@@ -1,5 +1,5 @@
 %% Fast-Furious 
-%  Linear Regression 
+%  Linear Regession 
 %  =================
 %  Variant #1: Continuous Features 
 %              In this case, by default, it's performed features scaling and normalization 
@@ -20,18 +20,32 @@ function [is_ok] = var1_doUseCaseBasic()
  is_ok = 0; % return as 1 if ok  
  p = 10;
  lambda = 0.1; 
- 
+ printf("Running var1_doUseCaseBasic ... \n"); 
+
  load ('ex5data1.mat');
  
- X = treatContFeatures(X,p);
  [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X,y,0.70);
+ [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p);
  [theta] = trainLinearReg(Xtrain, ytrain, lambda , 200 );
  
+ [Xval,mu_val,sigma_val] = treatContFeatures(Xval,p,1,mu,sigma);
+ if (mu != mu_val | sigma != sigma_val) 
+   disp(mu);
+   disp(mu_val);
+   disp(sigma);
+   disp(sigma_val);
+   error("error in function treatContFeatures: mu != mu_val or sigma != sigma_val - displayed mu,mu_val,sigma,sigma_val .. ");
+ endif  
  y_pred = predictLinearReg(Xval,theta);
  cost = linearRegCostFunction(Xval, yval, theta, lambda);
  
  if ( cost < 5.5 )  % put correctness tests here 
    is_ok = 1;
+   printf("Test case passed.\n");
+ else 
+   is_ok = 0;             
+   printf("Cost; %f\n",cost);
+   error("Test case NOT passed.\n"); 
  endif 
 
 endfunction
