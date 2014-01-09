@@ -1,10 +1,9 @@
-function [theta] = trainLinearReg(X, y, lambda , iter )
+function [theta] = trainLinearReg(X, y, lambda , iter = 200 )
 %TRAINLINEARREG Trains linear regression given a dataset (X, y) and a
 %regularization parameter lambda
 %   [theta] = TRAINLINEARREG (X, y, lambda) trains linear regression using
 %   the dataset (X, y) and regularization parameter lambda. Returns the
 %   trained parameters theta.
-%   by default, iter = 200 
 
 % Initialize Theta
 initial_theta = zeros(size(X, 2), 1); 
