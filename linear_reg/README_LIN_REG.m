@@ -15,12 +15,12 @@
 %
 %  Variant #1 / Use Cases 
 %  ========================
-function [is_ok] = var1_doUseCaseBasic()
- 
+function [is_ok] = var1_doBasicUseCase()
+ clear ; close all; 
  is_ok = 0; % return as 1 if ok  
  p = 10;
  lambda = 0.1; 
- printf("Running var1_doUseCaseBasic ... \n"); 
+ printf("Running var1_doBasicUseCase ... \n"); 
 
  load ('ex5data1.mat');
  
@@ -45,6 +45,39 @@ function [is_ok] = var1_doUseCaseBasic()
  else 
    is_ok = 0;             
    printf("Cost; %f\n",cost);
+   error("Test case NOT passed.\n"); 
+ endif 
+
+endfunction
+
+function [is_ok] = var1_doFindOptPAndLambdaUseCase()
+ clear ; close all;
+ is_ok = 0; % return as 1 if ok  
+ 
+ printf("Running var1_doFindOptPAndLambdaUseCase ... \n"); 
+ 
+ load ('ex5data1.mat');
+ Xtrain = Xtest; ytrain = ytest;
+ 
+ [Xtrain,mu,sigma] = treatContFeatures(Xtrain,1);
+ [Xval,mu_val,sigma_val] = treatContFeatures(Xval,1,1,mu,sigma);
+ if (mu != mu_val | sigma != sigma_val) 
+    disp(mu);
+    disp(mu_val);
+    disp(sigma);
+    disp(sigma_val);
+    error("error in function treatContFeatures: mu != mu_val or sigma != sigma_val - displayed mu,mu_val,sigma,sigma_val .. ");
+ endif
+ 
+ [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval);
+ 
+ [lambda_opt,J_opt] = findOptLambda_RegLin(Xtrain, ytrain, Xval, yval);
+ 
+ if ( p_opt == 3 )  % put correctness tests here 
+   is_ok = 1;
+   printf("Test case passed.\n");
+ else 
+   is_ok = 0;    
    error("Test case NOT passed.\n"); 
  endif 
 
