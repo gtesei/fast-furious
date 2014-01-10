@@ -58,7 +58,7 @@ function [is_ok] = var1_doFindOptPAndLambdaUseCase()
  
  load ('ex5data1.mat');
  Xtrain = Xtest; ytrain = ytest;
- 
+
  [Xtrain,mu,sigma] = treatContFeatures(Xtrain,1);
  [Xval,mu_val,sigma_val] = treatContFeatures(Xval,1,1,mu,sigma);
  if (mu != mu_val | sigma != sigma_val) 
