@@ -13,14 +13,7 @@ function [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval, p_vec = [1 
         [error_val(p), grad_cv]      = linearRegCostFunction(X_poly_val,   yval,   theta, lambda);
   endfor
 
-  p_opt = -1;
-  J_opt = 1000000;
-  for p = 1:length(p_vec)
-        if (p == 1 | error_val(p) < J_opt)
-                J_opt = error_val(p);
-                p_opt = p_vec(p);
-        endif
-  endfor 
+  [J_opt, p_opt] = min(error_val); 
 
   fprintf('Optimal Polynomial Degree p ==  %f , Minimum Cost == %f \n', p_opt , J_opt);
 

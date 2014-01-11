@@ -13,14 +13,7 @@ function [lambda_opt,J_opt] = findOptLambda_RegLin(Xtrain, ytrain, Xval, yval, l
         [error_val(lambdaIdx), grad_cv] =      linearRegCostFunction(X_poly_val,   yval,   theta, 0);
   endfor
 
-  lambda_opt = -1;
-  J_opt = 1000000;
-  for lambdaIdx = 1:length(lambda_vec)
-        if (lambdaIdx == 1 | error_val(lambdaIdx) < J_opt) 
-                J_opt = error_val(lambdaIdx);
-                lambda_opt = lambda_vec(lambdaIdx);
-        endif
-  endfor 
+  [J_opt,lambda_opt] = min(error_val);
 
   fprintf('Optimal Regression Parameter lambda ==  %f , Minimum Cost == %f \n', lambda_opt , J_opt);
 
