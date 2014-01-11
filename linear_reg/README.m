@@ -79,11 +79,15 @@ function [is_ok] = var1_doFindOptPAndLambdaUseCase()
  endif
  
  printf("|--> finding optimal polinomial degree ... \n");
- [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval);
+ tic(); [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval); toc();
  pause;
  
  printf("|--> finding optimal regularization parameter ... \n");
- [lambda_opt,J_opt] = findOptLambda_RegLin(Xtrain, ytrain, Xval, yval);
+ tic(); [lambda_opt,J_opt] = findOptLambda_RegLin(Xtrain, ytrain, Xval, yval); toc();
+ pause;
+ 
+ printf("|--> computing learning curve ... \n");
+  tic(); [error_train,error_val] = learningCurve_RegLin(Xtrain, ytrain, Xval, yval); toc();
  pause;
  
  if ( p_opt == 3 )  % put correctness tests here 

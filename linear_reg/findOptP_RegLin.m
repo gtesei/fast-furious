@@ -9,8 +9,8 @@ function [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval, p_vec = [1 
         [X_poly_val,mu_val,sigma_val] = treatContFeatures(Xval,p_vec(p),1,mu,sigma);
         
         theta = trainLinearReg(X_poly_train, ytrain, lambda);        
-        [error_train(p), grad_train] = linearRegCostFunction(X_poly_train, ytrain, theta, lambda);
-        [error_val(p), grad_cv]      = linearRegCostFunction(X_poly_val,   yval,   theta, lambda);
+        [error_train(p), grad_train] = linearRegCostFunction(X_poly_train, ytrain, theta, 0);
+        [error_val(p), grad_cv]      = linearRegCostFunction(X_poly_val,   yval,   theta, 0);
   endfor
 
   [J_opt, p_opt] = min(error_val); 
