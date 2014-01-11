@@ -14,6 +14,11 @@ function [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval, p_vec = [1 
   endfor
 
   [J_opt, p_opt] = min(error_val); 
+  
+  fprintf('Polynomial Degree \tTrain Error\tCross Validation Error\n');
+    for i = 1:length(p_vec)
+          fprintf('  \t%d\t\t%f\t%f\n', i, error_train(i), error_val(i));
+  endfor
 
   fprintf('Optimal Polynomial Degree p ==  %f , Minimum Cost == %f \n', p_opt , J_opt);
 

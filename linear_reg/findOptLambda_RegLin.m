@@ -15,6 +15,11 @@ function [lambda_opt,J_opt] = ...
   endfor
 
   [J_opt,lambda_opt] = min(error_val);
+  
+  fprintf('Regression Parameter \tTrain Error\tCross Validation Error\n');
+  for i = 1:length(lambda_vec)
+        fprintf('  \t%d\t\t%f\t%f\n', i, error_train(i), error_val(i));
+  endfor
 
   fprintf('Optimal Regression Parameter lambda ==  %f , Minimum Cost == %f \n', lambda_opt , J_opt);
 
