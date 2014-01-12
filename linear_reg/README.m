@@ -32,15 +32,20 @@ function [is_ok] = var1_doBasicUseCase()
 
  load ('ex5data1.mat');
  
- printf("|--> splitting dataset into train set and cross validation set ...");
+ printf("|--> splitting dataset into train set and cross validation set ...\n");
  [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X,y,0.70);
 
  printf("|--> performing feature scaling and normalization on train dataset and cross validation dataset ...\n");
  [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p);
  
- printf("|--> training ...");
+ printf("|--> training with gradient descent (optmized) ...\n");
  [theta] = trainLinearReg(Xtrain, ytrain, lambda , 200 );
- 
+ disp("theta - gradient descent");disp(theta);disp("-----------");
+ printf("|--> finding solution with normal equation ...\n");
+ [thetaNormEqn] = normalEqn_RegLin(Xtrain,ytrain,lambda); 
+ disp("theta - normal equation");disp(thetaNormEqn);disp("-----------");
+ disp("computing difference");disp(thetaNormEqn - theta);disp("-----------");
+
  [Xval,mu_val,sigma_val] = treatContFeatures(Xval,p,1,mu,sigma);
  if (mu != mu_val | sigma != sigma_val) 
    disp(mu); disp(mu_val); disp(sigma); disp(sigma_val);
@@ -133,35 +138,103 @@ function [is_ok] = var1_doComparisonPurePolyDatasetUseCase()
   tic(); [error_train,error_val] = learningCurve_RegLin(Xtrain, ytrain, Xval, yval); toc();
  pause;
  
- 
+ ##normal equation p = 1, lambda = 0
+ p = 1; lambda = 0;
+ printf("|--> finding optimal solution with normal equation p = %i and lambda = %f \n",p,lambda);
+ tic();
+ [Xtrain,mu,sigma] = treatContFeatures(_Xtrain,p);
+ [Xval,mu_val,sigma_val] = treatContFeatures(_Xval,p,1,mu,sigma);
+ [theta] = normalEqn_RegLin(Xtrain,ytrain,lambda);
+ y_pred = predictLinearReg(Xval,theta);
+ y_train_pred = predictLinearReg(Xtrain,theta);
+ cost_val_ne1 = MSE(y_pred, yval);
+ cost_train = MSE(y_train_pred, ytrain);
+ toc();
+ printf("MSE on training set = %f \n",cost_train);
+ printf("MSE on cross validation set = %f \n",cost_val_ne1);
+
+ ##normal equation p = 4, lambda = 0                                                                                                                                                          
+ p = 4; lambda = 0;
+ printf("|--> finding optimal solution with normal equation p = %i and lambda = %f \n",p,lambda);
+ tic();
+ [Xtrain,mu,sigma] = treatContFeatures(_Xtrain,p);
+ [Xval,mu_val,sigma_val] = treatContFeatures(_Xval,p,1,mu,sigma);
+ [theta] = normalEqn_RegLin(Xtrain,ytrain,lambda);
+ y_pred = predictLinearReg(Xval,theta);
+ y_train_pred =predictLinearReg(Xtrain,theta);
+ cost_val = MSE(y_pred, yval);
+ cost_train = MSE(y_train_pred, ytrain); 
+ toc();
+ printf("MSE on training set = %f \n",cost_train);
+ printf("MSE on cross validation set = %f \n",cost_val);
+
  ## p = 5 , lambda = 1                                                                                                                                                                                    
  p = 5;lambda=1;
- printf("|--> trying with p = %i and lambda = %f \n",p,lambda);
+ printf("|--> trying gradient descent (optimized) with p = %i and lambda = %f \n",p,lambda);
  tic();
  [Xtrain,mu,sigma] = treatContFeatures(_Xtrain,p);
  [Xval,mu_val,sigma_val] = treatContFeatures(_Xval,p,1,mu,sigma);
  [theta] = trainLinearReg(Xtrain, ytrain, lambda , 200 );
  y_pred = predictLinearReg(Xval,theta);
- cost_val = linearRegCostFunction(Xval, yval, theta, 0);
- cost_train = linearRegCostFunction(Xtrain, ytrain, theta, 0);
+ y_train_pred =predictLinearReg(Xtrain,theta);
+ cost_val = MSE(y_pred, yval);
+ cost_train = MSE(y_train_pred, ytrain);
  toc();
- printf("RMSE on training set = %f \n",cost_train);
- printf("RMSE on cross validation set = %f \n",cost_val);
+ printf("MSE on training set = %f \n",cost_train);
+ printf("MSE on cross validation set = %f \n",cost_val);
 
 
- ## p = 4 , lambda = 0
- p = 4;lambda=0;
- printf("|--> trying with p = %i and lambda = %f \n",p,lambda);
+ ## p = 4 , lambda = 0 , MaxIter = 200
+ p = 4;lambda=0;MaxIter = 200;
+ printf("|--> trying gradient descent (optimized) with p = %i , lambda = %f , MaxIter = %i \n",p,lambda,MaxIter);
  tic();  
  [Xtrain,mu,sigma] = treatContFeatures(_Xtrain,p);
  [Xval,mu_val,sigma_val] = treatContFeatures(_Xval,p,1,mu,sigma);
- [theta] = trainLinearReg(Xtrain, ytrain, lambda , 200 );
+ [theta] = trainLinearReg(Xtrain, ytrain, lambda , MaxIter );
  y_pred = predictLinearReg(Xval,theta);
- cost_val = linearRegCostFunction(Xval, yval, theta, 0); 
- cost_train = linearRegCostFunction(Xtrain, ytrain, theta, 0);
+ y_train_pred =predictLinearReg(Xtrain,theta);
+ cost_val = MSE(y_pred, yval);
+ cost_train = MSE(y_train_pred, ytrain);
  toc(); 
- printf("RMSE on training set = %f \n",cost_train); 
- printf("RMSE on cross validation set = %f \n",cost_val);
+ printf("MSE on training set = %f \n",cost_train); 
+ printf("MSE on cross validation set = %f \n",cost_val);
+
+ ## p = 4 , lambda = 0 , MaxIter = 400                                                                                                                                                                   
+ p = 4;lambda=0;MaxIter= 400;
+ printf("|--> trying gradient descent (optimized) with p = %i , lambda = %f , MaxIter = %i \n",p,lambda,MaxIter);
+ tic();
+ [Xtrain,mu,sigma] = treatContFeatures(_Xtrain,p);
+ [Xval,mu_val,sigma_val] = treatContFeatures(_Xval,p,1,mu,sigma);
+ [theta] = trainLinearReg(Xtrain, ytrain, lambda , MaxIter );
+ y_pred = predictLinearReg(Xval,theta);
+ y_train_pred =predictLinearReg(Xtrain,theta);
+ cost_val = MSE(y_pred, yval);
+ cost_train = MSE(y_train_pred, ytrain);
+ toc();
+ printf("MSE on training set = %f \n",cost_train);
+ printf("MSE on cross validation set = %f \n",cost_val);
+
+ ## p = 4 , lambda = 0 , MaxIter = 600                                                                                                                                                                    
+ p = 4;lambda=0;MaxIter= 600;
+ printf("|--> trying gradient descent (optimized) with p = %i , lambda = %f , MaxIter = %i \n",p,lambda,MaxIter);
+ tic();
+ [Xtrain,mu,sigma] = treatContFeatures(_Xtrain,p);
+ [Xval,mu_val,sigma_val] = treatContFeatures(_Xval,p,1,mu,sigma);
+ [theta] = trainLinearReg(Xtrain, ytrain, lambda , MaxIter );
+ y_pred = predictLinearReg(Xval,theta);
+ y_train_pred =predictLinearReg(Xtrain,theta);
+ cost_val = MSE(y_pred, yval);
+ cost_train = MSE(y_train_pred, ytrain);
+ toc();
+ printf("MSE on training set = %f \n",cost_train);
+ printf("MSE on cross validation set = %f \n",cost_val);
+
+ ## comparing R lm solution
+ printf("|--> comparing with R(lm) solution ...\n"); 
+ R_y_pred = dlmread([curr_dir "/dataset/poly/poly_pure_ypred.mat"]);
+ R_cost_val = MSE(R_y_pred, yval);
+ printf("MSE on cross validation set = %f \n",R_cost_val);
+ printf("MSE on xval R(lm1) / normal equation(p=1,lambda=0) = %f \n",(R_cost_val/cost_val_ne1));
 
  if ( cost_val < 100 )  % put correctness tests here 
    is_ok = 1;
