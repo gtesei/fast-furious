@@ -14,14 +14,14 @@ function [lambda_opt,J_opt] = ...
         [error_val(lambdaIdx), grad_cv] =      linearRegCostFunction(X_poly_val,   yval,   theta, 0);
   endfor
 
-  [J_opt,lambda_opt] = min(error_val);
+  [J_opt,lambda_opt_idx] = min(error_val);
   
   fprintf('Regression Parameter \tTrain Error\tCross Validation Error\n');
   for i = 1:length(lambda_vec)
-        fprintf('  \t%d\t\t%f\t%f\n', i, error_train(i), error_val(i));
+        fprintf('  \t%f\t\t%f\t%f\n', lambda_vec(i), error_train(i), error_val(i));
   endfor
 
-  fprintf('Optimal Regression Parameter lambda ==  %f , Minimum Cost == %f \n', lambda_opt , J_opt);
+  fprintf('Optimal Regression Parameter lambda ==  %f , Minimum Cost == %f \n', lambda_vec(lambda_opt_idx) , J_opt);
 
   %%plot 
   plot(lambda_vec, error_train, lambda_vec, error_val);
