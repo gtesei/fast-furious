@@ -113,10 +113,10 @@ function [is_ok] = var1_doComparisonPurePolyDatasetUseCase()
  
  printf("Running var1_doComparisonPurePolyDatasetUseCase ... \n"); 
  
- _Xtrain = dlmread([curr_dir "/dataset/poly/poly_pure_Xtrain.mat"]);
- ytrain =dlmread([curr_dir "/dataset/poly/poly_pure_ytrain.mat"]);
- _Xval =dlmread([curr_dir "/dataset/poly/poly_pure_Xval.mat"]);
- yval = dlmread([curr_dir "/dataset/poly/poly_pure_yval.mat"]);
+ _Xtrain = dlmread([curr_dir "/dataset/poly/poly_pure_Xtrain.zat"]);
+ ytrain =dlmread([curr_dir "/dataset/poly/poly_pure_ytrain.zat"]);
+ _Xval =dlmread([curr_dir "/dataset/poly/poly_pure_Xval.zat"]);
+ yval = dlmread([curr_dir "/dataset/poly/poly_pure_yval.zat"]);
  
  printf("|--> performing feature scaling and normalization on train dataset and cross validation dataset ...\n");
  [Xtrain,mu,sigma] = treatContFeatures(_Xtrain,1);
@@ -231,7 +231,7 @@ function [is_ok] = var1_doComparisonPurePolyDatasetUseCase()
 
  ## comparing R lm solution
  printf("|--> comparing with R(lm) solution ...\n"); 
- R_y_pred = dlmread([curr_dir "/dataset/poly/poly_pure_ypred.mat"]);
+ R_y_pred = dlmread([curr_dir "/dataset/poly/poly_pure_ypred.zat"]);
  R_cost_val = MSE(R_y_pred, yval);
  printf("MSE on cross validation set = %f \n",R_cost_val);
  printf("MSE on xval R(lm1) / normal equation(p=1,lambda=0) = %f \n",(R_cost_val/cost_val_ne1));

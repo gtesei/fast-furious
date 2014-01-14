@@ -25,10 +25,10 @@ Xval <- X[501:700,]
 ytrain <- y[1:500]
 yval <- y[501:700]
 
-write.table(Xtrain, file="poly_pure_Xtrain.mat", eol="\n",quote=FALSE, col.names=FALSE , row.names=FALSE,sep=",")
-write.table(ytrain, file="poly_pure_ytrain.mat", eol="\n",quote=FALSE, col.names=FALSE , row.names=FALSE,sep=",")
-write.table(Xval, file="poly_pure_Xval.mat", eol="\n",quote=FALSE, col.names=FALSE , row.names=FALSE,sep=",")
-write.table(yval, file="poly_pure_yval.mat", eol="\n",quote=FALSE, col.names=FALSE , row.names=FALSE,sep=",")
+write.table(Xtrain, file="poly_pure_Xtrain.zat", eol="\n",quote=FALSE, col.names=FALSE , row.names=FALSE,sep=",")
+write.table(ytrain, file="poly_pure_ytrain.zat", eol="\n",quote=FALSE, col.names=FALSE , row.names=FALSE,sep=",")
+write.table(Xval, file="poly_pure_Xval.zat", eol="\n",quote=FALSE, col.names=FALSE , row.names=FALSE,sep=",")
+write.table(yval, file="poly_pure_yval.zat", eol="\n",quote=FALSE, col.names=FALSE , row.names=FALSE,sep=",")
 ```
 
 ### Pure Polynomial - Fitting 
@@ -41,7 +41,7 @@ val <- data.frame(y=yval,x1=Xval[,1],x2=Xval[,2],x3=Xval[,3],x4=Xval[,4],x5=Xval
 lm1 <- lm(y ~ x1 + x2 + x3 + x4 + x5 , data=train)
 summary(lm1)
 ypred <- predict(lm1,newdata=val)
-write.table(ypred, file="poly_pure_ypred.mat", eol="\n",quote=FALSE, col.names=FALSE , row.names=FALSE,sep=",")
+write.table(ypred, file="poly_pure_ypred.zat", eol="\n",quote=FALSE, col.names=FALSE , row.names=FALSE,sep=",")
 RMSEtrain <- sqrt(sum((lm1$fitted-train$y)^2)) / length(train$y)
 RMSEval <- sqrt(sum((predict(lm1,newdata=val)-val$y)^2)) / length(val$y)
 
