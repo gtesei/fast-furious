@@ -17,10 +17,11 @@
 %  ========================
 
 function [is_ok] = go()
-  ok1 = var1_doBasicUseCase();
-  ok2 = var1_doFindOptPAndLambdaUseCase();
-  ok3 = var1_doComparisonPurePolyDatasetUseCase();
-  is_ok = ok1 & ok2 & ok3;
+  %ok1 = var1_doBasicUseCase();
+  %ok2 = var1_doFindOptPAndLambdaUseCase();
+  %ok3 = var1_doComparisonPurePolyDatasetUseCase();
+  %is_ok = ok1 & ok2 & ok3;
+  is_ok = var1_doBufferedUseCase();
 endfunction 
 
 function [is_ok] = var1_doBasicUseCase()
@@ -263,6 +264,35 @@ function [is_ok] = var1_doComparisonPurePolyDatasetUseCase()
 
 endfunction
 
+function [is_ok] = var1_doBufferedUseCase()
+  
+ is_ok = 0; % return as 1 if ok  
+ p = 10;
+ lambda = 0.1; 
+ printf("Running var1_doBufferedUseCase ... \n"); 
+
+ _Xtrain = dlmread([curr_dir "/dataset/poly/poly_pure_Xtrain.zat"]);
+ ytrain =dlmread([curr_dir "/dataset/poly/poly_pure_ytrain.zat"]);
+ 
+ fX = "/dataset/poly/poly_pure_Xtrain.zat";
+ fy = "/dataset/poly/poly_pure_ytrain.zat";
+ ciX = 0;
+ ceX = 4;
+ ciy = 0;
+ cey = 0;
+ 
+ TODO  
+
+ if ( cost < 5.5 )  % put correctness tests here 
+   is_ok = 1;
+   printf("Test case passed.\n");
+ else 
+   is_ok = 0;             
+   printf("Cost; %f\n",cost);
+   error("Test case NOT passed.\n"); 
+ endif 
+
+endfunction
 
 
 

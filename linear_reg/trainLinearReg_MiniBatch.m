@@ -10,8 +10,9 @@ costFunction = @(t) linearRegCostFunction(X, y, t, lambda);
 options = optimset('MaxIter', iter, 'GradObj', 'on');
 theta = fmincg(costFunction, theta, options);
 
-c = min(b,m);
-while ((size(X,1) == b) && (c < m) )
+_m = size(X,1);
+c = _m;
+while ( (_m == b) && (c < m) )
   X = dlmread(fX,sep=_sep,[c,ciX,c+b-1,ceX]);
   y = dlmread(fy,sep=_sep,[c,ciy,c+b-1,cey]);
 
@@ -19,8 +20,8 @@ while ((size(X,1) == b) && (c < m) )
   options = optimset('MaxIter', iter, 'GradObj', 'on');
   theta = fmincg(costFunction, theta, options);
 
-  _b = size(X,1);
-  c += _b;
+  _m = size(X,1);
+  c += _m;
 endwhile
 
 endfunction
