@@ -153,6 +153,21 @@ function [is_ok] = var1_doComparisonPurePolyDatasetUseCase()
  printf("MSE on training set = %f \n",cost_train);
  printf("MSE on cross validation set = %f \n",cost_val_ne1);
 
+ ## p = 1 , lambda = 0                                                                                                                                                                   
+ p = 1;lambda=0;
+ printf("|--> trying gradient descent (optimized) with p = %i and lambda = %f \n",p,lambda);
+ tic();
+ [Xtrain,mu,sigma] = treatContFeatures(_Xtrain,p);
+ [Xval,mu_val,sigma_val] = treatContFeatures(_Xval,p,1,mu,sigma);
+ [theta] = trainLinearReg(Xtrain, ytrain, lambda , 200 );
+ y_pred = predictLinearReg(Xval,theta);
+ y_train_pred =predictLinearReg(Xtrain,theta);
+ cost_val_gd1 = MSE(y_pred, yval);
+ cost_train_gd1 = MSE(y_train_pred, ytrain);
+ toc();
+ printf("MSE on training set = %f \n",cost_train_gd1);
+ printf("MSE on cross validation set = %f \n",cost_val_gd1);
+
  ##normal equation p = 4, lambda = 0                                                                                                                                                          
  p = 4; lambda = 0;
  printf("|--> finding optimal solution with normal equation p = %i and lambda = %f \n",p,lambda);
@@ -235,6 +250,8 @@ function [is_ok] = var1_doComparisonPurePolyDatasetUseCase()
  R_cost_val = MSE(R_y_pred, yval);
  printf("MSE on cross validation set = %f \n",R_cost_val);
  printf("MSE on xval R(lm1) / normal equation(p=1,lambda=0) = %f \n",(R_cost_val/cost_val_ne1));
+ printf("MSE on xval R(lm1) / opt. gradient descent (p=1,lambda=0) = %f \n",(R_cost_val/cost_val_gd1));
+
 
  if ( cost_val < 100 )  % put correctness tests here 
    is_ok = 1;

@@ -6,7 +6,7 @@ function [theta] = trainLinearReg(X, y, lambda , iter = 200 )
 %   trained parameters theta.
 
 % Initialize Theta
-initial_theta = zeros(size(X, 2), 1); 
+theta = zeros(size(X, 2), 1); 
 
 % Create "short hand" for the cost function to be minimized
 costFunction = @(t) linearRegCostFunction(X, y, t, lambda);
@@ -15,6 +15,6 @@ costFunction = @(t) linearRegCostFunction(X, y, t, lambda);
 options = optimset('MaxIter', iter, 'GradObj', 'on');
 
 % Minimize using fmincg
-theta = fmincg(costFunction, initial_theta, options);
+theta = fmincg(costFunction, theta, options);
 
 endfunction
