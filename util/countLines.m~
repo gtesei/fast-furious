@@ -1,0 +1,12 @@
+function [ctr] = countLines(fn,b=10000)                                       
+
+  f = fopen(fn, 'rt');
+  ctr = 0;
+  ln = fskipl(f,b);
+  while (!ln)
+    ctr += ln; 
+    ln= fskipl(f,b);
+  endwhile
+  fclose(f);                                                                                           
+
+endfunction  
