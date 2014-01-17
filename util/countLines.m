@@ -8,6 +8,6 @@ function [ctr] = countLines(fn,b=10000)
     ctr += ln; 
     ln= fskipl(f,b);
   endwhile
-  fclose(f);                                                                                           
+  fclose(f);
 
 endfunction  
