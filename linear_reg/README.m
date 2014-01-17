@@ -354,14 +354,14 @@ function [is_ok] = var1_doBufferedUseCase()
  printf("|->  cheking predictLinearReg_Buff: (y_pred_mb_10/y_pred_mb_100) = %f   \n" , mean(y_pred_mb_10 ./ y_pred_mb_100) );
 
  ##buffering curve
- train_mb = 1:10:size(Xtrain,1);
- val_mb = 1:10:size(Xtrain,1);
+ train_mb = 10:10:size(Xtrain,1);
+ val_mb = 10:10:size(Xtrain,1);
 
- train_bf = 1:10:size(Xtrain,1);
- val_bf = 1:10:size(Xtrain,1);
+ train_bf = 10:10:size(Xtrain,1);
+ val_bf = 10:10:size(Xtrain,1);
 
  idx = 1;
- for i = 1:10:size(Xtrain,1)
+ for i = 10:10:size(Xtrain,1)
   [theta_mb] = trainLinearReg_MiniBatch(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=i, _sep=',' , iter=200);
   y_pred_mb = predictLinearReg_Buff(foXval,ciX,ceX,theta_mb,b=10000,_sep=',');
   y_train_pred_mb = predictLinearReg_Buff(foXtrain,ciX,ceX,theta_mb,b=10000,_sep=',');
@@ -387,7 +387,7 @@ end
  max_X = size(Xtrain,1);
  max_Y = 4;
  ##min_Y = min(min(train_mb) , min(val_mb) );
- plot(1:10:size(Xtrain,1), train_mb, 1:10:size(Xtrain,1), val_mb , 1:10:size(Xtrain,1), train_bf, 1:10:size(Xtrain,1), val_bf);
+ plot(10:10:size(Xtrain,1), train_mb, 10:10:size(Xtrain,1), val_mb , 10:10:size(Xtrain,1), train_bf, 10:10:size(Xtrain,1), val_bf);
  title(sprintf('Buffering Curve (lambda = %f, p = %i)', lambda,p))
  xlabel('Buffer size')
  ylabel('MSE ratio (vs BATCH)')
@@ -397,6 +397,40 @@ end
 
  disp("## val_mb(1:10) ##");disp(val_mb(1:10));
  disp("## val_bf(1:10) ##");disp(val_bf(1:10));
+ 
+ 
+ ##buffering curve (time) 
+ time_mb = 10:10:size(Xtrain,1);
+ time_bf = 10:10:size(Xtrain,1);
+ time_b = 10:10:size(Xtrain,1);
+ 
+ _iter = 200,
+ 
+ idx = 1;
+ for i = 10:10:size(Xtrain,1)
+   tic();[theta_mb] = trainLinearReg_MiniBatch(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=i, _sep=',' , iter=_iter);t = toc();
+   time_mb(idx) = t;
+ 
+   tic(); [theta_bf] = trainLinearReg_Buff(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=i, _sep=',' , iter=_iter); t = toc(); 
+   time_bf(idx) = t;
+   
+   tic();[theta] = trainLinearReg(Xtrain, ytrain, lambda , _iter ); t = toc();
+   time_b(idx) = t;
+ 
+   idx += 1; 
+ end
+ 
+ %%plot
+ max_X = size(Xtrain,1);
+ max_Y = max(max(time_mb) , max(max(time_mb) ,max(time_b) ) );
+ plot(10:10:size(Xtrain,1), time_mb, 10:10:size(Xtrain,1), time_bf, 10:10:size(Xtrain,1), time_b);
+ title(sprintf('Buffering Curve (lambda = %f, p = %i , iter = %i)', lambda,p,_iter))
+ xlabel('Buffer size')
+ ylabel('Training time')
+ axis([0 max_X 0 max_Y])
+ legend('Mini-Batch' , 'Buffered', 'Batch' )
+ pause;
+ 
 
  if ( cost_val < 5.5 )  % put correctness tests here
    is_ok = 1;
