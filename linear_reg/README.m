@@ -17,7 +17,7 @@
 %  ========================
 
 function [is_ok] = go()
-  is_ok = 1
+  is_ok = 1;
   is_ok &= var1_doBasicUseCase();
   is_ok &= var1_doFindOptPAndLambdaUseCase();
   is_ok &= var1_doComparisonPurePolyDatasetUseCase();

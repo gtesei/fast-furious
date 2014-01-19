@@ -14,7 +14,10 @@ addpath([curr_dir "/dataset/poly/"]);
 
 
 ##Test Cases
-source "./linear_reg/README.m";
+%source "./linear_reg/README.m";
+%go();
+
+source "./logistic_reg/README.m";
 go();
 
 
