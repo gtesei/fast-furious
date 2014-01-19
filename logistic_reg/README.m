@@ -32,7 +32,7 @@ function [is_ok] = var1_doBasicUseCase()
  num_labels = 10; 
  printf("Running var1_doBasicUseCase ... \n"); 
 
- load ('ex3data1.mat'); %load X and y
+ load ('dataset/images/digits.mat'); %load X and y
  printf("|-> Loading and Visualizing Data ...\n"); 
  m = size(X, 1);
  rand_indices = randperm(m);
