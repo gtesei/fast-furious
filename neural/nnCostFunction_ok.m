@@ -1,36 +1,20 @@
 function [J grad] = nnCostFunction(nn_params, ...
-                                   NNMeta, ...
+                                   input_layer_size, ...
+                                   hidden_layer_size, ...
+                                   num_labels, ...
                                    X, y, lambda)
                                    
 m = size(X, 1);
-L = length(NNMeta.NNArchVect); 
 
-Theta = cell(L,1);
-Theta_grad = cell(L,1);
-start = 1;
-for i = 1:(L-1)
-  Theta(i,1) = reshape(nn_params(start:NNMeta.NNArchVect(i+1) * (NNMeta.NNArchVect(i) + 1)), ...
-                       NNMeta.NNArchVect(i+1), (NNMeta.NNArchVect(i) + 1));
-  Thata_grad(i,1) = zeros(size(Theta(i,1)));  
-  start += NNMeta.NNArchVect(i+1) * (NNMeta.NNArchVect(i) + 1);
-endfor 
-
-%Theta1 = reshape(nn_params(1:hidden_layer_size * (input_layer_size + 1)), ...
+Theta1 = reshape(nn_params(1:hidden_layer_size * (input_layer_size + 1)), ...
                  hidden_layer_size, (input_layer_size + 1));
-%Theta2 = reshape(nn_params((1 + (hidden_layer_size * (input_layer_size + 1))):end), ...
+Theta2 = reshape(nn_params((1 + (hidden_layer_size * (input_layer_size + 1))):end), ...
                  num_labels, (hidden_layer_size + 1));
 
-%Theta1_grad = zeros(size(Theta1));
-%Theta2_grad = zeros(size(Theta2));
+Theta1_grad = zeros(size(Theta1));
+Theta2_grad = zeros(size(Theta2));
 
-%------------ FORWARD PROP
-
-for i = 1:(L-1)
- a = 
-  
-
-endfor 
- 
+%------------ FORWARD PROP 
 a1 = [ones(m,1) X];
 z2 = a1 * Theta1';
 a2 = sigmoid(z2);
