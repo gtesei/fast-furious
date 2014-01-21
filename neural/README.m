@@ -44,8 +44,10 @@ function [is_ok] = var1_doBasicUseCase()
  fprintf("|-> Feedforward Using Neural Network ...\n");
  lambda = 0;
  J = nnCostFunction(nn_params, NNMeta , X, y, lambda);
+ 
  fprintf(["Cost at parameters (loaded from ex4weights): %f "...
          "\n(this value should be about 0.287629)\n"], J);
+         
  if ( J - 0.287629 > 0.01 )
    error("J - 0.287629 > 0.01");
  else 

@@ -17,8 +17,12 @@ addpath([curr_dir "/dataset/poly/"]);
 %source "./linear_reg/README.m";
 %go();
 
-source "./logistic_reg/README.m";
+%source "./logistic_reg/README.m";
+%go();
+
+source "./neural/README.m";
 go();
+
 
 
 
