@@ -29,6 +29,7 @@ function [is_ok] = var1_doBasicUseCase()
  is_ok = 0; % return as 1 if ok  
  printf("Running var1_doBasicUseCase ... \n"); 
 
+ %% load images 
  load ('dataset/images/digits.mat'); %load X and y
  printf("|-> Loading and Visualizing Data ...\n"); 
  m = size(X, 1);
@@ -37,6 +38,7 @@ function [is_ok] = var1_doBasicUseCase()
  displayData(sel);
  pause;
 
+ %% check cost function 
  fprintf("\n|-> Loading Saved Neural Network Parameters ...\n");
  NNMeta = buildNNMeta([400 25 10]);
  load('ex4weights.mat');
@@ -44,17 +46,50 @@ function [is_ok] = var1_doBasicUseCase()
  fprintf("|-> Feedforward Using Neural Network ...\n");
  lambda = 0;
  J = nnCostFunction(nn_params, NNMeta , X, y, lambda);
- 
  fprintf(["Cost at parameters (loaded from ex4weights): %f "...
          "\n(this value should be about 0.287629)\n"], J);
-         
  if ( J - 0.287629 > 0.01 )
    error("J - 0.287629 > 0.01");
  else 
    printf("OK");
  endif 
+
+ %% check cost function regularized 
+ fprintf('\nChecking Cost Function (w/ Regularization) ... \n')
+ lambda = 1;
+ J = nnCostFunction(nn_params, NNMeta , X, y, lambda);
+ fprintf(['Cost at parameters (loaded from ex4weights): %f '...
+         '\n(this value should be about 0.383770)\n'], J); 
+ if ( J - 0.383770 > 0.01 )
+   error("J - 0.383770 > 0.01");
+ else 
+   printf("OK");
+ endif 
  
- 
+ %% sigmoid gradient
+ fprintf('\nEvaluating sigmoid gradient...\n')
+ g = sigmoidGradient([1 -0.5 0 0.5 1]);
+ fprintf('Sigmoid gradient evaluated at [1 -0.5 0 0.5 1]:\n  ');
+ fprintf('%f ', g);
+ fprintf('\n\n');
+
+ %% Initializing Pameters
+ fprintf('\nInitializing Neural Network Parameters ...\n');
+ L = length(NNMeta.NNArchVect); 
+ Theta = cell(L-1,1);
+ for i = 1:(L-1)
+  Theta(i,1) = randInitializeWeights(NNMeta.NNArchVect(i),NNMeta.NNArchVect(i+1));
+ endfor  
+ initial_nn_params = [];
+ for i = fliplr(1:L-1)
+  initial_nn_params =  [ cell2mat(Theta(i))(:) ;  initial_nn_params(:) ];
+ endfor
+
+ %%Checking Backpropagation
+ fprintf('\nChecking Backpropagation... \n');
+ lambda = 0;
+ checkNNGradients(lambda);
+
 #  fprintf("\n|--> Training One-vs-All Logistic Regression...\n");
 #  _X = [ones(m, 1) X];
 #  [all_theta] = oneVsAll(_X, y, num_labels, lambda);
