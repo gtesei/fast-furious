@@ -115,66 +115,24 @@ function [is_ok] = var1_doBasicUseCase()
  accuracy = mean(double(pred == y)) * 100; 
  fprintf('\nTraining Set Accuracy: %f\n', accuracy);
 
+ %% -- splitting data set into training set and cross validation set  
+ printf("\n|--> splitting dataset into train set and cross validation set ...\n");
+ [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X,y,0.70);
+ printf("|--> performing feature scaling and normalization on train dataset and cross validation dataset ...\n" );
+
+ %% -- feature normalization
+ p = 1; 
+ printf("|-> Repeating with feature normalization ... \n "); 
+ [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p);
+ [Xval,mu_val,sigma_val] = treatContFeatures(Xval,p,1,mu,sigma);
+ [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 200, featureScaled = 1);
+ pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
+ pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
+ acc_train = mean(double(pred_train == ytrain)) * 100;
+ acc_val = mean(double(pred_val == yval)) * 100;
+ fprintf("Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
+ fprintf("Cross Validation Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_val);
  
- 
-
-#  fprintf("\n|--> Training One-vs-All Logistic Regression...\n");
-#  _X = [ones(m, 1) X];
-#  [all_theta] = oneVsAll(_X, y, num_labels, lambda);
-#  pred = predictOneVsAll(all_theta, _X);
-#  accuracy = mean(double(pred == y)) * 100;
-#  fprintf("\n Training Set Accuracy without feature normalization (p=%i,lambda=%f): %f\n", p,lambda,accuracy);
-
-#  printf("|-> Repeating with feature normalization ... \n "); 
-#  [Xnorm,mu,sigma] = treatContFeatures(X,p);
-#  [all_theta] = oneVsAll(Xnorm, y, num_labels, lambda);
-#  pred = predictOneVsAll(all_theta, Xnorm);
-#  accuracy = mean(double(pred == y)) * 100;
-#  fprintf("\n Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,accuracy);
-
-#  for p = 2:4
-#   printf("|-> Repeating with feature normalization and p = %i ... \n ",p);  
-#   [Xnorm,mu,sigma] = treatContFeatures(X,p);
-#   [all_theta] = oneVsAll(Xnorm, y, num_labels, lambda);
-#   pred = predictOneVsAll(all_theta, Xnorm);
-#   accuracy = mean(double(pred == y)) * 100;
-#   fprintf("\n Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,accuracy);
-#  endfor
- 
-#  printf("\n|--> splitting dataset into train set and cross validation set ...\n");
-#  [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X,y,0.70);
-#  printf("|--> performing feature scaling and normalization on train dataset and cross validation dataset (p=%i) ...\n" , p);
- 
-#  ## p = 4 , lambda = 0.1
-#  printf("\n|--> training with gradient descent (optmized) (p=%i , lambda=%f) ...\n" , p , lambda);
-#  [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p);
-#  [Xval,mu_val,sigma_val] = treatContFeatures(Xval,p,1,mu,sigma);
-#  [all_theta] = oneVsAll(Xtrain, ytrain, num_labels, lambda);
-#  pred_train = predictOneVsAll(all_theta, Xtrain);
-#  pred_val = predictOneVsAll(all_theta, Xval);
-#  acc_train = mean(double(pred_train == ytrain)) * 100;
-#  acc_val = mean(double(pred_val == yval)) * 100;
-#  fprintf("Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
-#  fprintf("Cross Validation Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_val);
-
-#  ## p = 1 , lambda = 1
-#  p = 1; lambda = 1; printf("\n|--> training with gradient descent (optmized) (p=%i , lambda=%f) ...\n" , p , lambda);
-#  [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p);
-#  [Xval,mu_val,sigma_val] = treatContFeatures(Xval,p,1,mu,sigma);
-#  [all_theta] = oneVsAll(Xtrain, ytrain, num_labels, lambda);
-#  pred_train = predictOneVsAll(all_theta, Xtrain);
-#  pred_val = predictOneVsAll(all_theta, Xval);
-#  acc_train = mean(double(pred_train == ytrain)) * 100;
-#  acc_val = mean(double(pred_val == yval)) * 100;
-#  fprintf("Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
-#  fprintf("Cross Validation Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_val);
-
-## NORMAL EQUAION ??  
-#   printf("|--> finding solution with normal equation ...\n");
-#   [thetaNormEqn] = normalEqn_RegLin(Xtrain,ytrain,lambda); 
-#   disp("theta - normal equation");disp(thetaNormEqn);disp("-----------");
-#   disp("computing difference");disp(thetaNormEqn - all_theta);disp("-----------");
-
  if ( accuracy > 95 )  % put correctness tests here 
    is_ok = 1;
    printf("Test case passed.\n");

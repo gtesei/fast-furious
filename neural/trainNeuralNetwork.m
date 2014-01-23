@@ -1,4 +1,4 @@
-function [Theta] = trainNeuralNetwork(NNMeta, X, y, lambda , iter = 200 )
+function [Theta] = trainNeuralNetwork(NNMeta, X, y, lambda , iter = 200 , featureScaled = 0)
 
 %% ----- Initial params 
 initial_nn_params = [];
@@ -15,7 +15,7 @@ endfor
 %% ----- Find minimum 
 options = optimset('MaxIter', iter, 'GradObj', 'on');
 
-costFunction = @(p) nnCostFunction(p, NNMeta, X, y, lambda);
+costFunction = @(p) nnCostFunction(p, NNMeta, X, y, lambda, featureScaled);
 
 [nn_params, cost] = fmincg(costFunction, initial_nn_params, options);
 

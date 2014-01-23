@@ -1,6 +1,6 @@
 function [J grad] = nnCostFunction(nn_params, ...
                                    NNMeta, ...
-                                   X, y, lambda)
+                                   X, y, lambda, featureScaled = 0)
                                    
 m = size(X, 1);
 L = length(NNMeta.NNArchVect); 
@@ -24,7 +24,14 @@ endfor
 %Theta2_grad = zeros(size(Theta2));
 
 %------------ FORWARD PROP
-a = cell(L,1); a(1,1) = [ones(m,1) X];
+a = cell(L,1); 
+
+if (featureScaled == 1) 
+  a(1,1) = X;
+else
+  a(1,1) = [ones(m,1) X];
+endif 
+
 z = cell(L,1);
 for i = 2:L
  z(i,1) = cell2mat(a(i-1,1)) * cell2mat(Theta(i-1,1))';
