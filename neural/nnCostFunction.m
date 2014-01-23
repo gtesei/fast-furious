@@ -11,7 +11,7 @@ start = 1;
 for i = 1:(L-1)
   Theta(i,1) = reshape(nn_params(start:start - 1 + NNMeta.NNArchVect(i+1) * (NNMeta.NNArchVect(i) + 1)), ...
                        NNMeta.NNArchVect(i+1), (NNMeta.NNArchVect(i) + 1));
-  Theta_grad(i,1) = zeros(size(Theta(i,1)));  
+  Theta_grad(i,1) = zeros(size(cell2mat(Theta(i,1))));
   start += NNMeta.NNArchVect(i+1) * (NNMeta.NNArchVect(i) + 1);
 endfor 
 
@@ -84,8 +84,8 @@ Theta_grad(1,1) = cell2mat(Theta_grad(1,1)) + cell2mat(d(2,1))' * cell2mat(a(1,1
 
 tai = cell(L-1,1);
 for i = 1:(L-1)
-  s = size(Theta(i,1));
-  tai(i,1) = [zeros(s(1),1),cell2mat(tai(i,1))(:,2:end)];
+  s = size(cell2mat(Theta(i,1)));
+  tai(i,1) = [zeros(s(1),1),cell2mat(Theta(i,1))(:,2:end)];
 endfor 
 
 
@@ -134,7 +134,7 @@ J = J + regTerm;
 
 grad = [];
 for i = fliplr(1:L-1)
-  grad =   [ cell2mat(Theta(i))(:) ;  grad(:) ];
+  grad =   [ cell2mat(Theta_grad(i))(:) ;  grad(:) ];
 endfor
 
 %v5 = [ cell2mat(c2(3))(:) ;  v5(:) ]
