@@ -85,10 +85,38 @@ function [is_ok] = var1_doBasicUseCase()
   initial_nn_params =  [ cell2mat(Theta(i))(:) ;  initial_nn_params(:) ];
  endfor
 
- %%Checking Backpropagation
- fprintf('\nChecking Backpropagation... \n');
+ %%Checking Backpropagation (lambda = 0)
  lambda = 0;
+ fprintf('\nChecking Backpropagation (lambda = %f)... \n',lambda);
  checkNNGradients(lambda);
+ 
+ % Checking Backpropagation (lambda != 0).
+ lambda = 3;
+ fprintf('\nChecking Backpropagation (lambda = %f)... \n',lambda);
+ checkNNGradients(lambda);
+ 
+ % Also output the costFunction debugging values
+ debug_J  = nnCostFunction(nn_params, NNMeta, X, y, lambda);
+ fprintf(['\n\nCost at (fixed) debugging parameters (w/ lambda = 10): %f ' ...
+         '\n(this value should be about 0.576051)\n\n'], debug_J);
+ 
+ % Training Neural Network
+ fprintf('\nTraining Neural Network... \n');
+ lambda = 1;
+ [Theta] = trainNeuralNetwork(NNMeta, X, y, lambda , iter = 50 );
+ 
+ % Visualizing Neural Network
+ fprintf('\nVisualizing Neural Network... \n')
+ displayData(cell2mat(Theta(1,1))(:, 2:end));
+ 
+ % Predict
+ [pred] = NNPredictMulticlass(NNMeta, Theta , X);
+ 
+ accuracy = mean(double(pred == y)) * 100; 
+ fprintf('\nTraining Set Accuracy: %f\n', accuracy);
+
+ 
+ 
 
 #  fprintf("\n|--> Training One-vs-All Logistic Regression...\n");
 #  _X = [ones(m, 1) X];
