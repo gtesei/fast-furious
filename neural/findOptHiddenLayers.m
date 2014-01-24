@@ -30,7 +30,7 @@ function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda
   [J_opt, h_opt] = min(error_val); 
   
   fprintf('\tHidden Layers \tTrain Error\tCross Validation Error\n');
-    for i = 1:length(s)
+    for i = 1:length(hl)
           fprintf('  \t%d\t\t%f\t%f\n', hl(i), error_train(i), error_val(i));
   endfor
 
