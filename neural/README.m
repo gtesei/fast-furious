@@ -18,8 +18,8 @@
 
 function [is_ok] = go()
   is_ok = 1;
-  is_ok &= var1_doBasicUseCase();
-#   is_ok &= var1_doFindOptPAndLambdaUseCase();
+# is_ok &= var1_doBasicUseCase();
+  is_ok &= var1_doFindOptParamsUseCase();
 #   is_ok &= var1_doComparisonPurePolyDatasetUseCase();
 #   is_ok &= var1_doBufferedUseCase();
 endfunction 
@@ -117,7 +117,9 @@ function [is_ok] = var1_doBasicUseCase()
 
  %% -- splitting data set into training set and cross validation set  
  printf("\n|--> splitting dataset into train set and cross validation set ...\n");
- [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X,y,0.70);
+ m = size(X, 1);
+ rand_indices = randperm(m);
+ [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X(rand_indices,:),y(rand_indices),0.70);
  printf("|--> performing feature scaling and normalization on train dataset and cross validation dataset ...\n" );
 
  %% -- feature normalization
@@ -144,26 +146,61 @@ function [is_ok] = var1_doBasicUseCase()
 
 endfunction
 
-# function [is_ok] = var1_doFindOptPAndLambdaUseCase()
+function [is_ok] = var1_doFindOptParamsUseCase()
  
-#  is_ok = 0; % return as 1 if ok  
+is_ok = 0; % return as 1 if ok  
  
-#  printf("Running var1_doFindOptPAndLambdaUseCase ... \n"); 
- 
-#  load ('ex5data1.mat');
-#  Xtrain = Xtest; ytrain = ytest;
+printf("Running var1_doFindOptParamsUseCase ... \n"); 
 
-#  printf("|--> performing feature scaling and normalization on train dataset and cross validation dataset ...\n");
-#  [Xtrain,mu,sigma] = treatContFeatures(Xtrain,1);
-#  [Xval,mu_val,sigma_val] = treatContFeatures(Xval,1,1,mu,sigma);
-#  if (mu != mu_val | sigma != sigma_val) 
-#     disp(mu); disp(mu_val); disp(sigma); disp(sigma_val);
-#     error("error in function treatContFeatures: mu != mu_val or sigma != sigma_val - displayed mu,mu_val,sigma,sigma_val .. ");
-#  endif
+%% load images 
+load ('dataset/images/digits.mat'); %load X and y
+printf("|-> Loading and Visualizing Data ...\n"); 
+m = size(X, 1);
+rand_indices = randperm(m);
+sel = X(rand_indices(1:100), :);
+displayData(sel);
+pause;
+
+printf("|--> performing feature scaling and normalization on train dataset and cross validation dataset ...\n");
+printf("\n|--> splitting dataset into train set and cross validation set ...\n");
+m = size(X, 1);
+rand_indices = randperm(m);
+[Xtrain,ytrain,Xval,yval] = splitTrainValidation(X(rand_indices,:),y(rand_indices),0.70);
  
-#  printf("|--> finding optimal polinomial degree ... \n");
-#  tic(); [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval); toc();
-#  pause;
+[Xtrain,mu,sigma] = treatContFeatures(Xtrain,1);
+[Xval,mu_val,sigma_val] = treatContFeatures(Xval,1,1,mu,sigma);
+if (mu != mu_val | sigma != sigma_val) 
+     disp(mu); disp(mu_val); disp(sigma); disp(sigma_val);
+     error("error in function treatContFeatures: mu != mu_val or sigma != sigma_val - displayed mu,mu_val,sigma,sigma_val .. ");
+endif
+
+
+%% finding optimal number of hidden layers 
+printf("|--> finding optimal number of neurons per layer ... \n");
+tic(); [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval); toc();
+pause;
+
+%% finding optimal number of neurons per layer 
+printf("|--> finding optimal number of neurons per layer ... \n");
+tic(); [s_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval); toc();
+pause;
+
+
+
+
+
+
+
+
+%% finding optimal lambda 
+
+
+
+
+
+
+ 
+
  
 #  printf("|--> finding optimal regularization parameter ... \n");
 #  tic(); [lambda_opt,J_opt] = findOptLambda_RegLin(Xtrain, ytrain, Xval, yval); toc();
@@ -515,4 +552,4 @@ endfunction
 #    error("Test case NOT passed.\n"); 
 #  endif 
 
-# endfunction
+endfunction
