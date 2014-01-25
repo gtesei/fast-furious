@@ -1,10 +1,17 @@
-function [s_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lambda=1)
+function [s_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lambda=1 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1)
 
   [m_train,n] = size(Xtrain);
-  num_label = unique(ytrain);
-  hl = 3; step = 40;
-  s = n:step:2*n; s1 = n-1;
-  printf("|-> findOptNeuronsPerLayer: detected %i features and %i classes ... \n",s1,length(num_label));
+  num_label = length(unique(ytrain));
+  hl = hidden_layers;
+  s0 = n;
+  sl = s0*2;
+  step = 40;
+  if (start_neurons > 0) s0 = start_neurons; endif
+  if (end_neurons > 0) sl = end_neurons; endif
+  if (step_fw > 0) step = step_fw; endif
+  s = s0:step:sl;
+  s1 = n-1;
+  printf("|-> findOptNeuronsPerLayer: detected %i features and %i classes (lambda=%f) ... \n",s1,num_label,lambda);
   printf("|-> findOptNeuronsPerLayer: setting  %i  hidden layers... \n",hl);
   printf("|-> findOptNeuronsPerLayer: setting  s2...sL-1 = %i,%i ... %i  neurons per layers... \n",min(s),min(s)+step,max(s));
   
@@ -14,16 +21,16 @@ function [s_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lam
   %% Finding ...
   for i = 1:length(s)
         
-        NNMeta = buildNNMeta([s1; ones(hl,1)*i ;num_label]); 
-            
-        [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 60, featureScaled = 1);
+    NNMeta = buildNNMeta([s1; ones(hl,1)*s(i) ;num_label]');disp(NNMeta);
+
+    [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 200, featureScaled = 1);
 	pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
 	pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
 	acc_train = mean(double(pred_train == ytrain)) * 100;
-        acc_val = mean(double(pred_val == yval)) * 100;
+    acc_val = mean(double(pred_val == yval)) * 100;
         
-        error_train(i) = 100 - acc_train;
-        error_val(i)   = 100 - acc_val;
+    error_train(i) = 100 - acc_train;
+    error_val(i)   = 100 - acc_val;
   endfor
 
   [J_opt, s_opt] = min(error_val); 
@@ -33,7 +40,7 @@ function [s_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lam
           fprintf('  \t%d\t\t%f\t%f\n', s(i), error_train(i), error_val(i));
   endfor
 
-  fprintf('Optimal Number of neurons s ==  %i , Minimum Cost == %f \n', s_opt , J_opt);
+  fprintf('Optimal Number of neurons ==  %i , Minimum Cost == %f \n', s(s_opt) , J_opt);
 
   %%plot 
   plot(s, error_train, s, error_val);

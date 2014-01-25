@@ -1,6 +1,6 @@
-function [NNMeta] = buildNNMeta(NNArchVect,featureEncodeOnTheFly=0)
+function [NNMeta] = buildNNMeta(_NNArchVect,featureEncodeOnTheFly=0)
 
-  NNMeta.NNArchVect = NNArchVect;
+  NNMeta.NNArchVect = _NNArchVect;
   NNMeta.featureEncodeOnTheFly = featureEncodeOnTheFly;
 
 endfunction

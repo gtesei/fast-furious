@@ -1,11 +1,12 @@
 function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda=1)
 
   [m_train,n] = size(Xtrain);
-  num_label = unique(ytrain);
+  num_label = length(unique(ytrain));
+  if (length(ytrain) != m_train) error("m_train error") endif;
   s1 = n-1;
   step = 1;
   hl = 1:step:5; 
-  printf("|-> findOptHiddenLayers: detected %i features and %i classes ... \n",s1,length(num_label));
+  printf("|-> findOptHiddenLayers: detected %i features and %i classes (lambda=%f) (m_train=%i) ... \n",s1,num_label,lambda,m_train);
   printf("|-> findOptHiddenLayers: setting  %i  neurons per layers... \n",s1);
   printf("|-> findOptHiddenLayers: setting  hidden layers = %i,%i ... %i ... \n",min(hl),min(hl)+step,max(hl));
   
@@ -14,17 +15,17 @@ function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda
 
   %% Finding ...
   for i = 1:length(hl)
-        
-        NNMeta = buildNNMeta([s1; ones(i,1)*s1 ;num_label]); 
+    arch = [s1; ones(hl(i),1) .* s1 ;num_label]';
+    NNMeta = buildNNMeta(arch);disp(NNMeta);
             
-        [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 60, featureScaled = 1);
+    [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 200, featureScaled = 1);
 	pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
 	pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
 	acc_train = mean(double(pred_train == ytrain)) * 100;
-        acc_val = mean(double(pred_val == yval)) * 100;
+    acc_val = mean(double(pred_val == yval)) * 100;
         
-        error_train(i) = 100 - acc_train;
-        error_val(i)   = 100 - acc_val;
+    error_train(i) = 100 - acc_train;
+    error_val(i)   = 100 - acc_val;
   endfor
 
   [J_opt, h_opt] = min(error_val); 
@@ -34,7 +35,7 @@ function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda
           fprintf('  \t%d\t\t%f\t%f\n', hl(i), error_train(i), error_val(i));
   endfor
 
-  fprintf('Optimal Number of hidden layers s ==  %i , Minimum Cost == %f \n', h_opt , J_opt);
+  fprintf('Optimal Number of hidden layers ==  %i , Minimum Cost == %f \n', hl(h_opt) , J_opt);
 
   %%plot 
   plot(hl, error_train, hl, error_val);

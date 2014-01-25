@@ -13,12 +13,12 @@
 %
 1;
 %
-%  Variant #1 / Use Cases 
-%  ========================
+%  Variant #1 / Use Cases .
+%  ======================== 
 
 function [is_ok] = go()
   is_ok = 1;
-# is_ok &= var1_doBasicUseCase();
+is_ok &= var1_doBasicUseCase();
   is_ok &= var1_doFindOptParamsUseCase();
 #   is_ok &= var1_doComparisonPurePolyDatasetUseCase();
 #   is_ok &= var1_doBufferedUseCase();
@@ -40,7 +40,7 @@ function [is_ok] = var1_doBasicUseCase()
 
  %% check cost function 
  fprintf("\n|-> Loading Saved Neural Network Parameters ...\n");
- NNMeta = buildNNMeta([400 25 10]);
+ NNMeta = buildNNMeta([400 25 10]);disp(NNMeta);
  load('ex4weights.mat');
  nn_params = [Theta1(:) ; Theta2(:)]; 
  fprintf("|-> Feedforward Using Neural Network ...\n");
@@ -123,7 +123,7 @@ function [is_ok] = var1_doBasicUseCase()
  printf("|--> performing feature scaling and normalization on train dataset and cross validation dataset ...\n" );
 
  %% -- feature normalization
- p = 1; 
+ p = 1; lambda = 0;
  printf("|-> Repeating with feature normalization ... \n "); 
  [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p);
  [Xval,mu_val,sigma_val] = treatContFeatures(Xval,p,1,mu,sigma);
@@ -135,12 +135,12 @@ function [is_ok] = var1_doBasicUseCase()
  fprintf("Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
  fprintf("Cross Validation Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_val);
  
- if ( accuracy > 95 )  % put correctness tests here 
+ if ( accuracy > 94 )  % put correctness tests here
    is_ok = 1;
    printf("Test case passed.\n");
  else 
    is_ok = 0;             
-   printf("Accuracy = %f < 95 \n",accuracy);
+   printf("Accuracy = %f < 94   \n",accuracy);
    error("Test case NOT passed.\n"); 
  endif 
 
@@ -175,14 +175,21 @@ if (mu != mu_val | sigma != sigma_val)
 endif
 
 
-%% finding optimal number of hidden layers 
+%% finding optimal number of hidden layers
+lambda = 0;
 printf("|--> finding optimal number of neurons per layer ... \n");
-tic(); [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval); toc();
+%tic(); [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval,lambda); toc();
 pause;
 
 %% finding optimal number of neurons per layer 
 printf("|--> finding optimal number of neurons per layer ... \n");
-tic(); [s_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval); toc();
+%tic(); [s_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval,lambda,start_neurons=10,end_neurons=100,step_fw=10); toc();
+pause;
+
+%% finding optimal lambda 
+printf("|--> finding optimal number of neurons per layer ... \n");
+NNMeta = buildNNMeta([400 85 10]);disp(NNMeta);
+tic(); [l_opt,J_opt] = findOptLambda(NNMeta, Xtrain, ytrain, Xval, yval); toc();
 pause;
 
 
@@ -191,8 +198,6 @@ pause;
 
 
 
-
-%% finding optimal lambda 
 
 
 
