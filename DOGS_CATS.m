@@ -32,12 +32,12 @@ fprintf("|-> Training Set Accuracy with feature normalization (lambda=%f): %f\n"
 fprintf("|-> Serialized Thetas into %s directory.\n",_dir); 
 
 %%% Predicting on Testset
-Xtest1 = dlmread([curr_dir "/dataset/images2/??????"]); 
-Xtest2 = dlmread([curr_dir "/dataset/images2/?????"]); 
-Xtest3 = dlmread([curr_dir "/dataset/images2/?????"]); 
+Xtest1 = dlmread([curr_dir "/dataset/images2/test_featuresDogsCatsE.zat"]); 
+Xtest2 = dlmread([curr_dir "/dataset/images2/test_featuresDogsCats_sobelsE.zat"]); 
+Xtest3 = dlmread([curr_dir "/dataset/images2/test_K-MEANS-ON_TRAINSET_featuresDogsCatsSURF.zat"]); 
 
 Xtest = [Xtest1 , Xtest2 , Xtest3];
-[Xest,mu_test,sigma_test] = treatContFeatures(Xest,1,1,mu,sigma);
+[Xtest,mu_test,sigma_test] = treatContFeatures(Xtest,1,1,mu,sigma);
 pred_test = NNPredictMulticlass(NNMeta, Theta , Xtest , featureScaled = 1);
 pred = [(1:length(pred_test))' pred_test];
 fn = "predictions.zat";

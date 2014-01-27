@@ -20,23 +20,24 @@ from sklearn.cluster import KMeans
 from mahotas.features import surf
 
 
-basedir = 'small_train-dogs-cats'
-images = glob('{}/*.jpg'.format(basedir))
-alldescriptors = []
-i = 0;
-for im in images:
-    im = mh.imread(im, as_grey=1)
-    im = im.astype(np.uint8)
-    alldescriptors.append(surf.surf(im, descriptor_only=True))
-    i += 1
-    print ('image:'+str(i))
+#basedir = 'small_train-dogs-cats'
+#images = glob('{}/*.jpg'.format(basedir))
+#alldescriptors = []
+#i = 0;
+#for im in images:
+#    im = mh.imread(im, as_grey=1)
+#    im = im.astype(np.uint8)
+#    alldescriptors.append(surf.surf(im, descriptor_only=True))
+#    i += 1
+#    print ('image:'+str(i))
 
 print('Descriptors done')
 k = 256
 km = KMeans(k)
 
-concatenated = np.concatenate(alldescriptors)
-concatenated = concatenated[::64]
+concatenated = np.loadtxt("test_SURF_concatenated.zat", delimiter=",")
+#concatenated = np.concatenate(alldescriptors)
+#concatenated = concatenated[::64]
 print('k-meaning...')
 km.fit(concatenated)
 features = []
@@ -60,7 +61,7 @@ for i in range(1,ims+1):
 features = np.array(features)
 
 np.savetxt("test_K-MEANS-ON_TRAINSET_featuresDogsCatsSURF.zat", features, delimiter=",")
-np.savetxt("test_SURF_concatenated.zat", concatenated, delimiter=",")
+np.savetxt("test_SURF_concatenated2.zat", concatenated, delimiter=",")
 
 
 

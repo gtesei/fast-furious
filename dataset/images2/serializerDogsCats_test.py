@@ -15,7 +15,11 @@ def features_for(im):
 features = []
 sobels = []
 images = glob('{}/*.jpg'.format(basedir))
-for im in images:
+ims = len(images)
+for i in range(1,ims+1):
+    im = 'test_dogs_vs_cats/'+str(i)+'.jpg'
+    print('processing ' +str(im) +' ...')
+    #for im in images:
     features.append(features_for(im))
     sobels.append(edginess_sobel(mh.imread(im, as_grey=True)))
 
