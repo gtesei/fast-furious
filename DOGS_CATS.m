@@ -1,10 +1,51 @@
 #! /opt/local/bin/octave -qf 
 
 ##setting enviroment 
-menv
+menv;
+
+%%% Loading Features & scaling 
+printf("|--> Loading trainset features ...\n");
+
+Xtrain1 = dlmread([curr_dir "/dataset/images2/featuresDogsCatsE.zat"]); %13 features 
+Xtrain2 = dlmread([curr_dir "/dataset/images2/featuresDogsCats_sobelsE.zat"]); %14 features
+Xtrain3 = dlmread([curr_dir "/dataset/images2/featuresDogsCatsSURF.zat"]); %14 features
+
+Xtrain = [Xtrain1 , Xtrain2 , Xtrain3];
+ytrain = dlmread([curr_dir "/dataset/images2/labelsDogsCats.zat"]);
+m = size(Xtrain, 1);
+n = size(Xtrain,2);
+ytrain = ones(m,1) + ytrain; 
+
+printf("|-> performing feature scaling ...\n");
+[Xtrain,mu,sigma] = treatContFeatures(Xtrain,1);
 
 
-#function findOptParams()
+%%% Model training 
+NNMeta = buildNNMeta([n n 2]);disp(NNMeta);
+lambda = 10;
+fprintf("|--> Neural Network Training  (lambda=%f) ... \n",lambda);
+[Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 10, featureScaled = 1);
+pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
+acc_train = mean(double(pred_train == ytrain)) * 100;
+fprintf("|-> Training Set Accuracy with feature normalization (lambda=%f): %f\n",lambda,acc_train);
+[_dir] = serializeNNTheta(Theta);
+fprintf("|-> Serialized Thetas into %s directory.\n",_dir); 
+
+%%% Predicting on Testset
+Xtest1 = dlmread([curr_dir "/dataset/images2/??????"]); 
+Xtest2 = dlmread([curr_dir "/dataset/images2/?????"]); 
+Xtest3 = dlmread([curr_dir "/dataset/images2/?????"]); 
+
+Xtest = [Xtest1 , Xtest2 , Xtest3];
+[Xest,mu_test,sigma_test] = treatContFeatures(Xest,1,1,mu,sigma);
+pred_test = NNPredictMulticlass(NNMeta, Theta , Xtest , featureScaled = 1);
+pred = [(1:length(pred_test))' pred_test];
+fn = "predictions.zat";
+dlmwrite(fn,pred);
+printf("|-> Predictions serialized into %s \n",fn);
+
+
+function findOptParams()
 
  global curr_dir;
 
@@ -57,7 +98,7 @@ tic(); [l_opt,J_opt] = findOptLambda(NNMeta, Xtrain, ytrain, Xval, yval); toc();
 
 
   
-#endfunction 
+endfunction 
 
 
 

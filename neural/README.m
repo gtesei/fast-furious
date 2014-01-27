@@ -163,6 +163,12 @@ function [is_ok] = var1_doBasicUseCase()
  printf("|-> DIFFERENCE: \n"); %disp(cell2mat(diff(1,1))(1,:));printf("\n");
  printf("|-> sum squares diffs:%f \n",sq);
  
+ %% -- Testing and serializing prediction   
+ pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
+ pred = [(1:length(pred_val))' pred_val];
+ fn = "prediction.zat";
+ dlmwrite(fn,pred);
+ printf("|-> prediction serialized into %s \n",fn);
  
  if ( accuracy > 94 )  % put correctness tests here
    is_ok = 1;
