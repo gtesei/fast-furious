@@ -1,12 +1,16 @@
-function [Theta] = trainNeuralNetwork(NNMeta, X, y, lambda , iter = 200 , featureScaled = 0)
+function [Theta] = trainNeuralNetwork(NNMeta, X, y, lambda , iter = 200 , featureScaled = 0 , initialTheta = cell(0,0) )
 
 %% ----- Initial params 
 initial_nn_params = [];
 L = length(NNMeta.NNArchVect); 
 Theta = cell(L-1,1);
-for i = 1:(L-1)
-  Theta(i,1) = randInitializeWeights(NNMeta.NNArchVect(i),NNMeta.NNArchVect(i+1));
-endfor  
+if (isempty(initialTheta))
+  for i = 1:(L-1)
+    Theta(i,1) = randInitializeWeights(NNMeta.NNArchVect(i),NNMeta.NNArchVect(i+1));
+  endfor  
+else 
+  Theta = initialTheta;
+endif 
 
 for i = fliplr(1:L-1)
   initial_nn_params =  [ cell2mat(Theta(i))(:) ;  initial_nn_params(:) ];

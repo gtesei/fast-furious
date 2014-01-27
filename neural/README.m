@@ -19,7 +19,7 @@
 function [is_ok] = go()
   is_ok = 1;
 is_ok &= var1_doBasicUseCase();
-  is_ok &= var1_doFindOptParamsUseCase();
+#   is_ok &= var1_doFindOptParamsUseCase();
 #   is_ok &= var1_doComparisonPurePolyDatasetUseCase();
 #   is_ok &= var1_doBufferedUseCase();
 endfunction 
@@ -127,13 +127,24 @@ function [is_ok] = var1_doBasicUseCase()
  printf("|-> Repeating with feature normalization ... \n "); 
  [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p);
  [Xval,mu_val,sigma_val] = treatContFeatures(Xval,p,1,mu,sigma);
- [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 200, featureScaled = 1);
+ [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, featureScaled = 1);
  pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
  pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
  acc_train = mean(double(pred_train == ytrain)) * 100;
  acc_val = mean(double(pred_val == yval)) * 100;
  fprintf("Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
  fprintf("Cross Validation Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_val);
+ 
+ %% -- testing initialTheta 
+ printf("|-> Repeating with starting from trained Theta ... \n "); 
+ [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, featureScaled = 1 , initialTheta = Theta);
+ pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
+ pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
+ acc_train = mean(double(pred_train == ytrain)) * 100;
+ acc_val = mean(double(pred_val == yval)) * 100;
+ fprintf("Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
+ fprintf("Cross Validation Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_val);
+ 
  
  if ( accuracy > 94 )  % put correctness tests here
    is_ok = 1;
