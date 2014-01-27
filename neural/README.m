@@ -145,6 +145,24 @@ function [is_ok] = var1_doBasicUseCase()
  fprintf("Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
  fprintf("Cross Validation Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_val);
  
+ %% -- testing serializing / deserializing Theta 
+ printf("|-> Testing serializing Theta ... \n"); 
+ [_dir] = serializeNNTheta(Theta);
+ printf("|-> created directory %s and serialized Thetas inside \n",_dir);
+ printf("|-> deserializing Thetas from %s  ... \n",_dir);
+ [_Theta] = deserializeNNTheta(NNMeta,_dir);
+ L = length(NNMeta.NNArchVect); 
+ diff = cell(L-1,1);
+ sq = 0;
+ for i = 1:(L-1)
+     diff(i,1) = cell2mat(Theta(i,1)) - cell2mat(_Theta(i,1));
+     s = cell2mat(diff(i,1));
+     s = s .* s;
+     sq += sum(s(:));
+ endfor  
+ printf("|-> DIFFERENCE: \n"); %disp(cell2mat(diff(1,1))(1,:));printf("\n");
+ printf("|-> sum squares diffs:%f \n",sq);
+ 
  
  if ( accuracy > 94 )  % put correctness tests here
    is_ok = 1;
