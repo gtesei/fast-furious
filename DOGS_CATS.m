@@ -6,12 +6,13 @@ menv;
 %%% Loading Features & scaling 
 printf("|--> Loading trainset features ...\n");
 
-Xtrain1 = dlmread([curr_dir "/dataset/images2/featuresDogsCatsE.zat"]); %13 features 
-Xtrain2 = dlmread([curr_dir "/dataset/images2/featuresDogsCats_sobelsE.zat"]); %14 features
-Xtrain3 = dlmread([curr_dir "/dataset/images2/featuresDogsCatsSURF.zat"]); %14 features
+Xtrain1 = dlmread([curr_dir "/dataset/images2/Xtrain1.zat"]); %13 features 
+Xtrain2 = dlmread([curr_dir "/dataset/images2/Xtrain2.zat"]); %14 features
+Xtrain3 = dlmread([curr_dir "/dataset/images2/Xtrain3.zat"]); %14 features
 
 Xtrain = [Xtrain1 , Xtrain2 , Xtrain3];
-ytrain = dlmread([curr_dir "/dataset/images2/labelsDogsCats.zat"]);
+Xtrain = [Xtrain1 , Xtrain2 ];
+ytrain = dlmread([curr_dir "/dataset/images2/Ytrain.zat"]);
 m = size(Xtrain, 1);
 n = size(Xtrain,2);
 ytrain = ones(m,1) + ytrain; 
@@ -24,7 +25,7 @@ printf("|-> performing feature scaling ...\n");
 NNMeta = buildNNMeta([n n 2]);disp(NNMeta);
 lambda = 10;
 fprintf("|--> Neural Network Training  (lambda=%f) ... \n",lambda);
-[Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 8000, featureScaled = 1);
+[Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 1000, featureScaled = 1);
 pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
 acc_train = mean(double(pred_train == ytrain)) * 100;
 fprintf("|-> Training Set Accuracy with feature normalization (lambda=%f): %f\n",lambda,acc_train);
@@ -32,11 +33,12 @@ fprintf("|-> Training Set Accuracy with feature normalization (lambda=%f): %f\n"
 fprintf("|-> Serialized Thetas into %s directory.\n",_dir); 
 
 %%% Predicting on Testset
-Xtest1 = dlmread([curr_dir "/dataset/images2/test_featuresDogsCatsE.zat"]); 
-Xtest2 = dlmread([curr_dir "/dataset/images2/test_featuresDogsCats_sobelsE.zat"]); 
-Xtest3 = dlmread([curr_dir "/dataset/images2/test_K-MEANS-ON_TRAINSET_featuresDogsCatsSURF.zat"]); 
+Xtest1 = dlmread([curr_dir "/dataset/images2/Xtest1.zat"]); 
+Xtest2 = dlmread([curr_dir "/dataset/images2/Xtest2.zat"]); 
+Xtest3 = dlmread([curr_dir "/dataset/images2/Xtest3.zat"]);
 
-Xtest = [Xtest1 , Xtest2 , Xtest3];
+%Xtest = [Xtest1 , Xtest2 , Xtest3];
+Xtest = [Xtest1 , Xtest2 ];
 [Xtest,mu_test,sigma_test] = treatContFeatures(Xtest,1,1,mu,sigma);
 pred_test = NNPredictMulticlass(NNMeta, Theta , Xtest , featureScaled = 1);
 pred_test = pred_test - ones(size(pred_test,1),1);

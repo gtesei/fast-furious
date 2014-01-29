@@ -3,6 +3,20 @@
 
 import os
 import shutil
+import mahotas as mh
+from sklearn import cross_validation
+from sklearn.linear_model.logistic import LogisticRegression
+import numpy as np
+from glob import glob
+from edginess import edginess_sobel
+
+
+
+def features_for(im):
+    im = mh.imread(im,as_grey=True).astype(np.uint8)
+    #return mh.features.haralick(im).mean(0)
+    return np.squeeze(mh.features.haralick(im)).reshape(-1)
+
 
 os.mkdir("small_collection") ## 3000 train , 3000 test 
 
@@ -15,6 +29,7 @@ for i in range(1,1501):
     dst = 'small_collection/cat.'+str(i)+'.jpg'
     print('picking ' +str(im) +' ...')
     shutil.copy(im, dst)
+
     
 ## train, dogs 
 basedir = 'train-dogs-vs-cats'
@@ -25,33 +40,24 @@ for i in range(1,1501):
     dst = 'small_collection/dog.'+str(i)+'.jpg'
     print('picking ' +str(im) +' ...')
     shutil.copy(im, dst)
-    
+
+
+
 ## test
 basedir = 'test_dogs_vs_cats'
 images = glob('{}/*.jpg'.format(basedir))
 for i in range(1,3001):
     im = 'test_dogs_vs_cats/'+str(i)+'.jpg'
-    dst = 'small_collection/str(i)+'.jpg'
+    dst = 'small_collection/'+str(i)+'.jpg'
     print('picking ' +str(im) +' ...')
     shutil.copy(im, dst)
-    
+
 
 ####################################################
 # Xtrain1, Xtrain2, Ytrain
 
-import mahotas as mh
-from sklearn import cross_validation
-from sklearn.linear_model.logistic import LogisticRegression
-import numpy as np
-from glob import glob
-from edginess import edginess_sobel
-
 basedir = 'train-dogs-vs-cats'
 
-def features_for(im):
-    im = mh.imread(im,as_grey=True).astype(np.uint8)
-    #return mh.features.haralick(im).mean(0)
-    return np.squeeze(mh.features.haralick(im)).reshape(-1)
 
 features = []
 sobels = []
@@ -70,6 +76,7 @@ for im in images:
         labelVect.append(np.array([1]))
     else: 
         raise Exception ("unrecognized label:"+str(im[:-len('.jpg')]))
+
 
 features = np.array(features)
 labels = np.array(labels)
@@ -140,6 +147,7 @@ for im in images:
     i += 1
     print ('image:'+str(i))
 
+
 print('Descriptors done')
 k = 256
 km = KMeans(k)
@@ -168,6 +176,7 @@ for im in images:
     else:
         raise Exception ("unrecognized label:"+str(im[:-len('.jpg')]))
 
+
 features = np.array(features)
 
 np.savetxt("Xtrain3.zat", features, delimiter=",")
@@ -195,6 +204,7 @@ for i in range(1,ims+1):
     features.append(
                     np.array([np.sum(c == i) for i in xrange(k)])
                     )
+
 
 features = np.array(features)
 
