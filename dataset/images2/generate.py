@@ -131,7 +131,7 @@ np.savetxt("Xtest2.zat", features_sobels, delimiter=",")
 # Xtrain3 
 
 print('SURFing ...')
-tfeatures = features
+
 from sklearn.cluster import KMeans
 from mahotas.features import surf
 
@@ -153,7 +153,7 @@ k = 256
 km = KMeans(k)
 
 concatenated = np.concatenate(alldescriptors)
-concatenated = concatenated[::64]
+#concatenated = concatenated[::64]
 print('k-meaning...')
 km.fit(concatenated)
 features = []
@@ -169,13 +169,6 @@ for im in images:
     features.append(
                     np.array([np.sum(c == i) for i in xrange(k)])
                     )
-    if ("train-dogs-vs-cats/cat" in im[:-len('.jpg')]):
-        labels.append('cat')
-    elif ("train-dogs-vs-cats/dog" in im[:-len('.jpg')]):
-        labels.append('dog')
-    else:
-        raise Exception ("unrecognized label:"+str(im[:-len('.jpg')]))
-
 
 features = np.array(features)
 
@@ -190,6 +183,7 @@ print('Accuracy (5 fold x-val) with Log. Reg [SURF features]: %s%%' % (0.1* roun
 ####################################################
 # Xtest3 
 
+features = []
 basedir = 'test_dogs_vs_cats'
 images = glob('{}/*.jpg'.format(basedir))
 ims = len(images)
