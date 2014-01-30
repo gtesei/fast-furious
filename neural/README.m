@@ -417,61 +417,66 @@ pause;
 
 # endfunction
 
-# function [is_ok] = var1_doBufferedUseCase()
+ function [is_ok] = var1_doBufferedUseCase()
   
-#  global curr_dir;
+  global curr_dir;
 
-#  is_ok = 0; % return as 1 if ok  
-#  p = 10;
-#  lambda = 0.1; 
-#  printf("Running var1_doBufferedUseCase ... \n"); 
+  is_ok = 0; % return as 1 if ok  
+  p = 1;
+  lambda = 0.1; 
+  printf("Running var1_doBufferedUseCase ... \n"); 
  
-#  ## path 
-#  fiXtrain = "dataset/poly/poly_pure_Xtrain.zat";
-#  foXtrain = "dataset/poly/poly_pure_Xtrain_buff.zat";
-#  fiXval = "dataset/poly/poly_pure_Xval.zat";
-#  foXval = "dataset/poly/poly_pure_Xval_buff.zat"; 
+  ## path 
+  fiXtrain = "dataset/poly/poly_pure_Xtrain.zat";
+  foXtrain = "dataset/poly/poly_pure_Xtrain_buff.zat";
+  fiXval = "dataset/poly/poly_pure_Xval.zat";
+  foXval = "dataset/poly/poly_pure_Xval_buff.zat"; 
 
-#  ## column index
-#  fytrain = "dataset/poly/poly_pure_ytrain.zat";
-#  fyval = "dataset/poly/poly_pure_yval.zat";                                                                                                                                                                 
+  ## column index
+  fytrain = "dataset/poly/poly_pure_ytrain.zat";
+  fyval = "dataset/poly/poly_pure_yval.zat";                                                                                                                                                                 
  
-#  ciX = 0;
-#  ceX = 4;
-#  ciy = 0;
-#  cey = 0;
+  ciX = 0;
+  ceX = 4;
+  ciy = 0;
+  cey = 0;
 
-#  ## reading datasets 
-#  _Xtrain = dlmread(fiXtrain);
-#  _Xval   = dlmread(fiXval);    
-#  ytrain  = dlmread(fytrain);
-#  yval    = dlmread(fyval);
+  ## reading datasets 
+  _Xtrain = dlmread(fiXtrain);
+  [m,n] = size(_Xtrain);
+  _Xval   = dlmread(fiXval);    
+  ytrain  = dlmread(fytrain);
+  yval    = dlmread(fyval);
  
-#  ## p = 1 , lambda = 0                                                                                                                                                                                    
-#  p = 1;lambda=0;
-#  printf("|--> comparing performances of Mini-Batch/Buffered/Batch gradient descent (optimized) with p = %i and lambda = %f \n",p,lambda);
-#  tic();
+## p = 1 , lambda = 0                                                                                                                                                                                    
+  p = 1;lambda=0;
+  printf("|--> comparing performances of Buffered/Batch gradient descent (optimized) with p = %i and lambda = %f \n",p,lambda);
+  tic();
 
-#  ## feature normalization 
-#  printf("|-> comparing Xtrain vs Xtrain_buff ... \n");
-#  [Xtrain,mu,sigma] = treatContFeatures(_Xtrain,p);
-#  [Xval,mu_val,sigma_val] = treatContFeatures(_Xval,p,1,mu,sigma);
+  ## feature normalization 
+  printf("|-> comparing Xtrain vs Xtrain_buff ... \n");
+  [Xtrain,mu,sigma] = treatContFeatures(_Xtrain,p);
+  [Xval,mu_val,sigma_val] = treatContFeatures(_Xval,p,1,mu,sigma);
  
-#  [foXtrain,mu_b,sigma_b] = treatContFeatures_Buff(fiXtrain,foXtrain,p);
-#  [foXval,mu_b,sigma_b] = treatContFeatures_Buff(fiXval,foXval,p,1,mu_b,sigma_b);
+  [foXtrain,mu_b,sigma_b] = treatContFeatures_Buff(fiXtrain,foXtrain,p);
+  [foXval,mu_b,sigma_b] = treatContFeatures_Buff(fiXval,foXval,p,1,mu_b,sigma_b);
 
-#  printf("|-> sum( (mu - mu_b) .^2) = %f \n" , sum( (mu - mu_b) .^2 ) );
-#  printf("|-> sum( (sigma - sigma_b) .^2) = %f \n" , sum( (sigma - sigma_b) .^2 ) ); 
+  printf("|-> sum( (mu - mu_b) .^2) = %f \n" , sum( (mu - mu_b) .^2 ) );
+  printf("|-> sum( (sigma - sigma_b) .^2) = %f \n" , sum( (sigma - sigma_b) .^2 ) ); 
   
-#  Xtrain_buff = dlmread(foXtrain); 
-#  Xval_buff = dlmread(foXval);
+  Xtrain_buff = dlmread(foXtrain); 
+  Xval_buff = dlmread(foXval);
 
-#  diff = Xtrain - Xtrain_buff;
-#  disp(diff(1:5,:));
-#  printf("|-> sum diff squares:%f \n", sum(sum(diff .^ 2))  );
+  diff = Xtrain - Xtrain_buff;
+  disp(diff(1:5,:));
+  printf("|-> sum diff squares:%f \n", sum(sum(diff .^ 2))  );
  
-#  ## training and predicting  
-#  printf("|-> comparing training and predicting ...  \n"); 
+  ## training and predicting  
+  printf("|-> comparing training and predicting ...  \n"); 
+  NNMeta = buildNNMeta([400 25 10]);disp(NNMeta);
+  
+  function [Theta] = trainNeuralNetwork_Buff(NNMeta, fX,ciX,ceX,fy,ciy,cey, _sep=',' , b=10000 , lambda , ...
+                      iter = 200 , featureScaled = 0 , initialTheta = cell(0,0) )
  
 #  [theta] = trainLinearReg(Xtrain, ytrain, lambda , 200 );
 #  y_pred = predictLinearReg(Xval,theta);
