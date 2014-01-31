@@ -18,10 +18,10 @@
 
 function [is_ok] = go()
   is_ok = 1;
-is_ok &= var1_doBasicUseCase();
+#   is_ok &= var1_doBasicUseCase();
 #   is_ok &= var1_doFindOptParamsUseCase();
 #   is_ok &= var1_doComparisonPurePolyDatasetUseCase();
-#   is_ok &= var1_doBufferedUseCase();
+   is_ok &= var1_doBufferedUseCase();
 endfunction 
 
 function [is_ok] = var1_doBasicUseCase()
@@ -475,8 +475,13 @@ pause;
   printf("|-> comparing training and predicting ...  \n"); 
   NNMeta = buildNNMeta([400 25 10]);disp(NNMeta);
   
-  function [Theta] = trainNeuralNetwork_Buff(NNMeta, fX,ciX,ceX,fy,ciy,cey, _sep=',' , b=10000 , lambda , ...
-                      iter = 200 , featureScaled = 0 , initialTheta = cell(0,0) )
+  function [Theta_Buff] = trainNeuralNetwork_Buff(NNMeta, fX,ciX,ceX,fy,ciy,cey, _sep=',' , b=10000 , lambda , ...
+                      iter = 200 , featureScaled = 0 , initialTheta = cell(0,0) );
+  y_pred_bf = predictLinearReg_Buff(foXval,ciX,ceX,theta_bf,b=10000,_sep=',');
+  y_train_pred_bf = predictLinearReg_Buff(foXtrain,ciX,ceX,theta_bf,b=10000,_sep=',');
+  cost_val_bf = MSE(y_pred_bf, yval);
+  cost_train_bf = MSE(y_train_pred_bf, ytrain);
+
  
 #  [theta] = trainLinearReg(Xtrain, ytrain, lambda , 200 );
 #  y_pred = predictLinearReg(Xval,theta);
