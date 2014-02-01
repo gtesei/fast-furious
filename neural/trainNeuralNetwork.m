@@ -1,4 +1,5 @@
-function [Theta] = trainNeuralNetwork(NNMeta, X, y, lambda , iter = 200 , featureScaled = 0 , initialTheta = cell(0,0) )
+function [Theta] = trainNeuralNetwork(NNMeta, X, y, lambda , iter = 200 , ... 
+                        featureScaled = 0 , initialTheta = cell(0,0) )
 
 %% ----- Initial params 
 initial_nn_params = [];

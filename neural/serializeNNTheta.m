@@ -1,4 +1,5 @@
-function [_dir] = serializeNNTheta(Theta,useTimestamp = 1, dPrefix="Theta",fPrefix="Theta", fExt="zat", rDir=".")
+function [_dir] = serializeNNTheta(Theta,useTimestamp = 1, dPrefix="Theta", ... 
+                         fPrefix="Theta", fExt="zat", rDir=".")
 
   ts = strftime ("%d_%m_%Y-%H%M", localtime (time ()));
   

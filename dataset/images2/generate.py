@@ -154,6 +154,7 @@ km = KMeans(k)
 
 concatenated = np.concatenate(alldescriptors)
 #concatenated = concatenated[::64]
+concatenated = concatenated[:64]
 print('k-meaning...')
 km.fit(concatenated)
 features = []
