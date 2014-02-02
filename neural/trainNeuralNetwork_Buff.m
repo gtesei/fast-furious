@@ -20,7 +20,7 @@ endfor
 %% ----- Find minimum 
 options = optimset('MaxIter', iter, 'GradObj', 'on');
 
-costFunction = @(p) nnCostFunction_Buff(p, NNMeta, fX, ciX, ceX,fy, ciy, cey, _sep=',' , lambda, featureScaled);
+costFunction = @(p) nnCostFunction_Buff(p, NNMeta, fX, ciX, ceX,fy, ciy, cey,_sep,b,lambda,featureScaled);
 
 [nn_params, cost] = fmincg(costFunction, initial_nn_params, options);
 

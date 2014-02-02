@@ -258,7 +258,7 @@ pause;
 #    error("Test case NOT passed.\n"); 
 #  endif 
 
-# endfunction
+endfunction
 
 # function [is_ok] = var1_doComparisonPurePolyDatasetUseCase()
 #  global curr_dir; 
@@ -435,7 +435,6 @@ pause;
   ## column index
   fytrain = "dataset/poly/poly_pure_ytrain.zat";
   fyval = "dataset/poly/poly_pure_yval.zat";                                                                                                                                                                 
- 
   ciX = 0;
   ceX = 4;
   ciy = 0;
@@ -448,7 +447,7 @@ pause;
   ytrain  = dlmread(fytrain);
   yval    = dlmread(fyval);
  
-## p = 1 , lambda = 0                                                                                                                                                                                    
+  ## p = 1 , lambda = 0                                                                                                                                                                                    
   p = 1;lambda=0;
   printf("|--> comparing performances of Buffered/Batch gradient descent (optimized) with p = %i and lambda = %f \n",p,lambda);
   tic();
@@ -475,55 +474,40 @@ pause;
   printf("|-> comparing training and predicting ...  \n"); 
   NNMeta = buildNNMeta([400 25 10]);disp(NNMeta);
   
-  function [Theta_Buff] = trainNeuralNetwork_Buff(NNMeta, fX,ciX,ceX,fy,ciy,cey, _sep=',' , b=10000 , lambda , ...
-                      iter = 200 , featureScaled = 0 , initialTheta = cell(0,0) );
-  y_pred_bf = predictLinearReg_Buff(foXval,ciX,ceX,theta_bf,b=10000,_sep=',');
-  y_train_pred_bf = predictLinearReg_Buff(foXtrain,ciX,ceX,theta_bf,b=10000,_sep=',');
-  cost_val_bf = MSE(y_pred_bf, yval);
-  cost_train_bf = MSE(y_train_pred_bf, ytrain);
+  [Theta_Buff] = trainNeuralNetwork_Buff(NNMeta, foXtrain,ciX,ceX,fytrain,ciy,cey,_sep=',',b=10000,lambda, ...
+                     iter = 200 , featureScaled = 0 , initialTheta = cell(0,0) );
+  pred_xval_bf = NNPredictMulticlass_Buff(NNMeta,foXval,ciX,ceX,Theta_Buff,b=10000,_sep=',');
+  pred_train_bf = NNPredictMulticlass_Buff(foXtrain,ciX,ceX,theta_bf,b=10000,_sep=',');
+  cost_val_bf = MSE(pred_xval_bf, yval);
+  cost_train_bf = MSE(pred_train_bf, ytrain);
 
+  [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, ... 
+      featureScaled = 1 , initialTheta = Theta);
+  pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
+  pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
+  cost_val = MSE(pred_val, yval);
+  cost_train = MSE(pred_train, ytrain);
  
-#  [theta] = trainLinearReg(Xtrain, ytrain, lambda , 200 );
-#  y_pred = predictLinearReg(Xval,theta);
-#  y_train_pred = predictLinearReg(Xtrain,theta);
-#  cost_val = MSE(y_pred, yval);
-#  cost_train = MSE(y_train_pred, ytrain);
+  toc();
+  printf("|-> BATCH - MSE on training set = %f \n",cost_train);
+  printf("|-> BATCH - MSE on cross validation set = %f \n",cost_val);
 
-#  [theta_mb] = trainLinearReg_MiniBatch(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=100, _sep=',' , iter=200);
-#  y_pred_mb = predictLinearReg_Buff(foXval,ciX,ceX,theta_mb,b=10000,_sep=',');
-#  y_train_pred_mb = predictLinearReg_Buff(foXtrain,ciX,ceX,theta_mb,b=10000,_sep=',');
-#  cost_val_mb = MSE(y_pred_mb, yval);
-#  cost_train_mb = MSE(y_train_pred_mb, ytrain);
+  printf("|-> BUFFERED - MSE on training set = %f  -   MSE(buffered_train) / MSE(batch_train) = %f  \n",cost_train_bf , (cost_train_bf / cost_train));
+  printf("|-> BUFFERED - MSE on cross validation set = %f  -   MSE(buffered_val) / MSE(batch_val) = %f  \n",cost_val_bf , (cost_val_bf / cost_val) );
 
-#  [theta_bf] = trainLinearReg_Buff(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=100, _sep=',' , iter=200);
-#  y_pred_bf = predictLinearReg_Buff(foXval,ciX,ceX,theta_bf,b=10000,_sep=',');
-#  y_train_pred_bf = predictLinearReg_Buff(foXtrain,ciX,ceX,theta_bf,b=10000,_sep=',');
-#  cost_val_bf = MSE(y_pred_bf, yval);
-#  cost_train_bf = MSE(y_train_pred_bf, ytrain);
+  ## cheking NNPredictMulticlass_Buff
+  y_pred_mb_10 = NNPredictMulticlass_Buff(foXval,ciX,ceX,theta_mb,b=10,_sep=',');
+  y_pred_mb_100 = NNPredictMulticlass_Buff(foXval,ciX,ceX,theta_mb,b=100,_sep=',');
+  printf("|->  cheking predictLinearReg_Buff: (y_pred_mb_10/y_pred_mb_100) = %f   \n" , mean(y_pred_mb_10 ./ y_pred_mb_100) );
 
-#  toc();
-#  printf("|-> BATCH - MSE on training set = %f \n",cost_train);
-#  printf("|-> BATCH - MSE on cross validation set = %f \n",cost_val);
+  ##buffering curve
+  train_mb = 10:10:size(Xtrain,1);
+  val_mb = 10:10:size(Xtrain,1);
 
-#  printf("|-> MINI-BATCH - MSE on training set = %f   -   MSE(mini-batch_train) / MSE(batch_train) = %f   \n" , cost_train_mb , (cost_train_mb / cost_train) );
-#  printf("|-> MINI-BATCH - MSE on cross validation set = %f  -   MSE(mini-batch_val) / MSE(batch_val) = %f  \n", cost_val_mb , (cost_val_mb / cost_val) );
+  train_bf = 10:10:size(Xtrain,1);
+  val_bf = 10:10:size(Xval,1);
 
-#  printf("|-> BUFFERED - MSE on training set = %f  -   MSE(buffered_train) / MSE(batch_train) = %f  \n",cost_train_bf , (cost_train_bf / cost_train));
-#  printf("|-> BUFFERED - MSE on cross validation set = %f  -   MSE(buffered_val) / MSE(batch_val) = %f  \n",cost_val_bf , (cost_val_bf / cost_val) );
-
-#  ## cheking predictLinearReg_Buff
-#  y_pred_mb_10 = predictLinearReg_Buff(foXval,ciX,ceX,theta_mb,b=10,_sep=',');
-#  y_pred_mb_100 = predictLinearReg_Buff(foXval,ciX,ceX,theta_mb,b=100,_sep=',');
-#  printf("|->  cheking predictLinearReg_Buff: (y_pred_mb_10/y_pred_mb_100) = %f   \n" , mean(y_pred_mb_10 ./ y_pred_mb_100) );
-
-#  ##buffering curve
-#  train_mb = 10:10:size(Xtrain,1);
-#  val_mb = 10:10:size(Xtrain,1);
-
-#  train_bf = 10:10:size(Xtrain,1);
-#  val_bf = 10:10:size(Xtrain,1);
-
-#  idx = 1;
+  idx = 1;
 #  for i = 10:10:size(Xtrain,1)
 #   [theta_mb] = trainLinearReg_MiniBatch(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=i, _sep=',' , iter=200);
 #   y_pred_mb = predictLinearReg_Buff(foXval,ciX,ceX,theta_mb,b=10000,_sep=',');

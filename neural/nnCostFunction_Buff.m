@@ -1,7 +1,7 @@
 function [J grad] = nnCostFunction_Buff(nn_params, ...
                                    NNMeta, ...
-                                   fX,ciX,ceX,fy,ciy,cey, b=10000 , _sep=',' , lambda, featureScaled = 0)
-                                   
+                                   fX,ciX,ceX,fy,ciy,cey,_sep=',', b = 10000 ,lambda,featureScaled = 0)
+
 m = countLines(fy,b); 
 L = length(NNMeta.NNArchVect); 
 
