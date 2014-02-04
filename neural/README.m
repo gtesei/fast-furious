@@ -558,16 +558,18 @@ endfunction
    
   ## training and predicting  
   printf("|-> comparing training and predicting ...  \n"); 
+  printf("|-> training buffering ... ");
   NNMeta = buildNNMeta([n-1 n-1 num_label]);disp(NNMeta);fflush(stdout);
     
   [Theta_Buff] = trainNeuralNetwork_Buff(NNMeta, fiXtrain,ciX,ceX,fytrain,ciy,cey,',',10000,lambda, ...
-                       200 , 1 , cell(0,0) );
+                       100 , 1 , cell(0,0) );
   pred_val_bf = NNPredictMulticlass_Buff(NNMeta,fiXval,ciX,ceX,Theta_Buff,10000,',',1);
   pred_train_bf = NNPredictMulticlass_Buff(NNMeta,fiXtrain,ciX,ceX,Theta_Buff,10000,',',1);
   ##(NNMeta,fX,ciX,ceX,Theta,b=10000,_sep=',',featureScaled = 0)
   cost_val_bf = MSE(pred_val_bf, yval);
   cost_train_bf = MSE(pred_train_bf, ytrain);
-  
+   
+  printf("|-> training batch ... ");
   [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, ... 
         featureScaled = 1);
   pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
@@ -578,12 +580,14 @@ endfunction
   toc();
   acc_train = mean(double(pred_train == ytrain)) * 100;
   acc_val = mean(double(pred_val == yval)) * 100;
+  acc_train_bf = mean(double(pred_train_bf == ytrain)) * 100;
+  acc_val_bf = mean(double(pred_val_bf == yval)) * 100;
   fprintf("Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
   fprintf("Cross Validation Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_val);  
   acc_train_buff = mean(double(pred_train_bf == ytrain)) * 100;
   acc_val_buff = mean(double(pred_val_bf == yval)) * 100;
-  fprintf("Training Set Accuracy with feature normalization BUFFERED (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
-  fprintf("Cross Validation Set Accuracy with feature normalization BUFFERED (p=%i,lambda=%f): %f\n", p,lambda,acc_val);
+  fprintf("Training Set Accuracy with feature normalization BUFFERED (p=%i,lambda=%f): %f\n", p,lambda,acc_train_bf);
+  fprintf("Cross Validation Set Accuracy with feature normalization BUFFERED (p=%i,lambda=%f): %f\n", p,lambda,acc_val_bf);
   printf("|-> BATCH - MSE on training set = %f \n",cost_train);
   printf("|-> BATCH - MSE on cross validation set = %f \n",cost_val);
   
