@@ -26,7 +26,7 @@ function [y] = NNPredictMulticlass_Buff(NNMeta,fX,ciX,ceX,Theta,b=10000,_sep=','
 
    ##y(c+1:c+_b,:) = X * theta;
    #################
-   X = dlmread(fX,sep=_sep,[0,ciX,b-1,ceX]);
+   ##X = dlmread(fX,sep=_sep,[0,ciX,b-1,ceX]);
    for i = 1:L-1
     if (featureScaled & i == 1)
       h(i,1) = sigmoid(X * cell2mat(Theta(i,1))');

@@ -40,7 +40,7 @@ for i = 2:L
  endif 
 endfor 
  
-yVect = zeros(m,NNMeta.NNArchVect(L));
+yVect = zeros(_m,NNMeta.NNArchVect(L));
 for i = 1:NNMeta.NNArchVect(L)
   yVect(:,i) = (y == i);
 endfor
@@ -62,15 +62,6 @@ for i = fliplr(2:L-1)
 endfor 
 Theta_grad(1,1) = cell2mat(Theta_grad(1,1)) + cell2mat(d(2,1))' * cell2mat(a(1,1)); 
 
-tai = cell(L-1,1);
-for i = 1:(L-1)
-  s = size(cell2mat(Theta(i,1)));
-  tai(i,1) = [zeros(s(1),1),cell2mat(Theta(i,1))(:,2:end)];
-endfor 
-
-for i = 1:(L-1)
-  Theta_grad(i,1) = (1/m) * (cell2mat(Theta_grad(i,1)) .+ (lambda)*cell2mat(tai(i,1)));
-endfor 
 
 %---------------------------- REGULARIZATION 
 regTerm = 0; 
@@ -89,7 +80,7 @@ c = _m;
 while ((_m == b) && (c < m) )
 	X = dlmread(fX,sep=_sep,[c,ciX,c+b-1,ceX]);
 	y = dlmread(fy,sep=_sep,[c,ciy,c+b-1,cey]);
-  	_m = size(X,1)
+  	_m = size(X,1);
 
 	% =========================================================================
 	%------------ FORWARD PROP
@@ -112,7 +103,7 @@ while ((_m == b) && (c < m) )
 	 endif 
 	endfor 
 	 
-	yVect = zeros(m,NNMeta.NNArchVect(L));
+	yVect = zeros(_m,NNMeta.NNArchVect(L));
 	for i = 1:NNMeta.NNArchVect(L)
 	  yVect(:,i) = (y == i);
 	endfor
@@ -140,15 +131,27 @@ while ((_m == b) && (c < m) )
 	%  tai(i,1) = [zeros(s(1),1),cell2mat(Theta(i,1))(:,2:end)];
 	%endfor 
 	
-	for i = 1:(L-1)
-	  Theta_grad(i,1) = (1/m) * (cell2mat(Theta_grad(i,1))) %%%%%%%%%%.+ (lambda)*cell2mat(tai(i,1)));
-	endfor 
+	%for i = 1:(L-1)
+	%  Theta_grad(i,1) = (1/m) * (cell2mat(Theta_grad(i,1))); %%%%%%%%%%.+ (lambda)*cell2mat(tai(i,1)));
+	%endfor 
 	
 	% =========================================================================
 
 
 	c += _m;
 endwhile
+
+tai = cell(L-1,1);
+for i = 1:(L-1)
+  s = size(cell2mat(Theta(i,1)));
+  tai(i,1) = [zeros(s(1),1),cell2mat(Theta(i,1))(:,2:end)];
+endfor 
+
+for i = 1:(L-1)
+  Theta_grad(i,1) = (1/m) * (cell2mat(Theta_grad(i,1)) .+ (lambda)*cell2mat(tai(i,1)));
+endfor 
+
+
 
 % -------------------------------------------------------------
 

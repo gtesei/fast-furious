@@ -480,15 +480,21 @@ endfunction
                      iter = 50 , featureScaled = 0 , initialTheta = cell(0,0) );
   pred_val_bf = NNPredictMulticlass_Buff(NNMeta,foXval,ciX,ceX,Theta_Buff,10000,',',0);
   pred_train_bf = NNPredictMulticlass_Buff(NNMeta,foXtrain,ciX,ceX,Theta_Buff,10000,',',0);
-  ##(NNMeta,fX,ciX,ceX,Theta,b=10000,_sep=',',featureScaled = 0)
   cost_val_bf = MSE(pred_val_bf, yval);
   cost_train_bf = MSE(pred_train_bf, ytrain);
-  [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, ... 
+  
+  [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 50, ... 
       featureScaled = 1);
   pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
   pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
   cost_val = MSE(pred_val, yval);
   cost_train = MSE(pred_train, ytrain);
+  
+  pred_train_mix = NNPredictMulticlass(NNMeta, Theta_Buff , Xtrain , featureScaled = 1);
+  pred_val_mix = NNPredictMulticlass(NNMeta, Theta_Buff , Xval , featureScaled = 1);
+  cost_val_mix = MSE(pred_val_mix, yval);
+  cost_train_mix = MSE(pred_train_mix, ytrain);
+
   toc();
   
   acc_train = mean(double(pred_train == ytrain)) * 100;
@@ -500,6 +506,12 @@ endfunction
   acc_val_buff = mean(double(pred_val_bf == yval)) * 100;
   fprintf("Training Set Accuracy with feature normalization BUFFERED (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
   fprintf("Cross Validation Set Accuracy with feature normalization BUFFERED (p=%i,lambda=%f): %f\n", p,lambda,acc_val);
+  
+
+  acc_train_mix = mean(double(pred_train_mix == ytrain)) * 100;
+  acc_val_mix = mean(double(pred_val_mix == yval)) * 100;
+  fprintf("Training Set Accuracy with feature normalization MIX (p=%i,lambda=%f): %f\n", p,lambda,acc_train_mix);
+  fprintf("Cross Validation Set Accuracy with feature normalization MIX (p=%i,lambda=%f): %f\n", p,lambda,acc_val_mix);
   
   printf("|-> BATCH - MSE on training set = %f \n",cost_train);
   printf("|-> BATCH - MSE on cross validation set = %f \n",cost_val);
@@ -553,46 +565,80 @@ endfunction
     
   ## p = 1 , lambda = 0                                                                                                                                                                                    
   p = 1;lambda=0;
-  printf("|--> comparing performances of Buffered/Batch gradient descent (optimized) with p = %i and lambda = %f \n",p,lambda);
+  printf("|--> comparing performances of Buffered/Batch gradient descent (optimized) with p = %i , lambda = %f , m = %i , n = %i \n",p,lambda,m,n);
   tic();
    
   ## training and predicting  
   printf("|-> comparing training and predicting ...  \n"); 
   printf("|-> training buffering ... ");
   NNMeta = buildNNMeta([n-1 n-1 num_label]);disp(NNMeta);fflush(stdout);
+  
+  [Theta_in] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 50, ... 
+        featureScaled = 1);
     
-  [Theta_Buff] = trainNeuralNetwork_Buff(NNMeta, fiXtrain,ciX,ceX,fytrain,ciy,cey,',',10000,lambda, ...
-                       100 , 1 , cell(0,0) );
-  pred_val_bf = NNPredictMulticlass_Buff(NNMeta,fiXval,ciX,ceX,Theta_Buff,10000,',',1);
-  pred_train_bf = NNPredictMulticlass_Buff(NNMeta,fiXtrain,ciX,ceX,Theta_Buff,10000,',',1);
-  ##(NNMeta,fX,ciX,ceX,Theta,b=10000,_sep=',',featureScaled = 0)
+  [Theta_Buff] = trainNeuralNetwork_Buff(NNMeta, fiXtrain,ciX,ceX,fytrain,ciy,cey,',',1000,lambda, ...
+                       50 , 1 , Theta_in );
+
+  printf("|-> training batch ... ");
+  [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 50, ... 
+        featureScaled = 1, Theta_in);
+
+  pred_val_bf = NNPredictMulticlass_Buff(NNMeta,fiXval,ciX,ceX,Theta_Buff,100,',',1);
+  pred_train_bf = NNPredictMulticlass_Buff(NNMeta,fiXtrain,ciX,ceX,Theta_Buff,100,',',1);
   cost_val_bf = MSE(pred_val_bf, yval);
   cost_train_bf = MSE(pred_train_bf, ytrain);
+  
+  pred_train_mix = NNPredictMulticlass(NNMeta, Theta_Buff , Xtrain , featureScaled = 1);
+  pred_val_mix = NNPredictMulticlass(NNMeta, Theta_Buff , Xval , featureScaled = 1);
+  cost_val_mix = MSE(pred_val_mix, yval);
+  cost_train_mix = MSE(pred_train_mix, ytrain);
+
+  pred_val_mix2 = NNPredictMulticlass_Buff(NNMeta,fiXval,ciX,ceX,Theta,100,',',1);
+  pred_train_mix2 = NNPredictMulticlass_Buff(NNMeta,fiXtrain,ciX,ceX,Theta,100,',',1);
+  cost_val_mix2 = MSE(pred_val_mix2, yval);
+  cost_train_mix2 = MSE(pred_train_mix2, ytrain);
    
-  printf("|-> training batch ... ");
-  [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, ... 
-        featureScaled = 1);
   pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
   pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
   cost_val = MSE(pred_val, yval);
   cost_train = MSE(pred_train, ytrain);
-   
   toc();
+
   acc_train = mean(double(pred_train == ytrain)) * 100;
   acc_val = mean(double(pred_val == yval)) * 100;
+
   acc_train_bf = mean(double(pred_train_bf == ytrain)) * 100;
   acc_val_bf = mean(double(pred_val_bf == yval)) * 100;
+
+  acc_train_mix = mean(double(pred_train_mix == ytrain)) * 100;
+  acc_val_mix = mean(double(pred_val_mix == yval)) * 100;
+
+  acc_train_mix2 = mean(double(pred_train_mix2 == ytrain)) * 100;
+  acc_val_mix2 = mean(double(pred_val_mix2 == yval)) * 100;
+
   fprintf("Training Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_train);
   fprintf("Cross Validation Set Accuracy with feature normalization (p=%i,lambda=%f): %f\n", p,lambda,acc_val);  
-  acc_train_buff = mean(double(pred_train_bf == ytrain)) * 100;
-  acc_val_buff = mean(double(pred_val_bf == yval)) * 100;
+
   fprintf("Training Set Accuracy with feature normalization BUFFERED (p=%i,lambda=%f): %f\n", p,lambda,acc_train_bf);
   fprintf("Cross Validation Set Accuracy with feature normalization BUFFERED (p=%i,lambda=%f): %f\n", p,lambda,acc_val_bf);
+  
+  fprintf("Training Set Accuracy with feature normalization MIX (p=%i,lambda=%f): %f\n", p,lambda,acc_train_mix);
+  fprintf("Cross Validation Set Accuracy with feature normalization MIX (p=%i,lambda=%f): %f\n", p,lambda,acc_val_mix);
+
+  fprintf("Training Set Accuracy with feature normalization MIX2 (p=%i,lambda=%f): %f\n", p,lambda,acc_train_mix2);
+  fprintf("Cross Validation Set Accuracy with feature normalization MIX2 (p=%i,lambda=%f): %f\n", p,lambda,acc_val_mix2);
+
   printf("|-> BATCH - MSE on training set = %f \n",cost_train);
   printf("|-> BATCH - MSE on cross validation set = %f \n",cost_val);
   
   printf("|-> BUFFERED - MSE on training set = %f  -   MSE(buffered_train) / MSE(batch_train) = %f  \n",cost_train_bf , (cost_train_bf / cost_train));
   printf("|-> BUFFERED - MSE on cross validation set = %f  -   MSE(buffered_val) / MSE(batch_val) = %f  \n",cost_val_bf , (cost_val_bf / cost_val) );
+
+  printf("|-> MIX - MSE on training set = %f \n",cost_train_mix);
+  printf("|-> MIX - MSE on cross validation set = %f \n",cost_val_mix);
+
+  printf("|-> MIX2 - MSE on training set = %f \n",cost_train_mix2);
+  printf("|-> MIX2 - MSE on cross validation set = %f \n",cost_val_mix2);
   
   ## cheking NNPredictMulticlass_Buff
   y_pred_mb_10 = NNPredictMulticlass_Buff(NNMeta,fiXval,ciX,ceX,Theta_Buff,10,',',1);
