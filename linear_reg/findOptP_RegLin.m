@@ -1,4 +1,4 @@
-function [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval, p_vec = [1 2 3 4 5 6 7 8 9 10 12 20 60]' , lambda=0)
+function [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval, p_vec = [1 2 3 4 5 6 7 8 9 10 12 20 60]' , lambda=0 )
 
   error_train = zeros(length(p_vec), 1);
   error_val = zeros(length(p_vec), 1);
@@ -7,6 +7,7 @@ function [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval, p_vec = [1 
   for p = 1:length(p_vec)
         [X_poly_train,mu,sigma] = treatContFeatures(Xtrain,p_vec(p));
         [X_poly_val,mu_val,sigma_val] = treatContFeatures(Xval,p_vec(p),1,mu,sigma);
+        
         
         theta = trainLinearReg(X_poly_train, ytrain, lambda);        
         [error_train(p), grad_train] = linearRegCostFunction(X_poly_train, ytrain, theta, 0);

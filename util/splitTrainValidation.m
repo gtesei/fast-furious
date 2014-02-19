@@ -4,6 +4,7 @@ function [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X,y,perc_train)
  [_m,_n] = size(y);
  
  if (m != _m)
+   printf("m(features)=%i   _m(classes)=%i \n",m,_m); 
    error ("the length of y must be equal to the length of X!");
  elseif (perc_train > 1 || perc_train < 0)
    error ("perc_train must belong to the range [0,1]!");

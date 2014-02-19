@@ -1,4 +1,4 @@
-function [s_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lambda=1 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1)
+function [n_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lambda=1 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1)
 
   [m_train,n] = size(Xtrain);
   num_label = length(unique(ytrain));
@@ -33,7 +33,8 @@ function [s_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lam
     error_val(i)   = 100 - acc_val;
   endfor
 
-  [J_opt, s_opt] = min(error_val); 
+  [J_opt, s_opt] = min(error_val);
+  n_opt = s(s_opt) - 1;
   
   fprintf('\tNeurons \tTrain Error\tCross Validation Error\n');
     for i = 1:length(s)
