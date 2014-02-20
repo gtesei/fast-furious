@@ -4,8 +4,8 @@ function [lambda_opt,J_opt] = findOptLambda(NNMeta, Xtrain, ytrain, Xval, yval ,
   num_label = length(unique(ytrain));
   if (length(ytrain) != m_train) error("m_train error") endif;
   s1 = n-1; 
-  printf("|-> findOptHiddenLayers: detected %i features and %i classes  (m_train=%i) ... \n",s1,num_label,m_train);
-  printf("|-> findOptHiddenLayers: setting  %i  neurons per layers... \n",s1);
+  printf("|-> findOptLambda: detected %i features and %i classes  (m_train=%i) ... \n",s1,num_label,m_train);
+  printf("|-> findOptLambda: setting  %i  neurons per layers... \n",s1);
    
   error_train = zeros(length(lambda_vec), 1);
   error_val = zeros(length(lambda_vec), 1);

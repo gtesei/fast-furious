@@ -1,4 +1,4 @@
-function [n_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lambda=1 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1)
+function [n_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lambda=1 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1,verbose=1)
 
   [m_train,n] = size(Xtrain);
   num_label = length(unique(ytrain));
@@ -21,7 +21,10 @@ function [n_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lam
   %% Finding ...
   for i = 1:length(s)
         
-    NNMeta = buildNNMeta([s1; ones(hl,1)*s(i) ;num_label]');disp(NNMeta);
+    NNMeta = buildNNMeta([s1; ones(hl,1)*s(i) ;num_label]');
+    if (verbose)
+      disp(NNMeta);
+    endif 
 
     [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 200, featureScaled = 1);
 	pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);

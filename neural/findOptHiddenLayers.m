@@ -1,9 +1,12 @@
-function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda=1)
+function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda=1,neurons_hidden_layers=-1,verbose=1)
 
   [m_train,n] = size(Xtrain);
   num_label = length(unique(ytrain));
   if (length(ytrain) != m_train) error("m_train error") endif;
   s1 = n-1;
+  if (neurons_hidden_layers > 0)
+    s1 = neurons_hidden_layers;
+  endif 
   step = 1;
   hl = 1:step:5; 
   printf("|-> findOptHiddenLayers: detected %i features and %i classes (lambda=%f) (m_train=%i) ... \n",s1,num_label,lambda,m_train);
@@ -16,7 +19,10 @@ function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda
   %% Finding ...
   for i = 1:length(hl)
     arch = [s1; ones(hl(i),1) .* s1 ;num_label]';
-    NNMeta = buildNNMeta(arch);disp(NNMeta);
+    NNMeta = buildNNMeta(arch);
+    if (verbose)
+      disp(NNMeta);
+    endif 
             
     [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 200, featureScaled = 1);
 	pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
