@@ -10,8 +10,8 @@ find_par_mode = 1;
 printf("|--> FEATURES BUILDING ...\n");
 
 data = dlmread([curr_dir "/dataset/loan_default/train_impute_mean.zat"]); %%NA filled in R
-data = data(1:1000,:);
-%%y_loss = data(:,end);
+%%data = data(1:1000,:);
+y_loss = data(:,end);
 y_def = (y_loss > 0);
 
 Xcat = [data(:,3) data(:,6) data(:,768) data(:,769)]; 
