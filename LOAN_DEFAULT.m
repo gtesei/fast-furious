@@ -182,9 +182,11 @@ else
   
   sub_comb = [(1:m)' pred_comb];
   sub_closs = [(1:m)' pred_closs];
+  sub_loss = [(1:m)' pred_loss];
   
   dlmwrite ('sub_comb.csv', sub_comb,",");
   dlmwrite ('sub_closs.csv', sub_closs,",");
+  dlmwrite ('sub_loss.csv', sub_loss,",");
 
   toc();
 endif 
