@@ -25,14 +25,15 @@ function [lambda_opt,J_opt] = findOptLambda(NNMeta, Xtrain, ytrain, Xval, yval ,
      error_val(lambdaIdx)   = 100 - acc_val;
   endfor
 
-  [J_opt, lambda_opt] = min(error_val); 
+  [J_opt, lambdaIdxOpt] = min(error_val);
+  lambda_opt = lambda_vec(lambdaIdxOpt); 
   
   fprintf('\tLambda \tTrain Error\tCross Validation Error\n');
   for lambdaIdx = 1:length(lambda_vec)
           fprintf('  \t%f\t\t%f\t%f\n', lambda_vec(lambdaIdx), error_train(lambdaIdx), error_val(lambdaIdx));
   endfor
 
-  fprintf('Optimal Number of lambda ==  %f , Minimum Cost == %f \n', lambda_vec(lambda_opt) , J_opt);
+  fprintf('Optimal Number of lambda ==  %f , Minimum Cost == %f \n', lambda_vec(lambdaIdxOpt) , J_opt);
 
   %%plot 
   plot(lambda_vec, error_train, lambda_vec, error_val);

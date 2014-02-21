@@ -54,7 +54,7 @@ if (find_par_mode)
 
   %% --> model parameters: n_opt , h_opt , lambda_opt
   NNpars = [n_opt h_opt lambda_opt];
-  printf("|--> OPTIMAL PARAMETERS NEURAL NETWORK DEFAULT CLASSIFIER  --> opt. number of hidden layers(h_opt) = %i , opt. number of neurons for hidden layers(n_opt) = % i , opt. lambda = %f\n",h_opt,n_opt,lamda_opt);
+  printf("|--> OPTIMAL PARAMETERS NEURAL NETWORK DEFAULT CLASSIFIER  --> opt. number of hidden layers(h_opt) = %i , opt. number of neurons for hidden layers(n_opt) = % i , opt. lambda = %f\n",h_opt,n_opt,lambda_opt);
   dlmwrite ('NNpars.zat', NNpars);
 
   %% --> performance
@@ -81,7 +81,7 @@ if (find_par_mode)
   NNMeta = buildNNMeta([(n - 1) repmat(n_opt_loss,1,h_opt_loss) num_label_loss]);disp(NNMeta);
   [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain_loss, lambda_opt_loss , iter = 200, featureScaled = 1);
   pred_loss_nn = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
-  [mae] = MSE(pred_loss_nn, yval_loss);
+  [mae] = MAE(pred_loss_nn, yval_loss);
   printf("|-> trained Neural Network --- LOSS --- classifier. MAE on cross validantion set = %f  \n",mae);
 
 
@@ -95,11 +95,12 @@ if (find_par_mode)
   printf("|--> OPTIMAL LINERA REGRESSOR PARAMS -->  opt. number of poliinomial degree (p_opt) = %i , opt. lambda = %f\n",p_opt,reg_lamda_opt);
   dlmwrite ('REGpars.zat', REGpars);
 
-  %% --> performance 
-  rtheta = trainLinearReg(Xtrain, ytrain_loss, 0, 400);
+  %% --> performance
+  Xtrain_poly = treatContFeatures(Xtrain,p_opt); 
+  rtheta = trainLinearReg(Xtrain_poly, ytrain_loss, lambda_opt, 400);
   Xval_poly = treatContFeatures(Xval,p_opt);
   pred_loss = predictLinearReg(Xval_poly,rtheta);
-  [mae] = MSE(pred_loss, yval_loss);
+  [mae] = MAE(pred_loss, yval_loss);
   printf("|-> trained loss regressor. MAE on cross validation set = %f  \n",mae);
 
   %% combining predictions 
@@ -112,8 +113,8 @@ else
   tic();
 
   %%% NN default classifier params 
-  n_opt = 0;
-  h_opt = 0;
+  n_opt = 790;
+  h_opt = 1;
   lambda_opt = 0;
 
   %%% NN Loss classifier params
@@ -122,8 +123,8 @@ else
   lambda_opt_loss = 0;
 
   %%% Linear Regressor params 
-  p_opt = 0;
-  reg_lambda_opt = 0;
+  p_opt = 1;
+  reg_lambda_opt = 0.001000;
 
   %%% 4) TRAINING CLASSIFIERS / REGRESSOR 
   printf("|--> TRAINING CLASSIFIERS  ...\n");
@@ -145,8 +146,8 @@ else
   [_dir] = serializeNNTheta(Theta_loss,dPrefix="Theta-loss-class");
 
   printf("|-> training  linear regressor ...  \n");
+  X = treatContFeatures(X,p_opt); %% cambia X 
   rtheta = trainLinearReg(X, y_loss, 0, 400);
-  X = treatContFeatures(X,p_opt); %% cambia X
   pred_loss = predictLinearReg(X,rtheta);
   rerr = linearRegCostFunction(X, y_loss, rtheta, 0); 
   printf("|-> trained loss regressor. Error on training set = %f  \n",rerr);

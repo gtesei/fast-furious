@@ -1,4 +1,4 @@
-function [J] = MSE(ypred, y)
+function [J] = MAE(ypred, y)
 
 m = length(y); % number of training examples
 
