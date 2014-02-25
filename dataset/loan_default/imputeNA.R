@@ -7,9 +7,9 @@ imputeNAMean <- function(dd) {
   }
   dd
 }
-data <- read.csv('train_v2.csv')
+data <- read.csv('test_v2.zat')
 sum(is.na(data))
 data <- imputeNAMean(data)
 sum(is.na(data))
-write.csv(data,quote=FALSE,file='train_impute_mean.csv',row.names=FALSE)
+write.csv(data,quote=FALSE,file='test_impute_mean.csv',row.names=FALSE)
 

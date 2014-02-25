@@ -15,6 +15,7 @@ function [lambda_opt,J_opt] = ...
   endfor
 
   [J_opt,lambda_opt_idx] = min(error_val);
+  lambda_opt = lambda_vec(lambda_opt_idx);
   
   fprintf('Regression Parameter \tTrain Error\tCross Validation Error\n');
   for i = 1:length(lambda_vec)

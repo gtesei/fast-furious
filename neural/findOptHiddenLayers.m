@@ -4,6 +4,7 @@ function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda
   num_label = length(unique(ytrain));
   if (length(ytrain) != m_train) error("m_train error") endif;
   s1 = n-1;
+  s0 = n-1;
   if (neurons_hidden_layers > 0)
     s1 = neurons_hidden_layers;
   endif 
@@ -18,7 +19,7 @@ function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda
 
   %% Finding ...
   for i = 1:length(hl)
-    arch = [s1; ones(hl(i),1) .* s1 ;num_label]';
+    arch = [s0; ones(hl(i),1) .* s1 ;num_label]';
     NNMeta = buildNNMeta(arch);
     if (verbose)
       disp(NNMeta);

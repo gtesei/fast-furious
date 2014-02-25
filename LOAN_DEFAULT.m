@@ -9,7 +9,7 @@ find_par_mode = 1;
 %%% 1) FEATURES ENGINEERING 
 printf("|--> FEATURES BUILDING ...\n");
 
-data = dlmread([curr_dir "/dataset/loan_default/train_impute_mean.zat"]); %%NA filled in R
+data = dlmread([curr_dir "/dataset/loan_default/train_NO_NA.zat"]); %%NA clean in R
 if (find_par_mode)
   [m,n] = size(data);
   rand_indices = randperm(m);
@@ -21,7 +21,7 @@ y_loss = data(:,end);
 y_def = (y_loss > 0);
 
 Xcat = [data(:,3) data(:,6) data(:,768) data(:,769)]; 
-Xcont = [data(:,2) data(:,4:5) data(:,7:767) data(:,770:771)];  
+Xcont = [data(:,2) data(:,4:5) data(:,7:767) data(:,770)];  
 
 data = [];
 
@@ -92,13 +92,13 @@ if (find_par_mode)
 
   %% --> model parameters: p_opt , reg_lambda_opt
   REGpars = [p_opt reg_lambda_opt];
-  printf("|--> OPTIMAL LINERA REGRESSOR PARAMS -->  opt. number of poliinomial degree (p_opt) = %i , opt. lambda = %f\n",p_opt,reg_lamda_opt);
+  printf("|--> OPTIMAL LINEAR REGRESSOR PARAMS -->  opt. number of polinomial degree (p_opt) = %i , opt. lambda = %f\n",p_opt,reg_lambda_opt);
   dlmwrite ('REGpars.zat', REGpars);
 
   %% --> performance
-  Xtrain_poly = treatContFeatures(Xtrain,p_opt); 
-  rtheta = trainLinearReg(Xtrain_poly, ytrain_loss, lambda_opt, 400);
-  Xval_poly = treatContFeatures(Xval,p_opt);
+  [Xtrain_poly,mu,sigma] = treatContFeatures(Xtrain,p_opt); 
+  rtheta = trainLinearReg(Xtrain_poly, ytrain_loss, reg_lambda_opt, 400);
+  [Xval_poly,mu,sigma] = treatContFeatures(Xval,p_opt,1,mu,sigma);
   pred_loss = predictLinearReg(Xval_poly,rtheta);
   [mae] = MAE(pred_loss, yval_loss);
   printf("|-> trained loss regressor. MAE on cross validation set = %f  \n",mae);
@@ -118,9 +118,9 @@ else
   lambda_opt = 0;
 
   %%% NN Loss classifier params
-  n_opt_loss = 0;
-  h_opt_loss = 0;
-  lambda_opt_loss = 0;
+  n_opt_loss = 830; 
+  h_opt_loss = 1;  %% TODO better 
+  lambda_opt_loss = 0.01; 
 
   %%% Linear Regressor params 
   p_opt = 1;
@@ -164,7 +164,7 @@ else
   X = [];
   data = dlmread([curr_dir "/dataset/loan_default/test_impute_mean.zat"]); %%NA filled in R
   Xcat = [data(:,3) data(:,6) data(:,768) data(:,769)]; 
-  Xcont = [data(:,2) data(:,4:5) data(:,7:767) data(:,770:771)];  
+  Xcont = [data(:,2) data(:,4:5) data(:,7:767) data(:,770)];  
   data = [];
   
   [XcatE,map] = encodeCategoricalFeatures(Xcat);
@@ -174,8 +174,8 @@ else
   
   [m,n] = size(X);
   
-  pred_def  = NNPredictMulticlass(NNMeta, Theta_def , X , featureScaled = 1);
-  pred_closs = NNPredictMulticlass(NNMeta, Theta_loss , X , featureScaled = 1);
+  pred_def  = NNPredictMulticlass(NNMeta_def, Theta_def , X , featureScaled = 1);
+  pred_closs = NNPredictMulticlass(NNMeta_loss, Theta_loss , X , featureScaled = 1);
   X = treatContFeatures(X,p_opt); %% cambia X
   pred_loss = predictLinearReg(X,rtheta);
   pred_comb = (pred_def == 0) .* 0 + (pred_def == 1) .* pred_loss;
