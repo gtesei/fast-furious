@@ -5,11 +5,14 @@ menv;
 
 find_par_mode = 1;
 
+trainFile = "train_v2-1000.csv";
+testFile = "test_v2-1000.csv";
+
 
 %%% 1) FEATURES ENGINEERING 
 printf("|--> FEATURES BUILDING ...\n");
 
-data = dlmread([curr_dir "/dataset/loan_default/train_NO_NA_oct.zat"]); %%NA clean in R
+data = dlmread([curr_dir "/dataset/loan_default/" trainFile]); %%NA clean in R
 if (find_par_mode)
   [m,n] = size(data);
   rand_indices = randperm(m);
@@ -24,6 +27,9 @@ Xcat = [data(:,3) data(:,6) data(:,768) data(:,769)];
 Xcont = [data(:,2) data(:,4:5) data(:,7:767) data(:,770)];  
 
 data = [];
+data = dlmread([curr_dir "/dataset/loan_default/test_v2-1000.csv"]); %%NA clean in R
+
+Xtest_cat = [data(:,3) data(:,6) data(:,768) data(:,769)]; 
 
 [XcatE,map] = encodeCategoricalFeatures(Xcat);
 [Xcont,mu,sigma] = featureNormalize(Xcont);
@@ -48,8 +54,8 @@ if (find_par_mode)
   %%% 2) FINDING BEST PARAMS DEFAULT CLASSIFIER 
   printf("|--> FINDING BEST PARAMS DEFAULT CLASSIFIER   ...\n");
   num_label = length(unique(ytrain_def)); 
-  [n_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain_def, Xval, yval_def , lambda=0 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1,verbose=0);
-  [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain_def, Xval, yval_def , lambda=0,neurons_hidden_layers=n_opt,verbose=0);
+  [n_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain_def, Xval, yval_def , lambda=0 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1,_num_label=-1, verbose=0);
+  [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain_def, Xval, yval_def , lambda=0,neurons_hidden_layers=n_opt,_num_label=-1, verbose=0);
   NNMeta = buildNNMeta([(n - 1) repmat(n_opt,1,h_opt) num_label]);disp(NNMeta);
   [lambda_opt,J_opt] = findOptLambda(NNMeta, Xtrain, ytrain_def, Xval, yval_def , lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]');
 
@@ -109,7 +115,7 @@ if (find_par_mode)
 
   %% combining predictions 
   pred_comb = (pred_def == 2) .* 0 + (pred_def == 1) .* pred_loss;
-  [mae] = MSE(pred_comb, yval_loss);
+  [mae] = MAE(pred_comb, yval_loss);
   printf("|-> COMBINED PREDICTION --> MAE on cross validation set = %f  \n",mae);
   
   toc();
