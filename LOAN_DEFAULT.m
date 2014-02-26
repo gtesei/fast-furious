@@ -32,11 +32,11 @@ data = dlmread([curr_dir "/dataset/loan_default/" testFile]); %%NA clean in R
 Xcat_test = [data(:,3) data(:,6) data(:,768) data(:,769)]; 
 Xcat_tot = [Xcat;Xcat_test]; 
 data = [];
-[Xcat_totE,map] = encodeCategoricalFeatures(Xcat_tot);
+[Xcat_totE,map,offset] = encodeCategoricalFeatures(Xcat_tot);
 Xcat_totE = []; Xcat_tot = [];
 %%%%%%%%%%%%%%
 
-[XcatE,map] = encodeCategoricalFeatures(Xcat,map);
+[XcatE,map,offset] = encodeCategoricalFeatures(Xcat,map,offset);
 [Xcont,mu,sigma] = featureNormalize(Xcont);
 
 X = [XcatE Xcont];
@@ -154,43 +154,46 @@ else
   
   printf("|-> training  loss classifier...  \n");
   NNMeta_loss = buildNNMeta([(n - 1) repmat(n_opt_loss,1,h_opt_loss) 101]);disp(NNMeta_loss);
-  [Theta_loss] = trainNeuralNetwork(NNMeta_loss, X, y_def, lambda_opt , iter = 500, featureScaled = 1);
+  y_closs = (y_loss != 0) .* y_loss + (y_loss == 0) * 101;                                      %%% il caso loss == 0 e' stato mappato con 101
+  [Theta_loss] = trainNeuralNetwork(NNMeta_loss, X, y_closs, lambda_opt_loss , iter = 500, featureScaled = 1);
   pred_closs = NNPredictMulticlass(NNMeta_loss, Theta_loss , X , featureScaled = 1);
-  [mae_closs] = MSE(pred_closs, y_loss);
+  [mae_closs] = MAE(pred_closs, y_closs);
   printf("|-> LOSS CLASSIFIER --> MAE train set = %f  \n",mae_closs);
   [_dir] = serializeNNTheta(Theta_loss,dPrefix="Theta-loss-class");
 
   printf("|-> training  linear regressor ...  \n");
   X = treatContFeatures(X,p_opt); %% cambia X 
-  rtheta = trainLinearReg(X, y_loss, 0, 400);
+  rtheta = trainLinearReg(X, y_loss, 0, 500);
   pred_loss = predictLinearReg(X,rtheta);
   rerr = linearRegCostFunction(X, y_loss, rtheta, 0); 
   printf("|-> trained loss regressor. Error on training set = %f  \n",rerr);
-  [mae] = MSE(pred_loss, y_loss);
+  [mae] = MAE(pred_loss, y_loss);
   printf("|-> LINEAR REGRESSOR PREDICTION --> MAE train set = %f  \n",mae);
   dlmwrite ('rtheta.zat', rtheta);
   
   printf("|-> combining predictions ...  \n");
   pred_comb = (pred_def == 0) .* 0 + (pred_def == 1) .* pred_loss;
-  [mae] = MSE(pred_comb, y_loss);
+  [mae] = MAE(pred_comb, y_loss);
   printf("|-> COMBINED PREDICTION --> MAE training set = %f  \n",mae);
 
   %%% 5) PREDICTION ON TEST SET
   X = [];
-  data = dlmread([curr_dir "/dataset/loan_default/test_impute_mean.zat"]); %%NA filled in R
+  data = dlmread([curr_dir "/dataset/loan_default/" testFile]); %%NA clean in R
   Xcat = [data(:,3) data(:,6) data(:,768) data(:,769)]; 
   Xcont = [data(:,2) data(:,4:5) data(:,7:767) data(:,770)];  
   data = [];
   
-  [XcatE,map] = encodeCategoricalFeatures(Xcat);
-  [Xcont,mu,sigma] = treatContFeatures(Xcont,1);
+  [XcatE,map,offset] = encodeCategoricalFeatures(Xcat,map,offset);
+  [Xcont,mu,sigma] = featureNormalize(Xcont);
   
   X = [XcatE Xcont];
-  
-  [m,n] = size(X);
+  X = [ones(size(X,1),1) X];
+  [m,n] = size(X)
   
   pred_def  = NNPredictMulticlass(NNMeta_def, Theta_def , X , featureScaled = 1);
   pred_closs = NNPredictMulticlass(NNMeta_loss, Theta_loss , X , featureScaled = 1);
+  
+  %%% linear regressor 
   X = treatContFeatures(X,p_opt); %% cambia X
   pred_loss = predictLinearReg(X,rtheta);
   pred_comb = (pred_def == 0) .* 0 + (pred_def == 1) .* pred_loss;

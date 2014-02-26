@@ -1,4 +1,4 @@
-function [X_out,index] = encodeCategoricalFeatures(X,index=-1)
+function [X_out,index , offeset] = encodeCategoricalFeatures(X,index=-1,offset=-1)
 
 [m, n] = size(X);
 
