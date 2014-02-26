@@ -1,7 +1,8 @@
-function [lambda_opt,J_opt] = findOptLambda(NNMeta, Xtrain, ytrain, Xval, yval , lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]')
+function [lambda_opt,J_opt] = findOptLambda(NNMeta, Xtrain, ytrain, Xval, yval , lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]',_num_label=-1)
 
   [m_train,n] = size(Xtrain);
   num_label = length(unique(ytrain));
+  if ( _num_label > 0) num_label = _num_label; endif 
   if (length(ytrain) != m_train) error("m_train error") endif;
   s1 = n-1; 
   printf("|-> findOptLambda: detected %i features and %i classes  (m_train=%i) ... \n",s1,num_label,m_train);

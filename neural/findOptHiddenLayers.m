@@ -1,7 +1,8 @@
-function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda=1,neurons_hidden_layers=-1,verbose=1)
+function [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain, Xval, yval , lambda=1,neurons_hidden_layers=-1,_num_label=-1,verbose=1)
 
   [m_train,n] = size(Xtrain);
   num_label = length(unique(ytrain));
+  if ( _num_label > 0 ) num_label = _num_label; endif 
   if (length(ytrain) != m_train) error("m_train error") endif;
   s1 = n-1;
   s0 = n-1;

@@ -9,16 +9,16 @@ find_par_mode = 1;
 %%% 1) FEATURES ENGINEERING 
 printf("|--> FEATURES BUILDING ...\n");
 
-data = dlmread([curr_dir "/dataset/loan_default/train_NO_NA.zat"]); %%NA clean in R
+data = dlmread([curr_dir "/dataset/loan_default/train_NO_NA_oct.zat"]); %%NA clean in R
 if (find_par_mode)
   [m,n] = size(data);
   rand_indices = randperm(m);
   data = data(rand_indices,:);
-  data = data(1:10000,:);
+  data = data(1:100,:);
 endif
 
 y_loss = data(:,end);
-y_def = (y_loss > 0);
+y_def = (y_loss > 0) * 1 + (y_loss == 0)*2; %%% il default e' stato mappato con 1, mentre il caso loss == 0 con 2 
 
 Xcat = [data(:,3) data(:,6) data(:,768) data(:,769)]; 
 Xcont = [data(:,2) data(:,4:5) data(:,7:767) data(:,770)];  
@@ -26,12 +26,13 @@ Xcont = [data(:,2) data(:,4:5) data(:,7:767) data(:,770)];
 data = [];
 
 [XcatE,map] = encodeCategoricalFeatures(Xcat);
-[Xcont,mu,sigma] = treatContFeatures(Xcont,1);
+[Xcont,mu,sigma] = featureNormalize(Xcont);
 
 X = [XcatE Xcont];
 y = [y_def y_loss];
 
-[m,n] = size(X);
+X = [ones(size(X,1),1) X];
+[m,n] = size(X)
 rand_indices = randperm(m);
 [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X(rand_indices,:),y(rand_indices,:),0.70); 
 
@@ -46,7 +47,7 @@ if (find_par_mode)
   
   %%% 2) FINDING BEST PARAMS DEFAULT CLASSIFIER 
   printf("|--> FINDING BEST PARAMS DEFAULT CLASSIFIER   ...\n");
-  num_label = length(unique(ytrain_def));
+  num_label = length(unique(ytrain_def)); 
   [n_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain_def, Xval, yval_def , lambda=0 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1,verbose=0);
   [h_opt,J_opt] = findOptHiddenLayers(Xtrain, ytrain_def, Xval, yval_def , lambda=0,neurons_hidden_layers=n_opt,verbose=0);
   NNMeta = buildNNMeta([(n - 1) repmat(n_opt,1,h_opt) num_label]);disp(NNMeta);
@@ -67,21 +68,24 @@ if (find_par_mode)
   %%% 2.5) FINDING BEST PARAMS NEURAL NETWORK LOSS CLASSIFIER  
   printf("|--> FINDING BEST PARAMS NEURAL NETWORK LOSS CLASSIFIER  ...\n");
   num_label_loss = 101;
-  [n_opt_loss,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain_loss, Xval, yval_loss , lambda=0 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1,verbose=0);
-  [h_opt_loss,J_opt] = findOptHiddenLayers(Xtrain, ytrain_loss, Xval, yval_def , lambda=0 , neurons_hidden_layers=n_opt_loss,verbose=0);
+  ytrain_closs = (ytrain_loss != 0) .* ytrain_loss + (ytrain_loss == 0) * 101; %%% il caso loss == 0 e' stato mappato con 101
+  yval_closs = (yval_loss != 0) .* yval_loss + (yval_loss == 0 ) * 101; 
+  [n_opt_loss,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain_loss, Xval, yval_closs , lambda=0 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1,_num_label=101,verbose=0);
+  [h_opt_loss,J_opt] = findOptHiddenLayers(Xtrain, ytrain_loss, Xval, yval_closs , lambda=0 , neurons_hidden_layers=n_opt_loss,_num_label=101,verbose=0);
   NNMeta = buildNNMeta([(n - 1) repmat(n_opt_loss,1,h_opt_loss) num_label_loss]);disp(NNMeta);
-  [lambda_opt_loss,J_opt] = findOptLambda(NNMeta, Xtrain, ytrain_loss, Xval, yval_loss , lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]');
+  [lambda_opt_loss,J_opt] = findOptLambda(NNMeta, Xtrain, ytrain_closs, Xval, yval_loss , lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]',_num_label=101);
 
   %% --> model parameters: n_opt_loss , h_opt_loss , lambda_opt_loss
   NNpars_loss = [n_opt_loss h_opt_loss lambda_opt_loss];
-  printf("|--> OPTIMAL PARAMETERS NEURAL NETWORK LOSS CLASSIFIER  --> opt. number of hidden layers(h_opt_loss) = %i , opt. number of neurons for hidden layers(n_opt_loss) = % i , opt. lambda = %f\n",h_opt_loss,n_opt_loss,lamda_opt_loss);
+  printf("|--> OPTIMAL PARAMETERS NEURAL NETWORK LOSS CLASSIFIER  --> opt. number of hidden layers(h_opt_loss) = %i , opt. number of neurons for hidden layers(n_opt_loss) = % i , opt. lambda = %f\n",h_opt_loss,n_opt_loss,lambda_opt_loss);
   dlmwrite ('NNpars_loss.zat', NNpars_loss);
 
   %% --> performance
   NNMeta = buildNNMeta([(n - 1) repmat(n_opt_loss,1,h_opt_loss) num_label_loss]);disp(NNMeta);
-  [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain_loss, lambda_opt_loss , iter = 200, featureScaled = 1);
+  [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain_closs, lambda_opt_loss , iter = 200, featureScaled = 1);
   pred_loss_nn = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
-  [mae] = MAE(pred_loss_nn, yval_loss);
+  pred_loss_nn = (pred_loss_nn != 101) .* pred_loss_nn + (pred_loss_nn == 101 ) * 0; %%% il caso loss == 0 e' stato mappato con 101 
+  [mae] = MAE(pred_loss_nn, yval_closs);
   printf("|-> trained Neural Network --- LOSS --- classifier. MAE on cross validantion set = %f  \n",mae);
 
 
@@ -104,7 +108,7 @@ if (find_par_mode)
   printf("|-> trained loss regressor. MAE on cross validation set = %f  \n",mae);
 
   %% combining predictions 
-  pred_comb = (pred_def == 0) .* 0 + (pred_def == 1) .* pred_loss;
+  pred_comb = (pred_def == 2) .* 0 + (pred_def == 1) .* pred_loss;
   [mae] = MSE(pred_comb, yval_loss);
   printf("|-> COMBINED PREDICTION --> MAE on cross validation set = %f  \n",mae);
   

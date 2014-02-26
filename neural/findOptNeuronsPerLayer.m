@@ -1,7 +1,8 @@
-function [n_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lambda=1 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1,verbose=1)
+function [n_opt,J_opt] = findOptNeuronsPerLayer(Xtrain, ytrain, Xval, yval , lambda=1 ,start_neurons=-1,end_neurons=-1,step_fw=-1,hidden_layers=1,_num_label=-1,verbose=1)
 
   [m_train,n] = size(Xtrain);
   num_label = length(unique(ytrain));
+  if (_num_label > 0) num_label = _num_label; endif 
   hl = hidden_layers;
   s0 = n;
   sl = s0*2;
