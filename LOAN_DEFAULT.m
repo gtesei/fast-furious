@@ -26,12 +26,17 @@ y_def = (y_loss > 0) * 1 + (y_loss == 0)*2; %%% il default e' stato mappato con 
 Xcat = [data(:,3) data(:,6) data(:,768) data(:,769)]; 
 Xcont = [data(:,2) data(:,4:5) data(:,7:767) data(:,770)];  
 
+%%%%%%%%%%%%% merge test set for encoding categorical features 
 data = [];
-data = dlmread([curr_dir "/dataset/loan_default/test_v2-1000.csv"]); %%NA clean in R
+data = dlmread([curr_dir "/dataset/loan_default/" testFile]); %%NA clean in R
+Xcat_test = [data(:,3) data(:,6) data(:,768) data(:,769)]; 
+Xcat_tot = [Xcat;Xcat_test]; 
+data = [];
+[Xcat_totE,map] = encodeCategoricalFeatures(Xcat_tot);
+Xcat_totE = []; Xcat_tot = [];
+%%%%%%%%%%%%%%
 
-Xtest_cat = [data(:,3) data(:,6) data(:,768) data(:,769)]; 
-
-[XcatE,map] = encodeCategoricalFeatures(Xcat);
+[XcatE,map] = encodeCategoricalFeatures(Xcat,map);
 [Xcont,mu,sigma] = featureNormalize(Xcont);
 
 X = [XcatE Xcont];
