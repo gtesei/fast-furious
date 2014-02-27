@@ -5,8 +5,8 @@ menv;
 
 find_par_mode = 1;
 
-trainFile = "train_v2-1000.csv";
-testFile = "test_v2-1000.csv";
+trainFile = "train_NO_NA_oct.zat"; 
+testFile = "test_v2_NA_CI_oct.zat";   
 
 
 %%% 1) FEATURES ENGINEERING 
@@ -17,7 +17,7 @@ if (find_par_mode)
   [m,n] = size(data);
   rand_indices = randperm(m);
   data = data(rand_indices,:);
-  data = data(1:100,:);
+  data = data(1:10000,:);
 endif
 
 y_loss = data(:,end);
