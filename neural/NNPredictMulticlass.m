@@ -1,4 +1,4 @@
-function [p] = NNPredictMulticlass(NNMeta, Theta , X , featureScaled = 0)
+function [pred] = NNPredictMulticlass(NNMeta, Theta , X , featureScaled = 0)
 
 m = size(X, 1);
 p = zeros(size(X, 1), 1);
@@ -16,6 +16,13 @@ for i = 1:L-1
   endif
 endfor 
 
-[dummy, p] = max(cell2mat(h(L-1,1)), [], 2);
+%%[dummy, p] = max(cell2mat(h(L-1,1)), [], 2);
 
-end
+hx = cell2mat(h(L-1,1));
+for (i = 1:size(hx,1) )
+  [dummy , p(i)] = max(hx(i,:));
+endfor 
+
+pred = p;
+
+endfunction 

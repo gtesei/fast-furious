@@ -18,10 +18,10 @@
 
 function [is_ok] = go()
   is_ok = 1;
-#   is_ok &= var1_doBasicUseCase();
-#   is_ok &= var1_doFindOptParamsUseCase();
+   is_ok &= var1_doBasicUseCase();
+   is_ok &= var1_doFindOptParamsUseCase();
 #   is_ok &= var1_doComparisonPurePolyDatasetUseCase();
-   is_ok &= var1_doBufferedUseCase();
+#   is_ok &= var1_doBufferedUseCase();
 endfunction 
 
 function [is_ok] = var1_doBasicUseCase()
