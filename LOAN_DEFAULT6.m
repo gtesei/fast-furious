@@ -5,7 +5,8 @@ menv;
 
 find_par_mode = 1;
 
-trainFile = "train_NO_NA_oct_10K.zat"; 
+trainFile = "train_NO_NA_oct.zat";
+%trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 testFile = "test_v2_NA_CI_oct.zat";   
 
@@ -61,6 +62,10 @@ trashFeat = [1 32 33 34 36 37 670 692 693 694 728 756];
 eIdx = size(data,2) -1;
 
 bestMAE = -1; 
+bestMAE_P = -1;
+bestMAE_RTHETA = -1;      
+bestMAE_Epsilon = -1; 
+bestMAE_ALLTHETA = -1;
 
 bestREG_MAE = -1;
 bestP = -1; 
@@ -213,7 +218,6 @@ for idx = 0:eIdx
     bestREG_MAE = mae_reg;
     bestP = p_opt;
     bestRTHETA = rtheta;   
-    bestMAE = mae_log; 
     bestF1 = F1; 
     bestEpsilon = epsilon; 
     bestACC = acc_log;
@@ -224,6 +228,12 @@ for idx = 0:eIdx
     REG_MAEs = [REG_MAEs mae_reg];
     %%addedFeat_reg = [addedFeat_reg idx];
     %%addedFeat_class = [addedFeat_class idx];
+    
+    bestMAE = mae_log; 
+    bestMAE_P = p_opt;
+    bestMAE_RTHETA = rtheta;      
+    bestMAE_Epsilon = epsilon; 
+    bestMAE_ALLTHETA = all_theta;
 
   elseif ( (mae_reg < bestREG_MAE) & (F1 <= bestF1) )
     printf("|-! regressor ONLY improvment -  performance with feature index == %i (mae=%f) (mae_reg=%f) (F1=%f) (ACC=%f) !\n",idx,mae_log,mae_reg,F1,acc_log);
@@ -274,6 +284,10 @@ for idx = 0:eIdx
 
   if (mae_log < bestMAE)
     bestMAE = mae_log; 
+    bestMAE_P = p_opt;
+    bestMAE_RTHETA = rtheta;      
+    bestMAE_Epsilon = epsilon; 
+    bestMAE_ALLTHETA = all_theta;
   endif 
 
 endfor 
@@ -308,6 +322,10 @@ Xtest_reg = [ones(size(Xtest_reg,1),1) Xtest_reg];
 Xtest_class = [Xcont_class];
 Xtest_class = [ones(size(Xtest_class,1),1) Xtest_class];
 
+
+
+%%%%%%%%%%% PREDICTION W/ THE BEST REGRESSOR & THE BEST CLASSIFIER 
+
 ####### loss prediction 
 %%[Xtest_poly,mu,sigma] = treatContFeatures(Xtest_reg,bestP);
 Xtest_poly = polyFeatures(Xtest_reg,bestP); 
@@ -322,6 +340,28 @@ predtest_log = (ptval > bestEpsilon);
 predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 
 ids = data(:,1);
+sub_comb_greedy = [ids predtest_comb];
+
+dlmwrite ('sub_comb_log_greedy.csv', sub_comb_greedy,",");
+
+
+%%%%%%%%%%% PREDICTION W/ THE BEST COMBINATION OF REGRESSOR/CLASSIFIER 
+
+####### loss prediction 
+%%[Xtest_poly,mu,sigma] = treatContFeatures(Xtest_reg,bestMAE_P);
+Xtest_poly = polyFeatures(Xtest_reg,bestMAE_P); 
+predtest_loss = predictLinearReg(Xtest_poly,bestMAE_RTHETA);
+predtest_loss = (predtest_loss < 0) .* 0 + (predtest_loss > 100) .* 100 +  (predtest_loss >= 0 & predtest_loss <= 100) .*  predtest_loss;
+
+####### default prediction
+ptval = sigmoid(Xtest_class * bestMAE_ALLTHETA' );
+predtest_log = (ptval > bestMAE_Epsilon);
+
+##### combinata 
+predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
+
+ids = data(:,1);
 sub_comb = [ids predtest_comb];
 
 dlmwrite ('sub_comb_log.csv', sub_comb,",");
+    
