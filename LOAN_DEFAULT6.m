@@ -101,11 +101,11 @@ for idx = 0:eIdx
   Xcont_class = [];
 
   for k = 1:length(addedFeat_reg)
-    Xcont_reg = [Xcont_reg data(:,k)];
+    Xcont_reg = [Xcont_reg data(:, addedFeat_reg(k) )];
   endfor 
 
   for k = 1:length(addedFeat_class)
-    Xcont_class = [Xcont_class data(:,k)];
+    Xcont_class = [Xcont_class data(:, addedFeat_class(k) )];
   endfor 
 
   %%%% initial cond
@@ -118,6 +118,9 @@ for idx = 0:eIdx
     
     Xcont_reg = [Xcont_reg data(:,idx)];
     Xcont_class = [Xcont_class data(:,idx)];
+    
+  endif
+  
     [Xcont_reg,mu,sigma] = featureNormalize(Xcont_reg);
     [Xcont_class,mu,sigma] = featureNormalize(Xcont_class);
 
@@ -141,7 +144,7 @@ for idx = 0:eIdx
     yval_def = yval(:,1);
     yval_loss = yval(:,2);
 
-  endif 
+  %%endif 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
   %%%%%%%%%%%%%%%%%%%%%%% LOSS REGRESSOR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -157,11 +160,11 @@ for idx = 0:eIdx
   %%dlmwrite ('REGpars.zat', REGpars);
 
   %% --> performance
-  [Xtrain_poly,mu,sigma] = treatContFeatures(Xtrain_reg,p_opt);
-  %%Xtrain_poly = polyFeatures(Xtrain,p_opt); 
+  %%[Xtrain_poly,mu,sigma] = treatContFeatures(Xtrain_reg,p_opt);
+  Xtrain_poly = polyFeatures(Xtrain,p_opt); 
   rtheta = trainLinearReg(Xtrain_poly, ytrain_loss, reg_lambda_opt, 400);
-  [Xval_poly,mu,sigma] = treatContFeatures(Xval_reg,p_opt,1,mu,sigma);
-  %%Xval_poly = polyFeatures(Xval,p_opt);
+  %%[Xval_poly,mu,sigma] = treatContFeatures(Xval_reg,p_opt,1,mu,sigma);
+  Xval_poly = polyFeatures(Xval,p_opt);
   pred_loss = predictLinearReg(Xval_poly,rtheta);
   pred_loss = (pred_loss < 0) .* 0 + (pred_loss > 100) .* 100 +  (pred_loss >= 0 & pred_loss <= 100) .*  pred_loss;
   [mae_reg] = MAE(pred_loss, yval_loss);
@@ -287,11 +290,11 @@ Xcont_reg = [];
 Xcont_class = [];
 
 for k = 1:length(addedFeat_reg)
-  Xcont_reg = [Xcont_reg data(:,k)];
+  Xcont_reg = [Xcont_reg data(:, addedFeat_reg(k) )];
 endfor
 
 for k = 1:length(addedFeat_class)
-  Xcont_class = [Xcont_class data(:,k)];
+  Xcont_class = [Xcont_class data(:, addedFeat_class(k) )];
 endfor
 
 %%Xcont = [data(:,522) data(:,523) data(:,270)];
@@ -305,7 +308,8 @@ Xtest_class = [Xcont_class];
 Xtest_class = [ones(size(Xtest_class,1),1) Xtest_class];
 
 ####### loss prediction 
-[Xtest_poly,mu,sigma] = treatContFeatures(Xtest_reg,bestP);
+%%[Xtest_poly,mu,sigma] = treatContFeatures(Xtest_reg,bestP);
+Xtest_poly = polyFeatures(Xtest_reg,bestP); 
 predtest_loss = predictLinearReg(Xtest_poly,bestRTHETA);
 predtest_loss = (predtest_loss < 0) .* 0 + (predtest_loss > 100) .* 100 +  (predtest_loss >= 0 & predtest_loss <= 100) .*  predtest_loss;
 
