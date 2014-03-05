@@ -8,7 +8,9 @@ find_par_mode = 1;
 trainFile = "train_NO_NA_oct.zat";
 %trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
+
 testFile = "test_v2_NA_CI_oct.zat";   
+%testFile = "train_NO_NA_oct_10K.zat";  
 
 
 %%% 1) FEATURES ENGINEERING 
@@ -60,12 +62,16 @@ initFeat = [270 522 523];
 trashFeat = [1 32 33 34 36 37 670 692 693 694 728 756];
 
 eIdx = size(data,2) -1;
+%eIdx = 20;
+
 
 bestMAE = -1; 
 bestMAE_P = -1;
 bestMAE_RTHETA = -1;      
 bestMAE_Epsilon = -1; 
 bestMAE_ALLTHETA = -1;
+bestMAE_FEAT_REG = -1;
+bestMAE_FEAT_CLASS = -1;
 
 bestREG_MAE = -1;
 bestP = -1; 
@@ -166,10 +172,10 @@ for idx = 0:eIdx
 
   %% --> performance
   %%[Xtrain_poly,mu,sigma] = treatContFeatures(Xtrain_reg,p_opt);
-  Xtrain_poly = polyFeatures(Xtrain,p_opt); 
+  Xtrain_poly = polyFeatures(Xtrain_reg,p_opt); 
   rtheta = trainLinearReg(Xtrain_poly, ytrain_loss, reg_lambda_opt, 400);
   %%[Xval_poly,mu,sigma] = treatContFeatures(Xval_reg,p_opt,1,mu,sigma);
-  Xval_poly = polyFeatures(Xval,p_opt);
+  Xval_poly = polyFeatures(Xval_reg,p_opt);
   pred_loss = predictLinearReg(Xval_poly,rtheta);
   pred_loss = (pred_loss < 0) .* 0 + (pred_loss > 100) .* 100 +  (pred_loss >= 0 & pred_loss <= 100) .*  pred_loss;
   [mae_reg] = MAE(pred_loss, yval_loss);
@@ -209,12 +215,12 @@ for idx = 0:eIdx
 
   pred_comb_log = (pred_log == 0) .* 0 + (pred_log == 1) .* pred_loss;
   [mae_log] = MAE(pred_comb_log, yval_loss);
-  printf("|-> COMBINED PREDICTION --> MAE on cross validation set = %f  (mae_reg    =%f) (F1    =%f) (ACC    =%f) \n",mae_log, mae_reg, F1, acc_log);
-  printf("|->        vs           --> bestMAE                     = %f  (bestREG_MAE=%f) (bestF1=%f) (bestACC=%f) \n", bestMAE  , bestREG_MAE , bestACC );
+  printf("|-> COMBINED PREDICTION --> MAE on cross validation set = %f  (mae_reg    =%f) (F1    =%f) (ACC    =%f) \n", mae_log, mae_reg, F1, acc_log);
+  printf("|->        vs           --> bestMAE                     = %f  (bestREG_MAE=%f) (bestF1=%f) (bestACC=%f) \n", bestMAE  , bestREG_MAE , bestF1, bestACC );
   
   %%%%%%%%%%%%%%% update %%%%%%%%%%%%%%%%%%
   if (  idx == 0  )
-    printf("|-! first iteration -  performance with feature index == %i (mae=%f) (mae_reg=%f) (F1=%f) (ACC=%f) !\n",idx,mae_log,mae_reg,F1,acc_log);
+    printf("|-! first iteration -  \n");
     bestREG_MAE = mae_reg;
     bestP = p_opt;
     bestRTHETA = rtheta;   
@@ -226,35 +232,36 @@ for idx = 0:eIdx
     F1s = [F1s F1];
     MAEs = [MAEs mae_log];
     REG_MAEs = [REG_MAEs mae_reg];
-    %%addedFeat_reg = [addedFeat_reg idx];
-    %%addedFeat_class = [addedFeat_class idx];
+    
+    
     
     bestMAE = mae_log; 
     bestMAE_P = p_opt;
     bestMAE_RTHETA = rtheta;      
     bestMAE_Epsilon = epsilon; 
     bestMAE_ALLTHETA = all_theta;
+    bestMAE_FEAT_REG = addedFeat_reg;
+    bestMAE_FEAT_CLASS = addedFeat_class;
 
   elseif ( (mae_reg < bestREG_MAE) & (F1 <= bestF1) )
-    printf("|-! regressor ONLY improvment -  performance with feature index == %i (mae=%f) (mae_reg=%f) (F1=%f) (ACC=%f) !\n",idx,mae_log,mae_reg,F1,acc_log);
+    printf("|-! regressor ONLY improvment - index == %i \n",idx );
     bestREG_MAE = mae_reg;
-    bestP = p_opt; 
+    bestP = p_opt;
     bestRTHETA = rtheta;
-    %%bestF1 = F1;
-    %%bestEpsilon = epsilon;
-    %%bestACC = acc_log;
-    %%bestALLTHETA = all_theta;
+    
+    
+    
     ACCs = [ACCs acc_log];
     F1s = [F1s F1];
     MAEs = [MAEs mae_log];
     REG_MAEs = [REG_MAEs mae_reg];
     addedFeat_reg = [addedFeat_reg idx];
-    %%addedFeat_class = [addedFeat_class idx];
+    
   elseif ( (mae_reg >= bestREG_MAE) & (F1 > bestF1) )  
-    printf("|-! classifier ONLY improvment -  performance with feature index == %i (mae=%f) (mae_reg=%f) (F1=%f) (ACC=%f) !\n",idx,mae_log,mae_reg,F1,acc_log);
-    %%bestREG_MAE = mae_reg;
-    %%bestP = p_opt;
-    %%bestRTHETA = rtheta;  
+    printf("|-! classifier ONLY improvment - index == %i \n",idx );
+    
+    
+    
     bestF1 = F1;                                                                                                                                                                                      
     bestEpsilon = epsilon;                                                                                                                                                                                
     bestACC = acc_log;
@@ -263,13 +270,14 @@ for idx = 0:eIdx
     F1s = [F1s F1];
     MAEs = [MAEs mae_log];
     REG_MAEs = [REG_MAEs mae_reg];
-    %%addedFeat_reg = [addedFeat_reg idx];
+    
     addedFeat_class = [addedFeat_class idx]; 
   elseif ( (mae_reg < bestREG_MAE) & (F1 > bestF1) )
-    printf("|-! classifier and regressor improvment -  performance with feature index == %i (mae=%f) (F1=%f) (ACC=%f) !\n",idx,mae_log,F1,acc_log);
+    printf("|-! classifier and regressor improvment -  index == %i \n",idx );
     bestREG_MAE = mae_reg;
     bestP = p_opt;
-    bestRTHETA = rtheta;                                                                                                                                                    
+    bestRTHETA = rtheta;
+    
     bestF1 = F1;
     bestEpsilon = epsilon;
     bestACC = acc_log;
@@ -287,8 +295,23 @@ for idx = 0:eIdx
     bestMAE_P = p_opt;
     bestMAE_RTHETA = rtheta;      
     bestMAE_Epsilon = epsilon; 
-    bestMAE_ALLTHETA = all_theta;
+    bestMAE_ALLTHETA = all_theta;    
+    
+    if ( addedFeat_reg(:,end) == idx )
+      bestMAE_FEAT_REG = addedFeat_reg;
+    else
+      bestMAE_FEAT_REG = [addedFeat_reg idx];
+    endif 
+    
+    if (addedFeat_class(:,end) == idx)
+      bestMAE_FEAT_CLASS = addedFeat_class;
+    else 
+      bestMAE_FEAT_CLASS = [addedFeat_class idx];
+    endif 
+    
   endif 
+  
+  rtheta = [];
 
 endfor 
 
@@ -298,9 +321,10 @@ printf("|-. model performances: (bestMAE=%f) (bestREG_MAE=%f) (bestF1=%f)  (best
 
 printf("|-> prediction on test set ...  \n");
 
-testFile = "test_v2_NA_CI_oct.zat";
 data = dlmread([curr_dir "/dataset/loan_default/" testFile]);
 
+
+%%%%%%%%%%
 Xcont_reg = [];
 Xcont_class = [];
 
@@ -321,8 +345,6 @@ Xtest_reg = [ones(size(Xtest_reg,1),1) Xtest_reg];
 
 Xtest_class = [Xcont_class];
 Xtest_class = [ones(size(Xtest_class,1),1) Xtest_class];
-
-
 
 %%%%%%%%%%% PREDICTION W/ THE BEST REGRESSOR & THE BEST CLASSIFIER 
 
@@ -347,6 +369,28 @@ dlmwrite ('sub_comb_log_greedy.csv', sub_comb_greedy,",");
 
 %%%%%%%%%%% PREDICTION W/ THE BEST COMBINATION OF REGRESSOR/CLASSIFIER 
 
+%%%%%%%%%%
+Xcont_reg = [];
+Xcont_class = [];
+
+for k = 1:length(bestMAE_FEAT_REG)
+  Xcont_reg = [Xcont_reg data(:, bestMAE_FEAT_REG(k) )];
+endfor
+
+for k = 1:length(bestMAE_FEAT_CLASS)
+  Xcont_class = [Xcont_class data(:, bestMAE_FEAT_CLASS(k) )];
+endfor
+
+%%Xcont = [data(:,522) data(:,523) data(:,270)];
+[Xcont_reg,mu,sigma] = featureNormalize(Xcont_reg);
+[Xcont_class,mu,sigma] = featureNormalize(Xcont_class);
+
+Xtest_reg = [Xcont_reg];
+Xtest_reg = [ones(size(Xtest_reg,1),1) Xtest_reg];
+
+Xtest_class = [Xcont_class];
+Xtest_class = [ones(size(Xtest_class,1),1) Xtest_class];
+
 ####### loss prediction 
 %%[Xtest_poly,mu,sigma] = treatContFeatures(Xtest_reg,bestMAE_P);
 Xtest_poly = polyFeatures(Xtest_reg,bestMAE_P); 
@@ -364,4 +408,3 @@ ids = data(:,1);
 sub_comb = [ids predtest_comb];
 
 dlmwrite ('sub_comb_log.csv', sub_comb,",");
-    
