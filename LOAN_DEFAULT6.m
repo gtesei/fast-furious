@@ -5,7 +5,7 @@ menv;
 
 find_par_mode = 1;
 
-trainFile = "train_NO_NA_oct.zat"; 
+trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 testFile = "test_v2_NA_CI_oct.zat";   
 
@@ -204,7 +204,8 @@ for idx = 0:eIdx
 
   pred_comb_log = (pred_log == 0) .* 0 + (pred_log == 1) .* pred_loss;
   [mae_log] = MAE(pred_comb_log, yval_loss);
-  printf("|-> COMBINED PREDICTION --> MAE on cross validation set = %f  (mae_reg=%f) (F1=%f) (ACC=%f) \n",mae_log, mae_reg, F1, acc_log);
+  printf("|-> COMBINED PREDICTION --> MAE on cross validation set = %f  (mae_reg    =%f) (F1    =%f) (ACC    =%f) \n",mae_log, mae_reg, F1, acc_log);
+  printf("|->        vs           --> bestMAE                     = %f  (bestREG_MAE=%f) (bestF1=%f) (bestACC=%f) \n", bestMAE  , bestREG_MAE , bestACC );
   
   %%%%%%%%%%%%%%% update %%%%%%%%%%%%%%%%%%
   if (  idx == 0  )
@@ -239,7 +240,7 @@ for idx = 0:eIdx
     REG_MAEs = [REG_MAEs mae_reg];
     addedFeat_reg = [addedFeat_reg idx];
     %%addedFeat_class = [addedFeat_class idx];
-  elseif ( (mae_reg < bestREG_MAE) & (F1 > bestF1) )  
+  elseif ( (mae_reg >= bestREG_MAE) & (F1 > bestF1) )  
     printf("|-! classifier ONLY improvment -  performance with feature index == %i (mae=%f) (mae_reg=%f) (F1=%f) (ACC=%f) !\n",idx,mae_log,mae_reg,F1,acc_log);
     %%bestREG_MAE = mae_reg;
     %%bestP = p_opt;
@@ -271,7 +272,7 @@ for idx = 0:eIdx
     addedFeat_class = [addedFeat_class idx];
   endif  
 
-  if (mae_log > bestMAE)
+  if (mae_log < bestMAE)
     bestMAE = mae_log; 
   endif 
 
