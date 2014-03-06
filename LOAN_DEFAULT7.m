@@ -19,12 +19,12 @@ testFile = "train_NO_NA_oct_10K.zat";
 printf("|--> FEATURES BUILDING ...\n");
 
 data = dlmread([curr_dir "/dataset/loan_default/" trainFile]); %%NA clean in R
-if (find_par_mode)
-  [m,n] = size(data);
-  rand_indices = randperm(m);
-  data = data(rand_indices,:);
-  %%data = data(1:10000,:);
-endif
+
+[m,n] = size(data);
+rand_indices = randperm(m);
+data = data(rand_indices,:);
+%%data = data(1:10000,:);
+
 
 y_loss = data(:,end);
 y_def = (y_loss > 0) * 1 + (y_loss == 0)*0; 
@@ -147,9 +147,8 @@ for _idx = 0:eIdx
     
     m = size(y,1);
 
-    rand_indices = randperm(m);
-    [Xtrain_reg,ytrain,Xval_reg,yval] = splitTrainValidation(X_reg(rand_indices,:),y(rand_indices,:),0.90); 
-    [Xtrain_class,ytrain,Xval_class,yval] = splitTrainValidation(X_class(rand_indices,:),y(rand_indices,:),0.90);
+    [Xtrain_reg,ytrain,Xval_reg,yval] = splitTrainValidation(X_reg,y,0.90); 
+    [Xtrain_class,ytrain,Xval_class,yval] = splitTrainValidation(X_class,y,0.90);
 
     ytrain_def = ytrain(:,1);
     ytrain_loss = ytrain(:,2);
@@ -176,9 +175,9 @@ for _idx = 0:eIdx
   ytrain_boot = [ytrain(id1,:); ytrain(id0,:)];
 
   %%% shuffle 
-  rand_indices = randperm(size(Xtrain_boot,1));
-  Xtrain_boot = Xtrain_boot(rand_indices,:);
-  ytrain_boot = ytrain_boot(rand_indices,:);
+  rand_ind_boot = randperm(size(Xtrain_boot,1));
+  Xtrain_boot = Xtrain_boot(rand_ind_boot,:);
+  ytrain_boot = ytrain_boot(rand_ind_boot,:);
 
   ytrain_def_boot = ytrain_boot(:,1);
   ytrain_loss_boot = ytrain_boot(:,2);   
@@ -399,11 +398,12 @@ Xtest_reg = [ones(size(Xtest_reg,1),1) Xtest_reg];
 Xtest_class = [Xcont_class];
 Xtest_class = [ones(size(Xtest_class,1),1) Xtest_class];
 
-rand_indices = randperm(size(Xtest_class,1));
-[Xtest_train_reg,ytest_train,Xtest_val_reg,ytest_val] = splitTrainValidation(Xtest_reg(rand_indices,:),y(rand_indices,:),0.90); 
-[Xtest_train_class,ytest_train,Xtest_val_class,ytest_val] = splitTrainValidation(Xtest_class(rand_indices,:),y(rand_indices,:),0.90);
+y = [y_def y_loss];
 
-####### loss prediction 
+[Xtest_train_reg,ytest_train,Xtest_val_reg,ytest_val] = splitTrainValidation(Xtest_reg,y,0.90); 
+[Xtest_train_class,ytest_train,Xtest_val_class,ytest_val] = splitTrainValidation(Xtest_class,y,0.90);
+
+####### GREEDY loss prediction 
 Xtest_poly = polyFeatures(Xtest_val_reg,bestP); 
 predtest_loss = predictLinearReg(Xtest_poly,bestRTHETA);
 predtest_loss = (predtest_loss < 0) .* 0 + (predtest_loss > 100) .* 100 +  (predtest_loss >= 0 & predtest_loss <= 100) .*  predtest_loss;
@@ -415,8 +415,50 @@ predtest_log = (ptval > bestEpsilon);
 ##### combinata 
 predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 
-[mae_gr] = MAE(predtest_comb, yval_loss);
+[mae_gr] = MAE(predtest_comb, ytest_val(:,2));
 printf("|-> GRREDY MODEL PREDICTION --> MAE on cross validation set = %f  \n", mae_gr);
+
+####################################
+printf("|-. trying best model ... ");
+Xcont_reg = [];
+Xcont_class = [];
+
+for k = 1:length(bestMAE_FEAT_REG)
+  Xcont_reg = [Xcont_reg data(:, bestMAE_FEAT_REG(k) )];
+endfor
+
+for k = 1:length(bestMAE_FEAT_CLASS)
+  Xcont_class = [Xcont_class data(:, bestMAE_FEAT_CLASS(k) )];
+endfor
+
+[Xcont_reg,mu,sigma] = featureNormalize(Xcont_reg);
+[Xcont_class,mu,sigma] = featureNormalize(Xcont_class);
+
+Xtest_reg = [Xcont_reg];
+Xtest_reg = [ones(size(Xtest_reg,1),1) Xtest_reg];
+
+Xtest_class = [Xcont_class];
+Xtest_class = [ones(size(Xtest_class,1),1) Xtest_class];
+
+y = [y_def y_loss];
+
+[Xtest_train_reg,ytest_train,Xtest_val_reg,ytest_val] = splitTrainValidation(Xtest_reg,y,0.90); 
+[Xtest_train_class,ytest_train,Xtest_val_class,ytest_val] = splitTrainValidation(Xtest_class,y,0.90);
+
+####### BEST loss prediction 
+Xtest_poly = polyFeatures(Xtest_val_reg,bestMAE_P); 
+predtest_loss = predictLinearReg(Xtest_poly,bestMAE_RTHETA);
+predtest_loss = (predtest_loss < 0) .* 0 + (predtest_loss > 100) .* 100 +  (predtest_loss >= 0 & predtest_loss <= 100) .*  predtest_loss;
+
+####### default prediction
+ptval = sigmoid(Xtest_val_class * bestMAE_ALLTHETA' );
+predtest_log = (ptval > bestMAE_Epsilon);
+
+##### combinata 
+predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
+
+[mae_gr] = MAE(predtest_comb, ytest_val(:,2));
+printf("|-> BEST MODEL PREDICTION --> MAE on cross validation set = %f  \n", mae_gr);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 printf("|-> prediction on test set ...  \n");
