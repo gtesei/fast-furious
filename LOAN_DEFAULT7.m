@@ -4,15 +4,15 @@
 menv;
 
 find_par_mode = 1;
-_max_iter = 5;
+_max_iter = 200;
 REGRESSOR_BOOTSTRAP = 0; 
 
-%trainFile = "train_NO_NA_oct.zat";
-trainFile = "train_NO_NA_oct_10K.zat"; 
+trainFile = "train_NO_NA_oct.zat";
+%trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 
-%testFile = "test_v2_NA_CI_oct.zat";   
-testFile = "train_NO_NA_oct_10K.zat";  
+testFile = "test_v2_NA_CI_oct.zat";   
+%testFile = "train_NO_NA_oct_10K.zat";  
 
 
 %%% 1) FEATURES ENGINEERING 
@@ -50,7 +50,8 @@ y_def = (y_loss > 0) * 1 + (y_loss == 0)*0;
 
 
 %%%%%%%%%%%%%%%%%%%%%% STEP FORWARD PROCEDUERE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-initFeat = [270 522 523];
+#initFeat = [270 522 523];
+initFeat = [522 523];
 trashFeat = [1 32 33 34 36 37 670 692 693 694 728 756];
 
 %%%%%%%%%%%%% features shuffle 
@@ -506,7 +507,7 @@ predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 ids = data(:,1);
 sub_comb_greedy = [ids predtest_comb];
 
-dlmwrite ('sub_comb_log_greedy.csv', sub_comb_greedy,",");
+dlmwrite ('sub_comb_log_greedy3.csv', sub_comb_greedy,",");
 
 
 %%%%%%%%%%% PREDICTION W/ THE BEST COMBINATION OF REGRESSOR/CLASSIFIER 
@@ -549,4 +550,4 @@ predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 ids = data(:,1);
 sub_comb = [ids predtest_comb];
 
-dlmwrite ('sub_comb_log.csv', sub_comb,",");
+dlmwrite ('sub_comb_log3.csv', sub_comb,",");

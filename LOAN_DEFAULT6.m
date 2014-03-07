@@ -364,7 +364,7 @@ predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 ids = data(:,1);
 sub_comb_greedy = [ids predtest_comb];
 
-dlmwrite ('sub_comb_log_greedy.csv', sub_comb_greedy,",");
+dlmwrite ('sub_comb_log_greedy2.csv', sub_comb_greedy,",");
 
 
 %%%%%%%%%%% PREDICTION W/ THE BEST COMBINATION OF REGRESSOR/CLASSIFIER 
@@ -407,4 +407,4 @@ predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 ids = data(:,1);
 sub_comb = [ids predtest_comb];
 
-dlmwrite ('sub_comb_log.csv', sub_comb,",");
+dlmwrite ('sub_comb_log2.csv', sub_comb,",");
