@@ -1,4 +1,4 @@
-function [X_out,index , offeset] = encodeCategoricalFeatures(X,index=-1,offset=-1)
+function [X_out,index , offeset] = encodeCategoricalFeatures(X,index=-1,offset=-1,labels = -1)
 
 [m, n] = size(X);
 
@@ -7,7 +7,9 @@ if ( ! isstruct (index) )
   offset = 1; 
   for i = 1:n 
     idxHash = struct('key', 'value');
-    labels = unique( X(:,i));
+    if ( ! ismatrix(labels) )
+      labels = unique( X(:,i));
+    endif
     for j = 1:length(labels)
       idxHash = setfield(idxHash , [num2str(i) num2str(labels(j))], offset);
       index = setfield(index , num2str(i), idxHash);
