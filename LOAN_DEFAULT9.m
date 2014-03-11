@@ -5,12 +5,12 @@ menv;
 
 REGRESSOR_BOOTSTRAP = 0; 
 
-trainFile = "train_NO_NA_oct.zat";
-%trainFile = "train_NO_NA_oct_10K.zat"; 
+%trainFile = "train_NO_NA_oct.zat";
+trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 
-testFile = "test_v2_NA_CI_oct.zat";   
-%testFile = "train_NO_NA_oct_10K.zat";  
+%testFile = "test_v2_NA_CI_oct.zat";   
+testFile = "train_NO_NA_oct_10K.zat";  
 
 
 bestMAE = -1; 
@@ -47,7 +47,7 @@ data = data(rand_indices,:);
 %FEAT_REG = [270 522   523]; 
 %FEAT_CLASS = [270 522   523];
 
-FEAT = [270 522 523];
+FEAT = [270 522 523 620];
 
 %CAT_FEAT = [3];
 CAT_FEAT = [-1];
