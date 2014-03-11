@@ -33,7 +33,9 @@ bestMAE_ACC = -1;
 data = dlmread([curr_dir "/dataset/loan_default/" trainFile]); %%NA clean in R
 data_test = dlmread([curr_dir "/dataset/loan_default/" testFile]);
 
-for (in = 1:1000)
+ll = 100;
+maes = zeros(ll,1);
+for (in = 1:ll)
 printf("|--> iteration # %i  ..... FEATURES BUILDING ...\n",in);
 
 [m,n] = size(data);
@@ -182,6 +184,8 @@ pred_comb_log = (pred_log == 0) .* 0 + (pred_log == 1) .* pred_loss;
 printf("|-> COMBINED PREDICTION --> MAE on cross validation set = %f  (mae_reg    =%f) (F1    =%f) (ACC    =%f) \n", mae_log, mae_reg, F1, acc_log);
 printf("|->        vs           --> bestMAE                     = %f  (bestMAE_REG=%f) (bestMAE_F1=%f) (bestMAE_ACC=%f) \n", bestMAE  , bestMAE_REG , bestMAE_F1, bestMAE_ACC );
 
+maes(in) = mae_log;
+
 if (mae_log < bestMAE | bestMAE < 0 )
 
 %%% update 
@@ -224,9 +228,14 @@ dlmwrite ('sub_comb_log.csv', sub_comb,",");
   
 endif 
 
-
-
+ 
 endfor 
+
+mae_mean = mean(maes);
+std_mean = std(maes);
+
+printf("|-> mae_mean=%f   mae_std=%f ...  \n",mae_mean,std_mean);
+
 
 
 
