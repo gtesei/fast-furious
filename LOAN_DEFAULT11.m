@@ -49,70 +49,19 @@ data = data(rand_indices,:);
 %FEAT_REG = [270 522   523]; 
 %FEAT_CLASS = [270 522   523];
 
-FEAT = [270 522 523 620];
+%FEAT = [270 522 523 620];
+
+FEAT = [270 522 523];
 
 %CAT_FEAT = [3];
 CAT_FEAT = [-1];
 CAT_FEAT_EXP = [1 2 3 4 5 6 7 8 9 10 11]';
-%%%%%%
-# Xcont_reg = [];
-# Xcat_reg = [];
-# Xcont_class = [];
-# Xcat_class = [];
-
-# for k = 1:length(FEAT_REG)
-#   if (sum( FEAT_REG(k) == CAT_FEAT ) >0)
-#     ii = find( FEAT_REG(k) == CAT_FEAT );
-#     cat = encodeCategoricalFeatures( [data(:, FEAT_REG(k)) ], index=-1,offset=-1, labels=CAT_FEAT_EXP(:,ii) );
-#     Xcat_reg = [Xcat_reg cat];
-#   else 
-#     Xcont_reg = [Xcont_reg data(:, FEAT_REG(k) )];
-#   endif
-# endfor 
-
-# for k = 1:length(FEAT_CLASS)
-#   if (sum( FEAT_CLASS(k) == CAT_FEAT ) >0)
-#     ii = find( FEAT_CLASS(k) == CAT_FEAT );     
-#     cat = encodeCategoricalFeatures( [data(:, FEAT_CLASS(k)) ], index=-1,offset=-1, labels=CAT_FEAT_EXP(:,ii) );
-#     Xcat_class = [Xcat_class cat];                                            
-#   else                                                                        
-#     Xcont_class = [Xcont_class data(:, FEAT_CLASS(k) )];                        
-#   endif 
-# endfor 
-
 
 Xtrain = [];
 
 for k = 1:length(FEAT)                                                                                                                                                                                
   Xtrain = [Xtrain data(:, FEAT(k) )];                                                                                                                                                       
 endfor
-
-
-%%%%%%
-# Xtestcont_reg = [];
-# Xtestcat_reg = [];
-# Xtestcont_class = [];
-# Xtestcat_class = [];
-
-# for k = 1:length(FEAT_REG)
-#   if (sum( FEAT_REG(k) == CAT_FEAT ) >0)
-#     ii = find( FEAT_REG(k) == CAT_FEAT );
-#     cat = encodeCategoricalFeatures( [data_test(:, FEAT_REG(k)) ], index=-1,offset=-1, labels=CAT_FEAT_EXP(:,ii) );
-#     Xtestcat_reg = [Xtestcat_reg cat];
-#   else 
-#     Xtestcont_reg = [Xtestcont_reg data_test(:, FEAT_REG(k) )];
-#   endif
-# endfor 
-
-# for k = 1:length(FEAT_CLASS)
-#   if (sum( FEAT_CLASS(k) == CAT_FEAT ) >0)
-#     ii = find( FEAT_CLASS(k) == CAT_FEAT );     
-#     cat = encodeCategoricalFeatures( [data_test(:, FEAT_CLASS(k)) ], index=-1,offset=-1, labels=CAT_FEAT_EXP(:,ii) );
-#     Xtestcat_class = [Xtestcat_class cat];                                            
-#   else                                                                        
-#     Xtestcont_class = [Xtestcont_class data_test(:, FEAT_CLASS(k) )];                        
-#   endif 
-# endfor 
 
 Xtest = [];
 
@@ -198,77 +147,34 @@ ptrain = sigmoid(Xtrain_class * all_theta' );
 pred_log_train = (ptrain > epsilon);
 
 %%%%%%%%%%%%%%%%%%%%%%% LOSS REGRESSOR %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
-%%%%%%%%%%%%% BOOTSTRAP %%%%%%%%%
-_Xval_reg = Xval_reg;
-_yval_loss = yval_loss;
-if (REGRESSOR_BOOTSTRAP)
-  t = (pred_log_train == 1);
-  tt = [];
-  for rr = 1:size(Xtrain_reg,1)
-    if ( t(rr) ) 
-      tt = [tt; Xtrain_reg(rr,:)];
-    endif 
-  endfor 
-  Xtrain_reg = tt;
-  
-  t = (pred_log_train == 1);
-    tt = [];
-    for rr = 1:size(ytrain_loss,1)
-      if ( t(rr) ) 
-        tt = [tt; ytrain_loss(rr,:)];
-      endif 
-    endfor 
-  ytrain_loss = tt;
-  
-  t = (pred_log == 1);
-    tt = [];
-    for rr = 1:size(Xval_reg,1)
-      if ( t(rr) ) 
-        tt = [tt; Xval_reg(rr,:)];
-      endif 
-    endfor 
-    _Xval_reg = tt;
-    
-  t = (pred_log == 1);
-      tt = [];
-      for rr = 1:size(yval_loss,1)
-        if ( t(rr) ) 
-          tt = [tt; yval_loss(rr,:)];
-        endif 
-      endfor 
-  _yval_loss = tt;
-endif 
-  
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% train
+%[Xtrain_def,Xtrain_no_def] = splitBy(Xtrain_reg,ytrain_def);
+%[ytrain_loss_def,ytrain_loss_no_def] = splitBy(ytrain_loss,ytrain_def);
+
+%%% x-val 
+%[Xval_def,Xval_no_def] = splitBy(Xval_reg,yval_def);
+%[yval_loss_def,yval_loss_no_def] = splitBy(yval_loss,yval_def);
+
   
 %%% 3) FINDING BEST PARAMS LOSS REGRESSOR 
-printf("|--> LOSS REGRESSOR  ...\n");
-[p_opt,J_opt] = findOptP_RegLin(Xtrain_reg, ytrain_loss, _Xval_reg, _yval_loss, p_vec = [1 2 3 4 5 6 7 8 9 10 12 20 60]' , lambda=0);
-[reg_lambda_opt,J_opt] = findOptLambda_RegLin(Xtrain_reg, ytrain_loss, _Xval_reg, _yval_loss, lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]' , p=p_opt);
+printf("|--> LOSS REGRESSOR trained only on 1' ...\n");
+[p_opt,J_opt] = findOptP_RegLin(Xtrain_boot, ytrain_loss_boot, Xval_reg, yval_loss, p_vec = [1 2 3 4 5 6 7 8 9 10 12 20 60]' , lambda=0);
+[reg_lambda_opt,J_opt] = findOptLambda_RegLin(Xtrain_boot, ytrain_loss_boot, Xval_reg, yval_loss, lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]' , p=p_opt);
   
 %% --> model parameters: p_opt , reg_lambda_opt
 REGpars = [p_opt reg_lambda_opt];
 printf("|--> OPTIMAL LINEAR REGRESSOR PARAMS -->  opt. number of polinomial degree (p_opt) = %i , opt. lambda = %f\n",p_opt,reg_lambda_opt);
-%%dlmwrite ('REGpars.zat', REGpars);
   
 %% --> performance
-%%[Xtrain_poly,mu,sigma] = treatContFeatures(Xtrain_reg,p_opt);
-Xtrain_poly = polyFeatures(Xtrain_reg,p_opt); 
-rtheta = trainLinearReg(Xtrain_poly, ytrain_loss, reg_lambda_opt, 400);
-%%[Xval_poly,mu,sigma] = treatContFeatures(Xval_reg,p_opt,1,mu,sigma);
-  
-_Xval_poly = polyFeatures(_Xval_reg,p_opt);
-_pred_loss = predictLinearReg(_Xval_poly,rtheta);
-_pred_loss = (_pred_loss < 0) .* 0 + (_pred_loss > 100) .* 100 +  (_pred_loss >= 0 & _pred_loss <= 100) .*  _pred_loss;
-[_mae_reg] = MAE(_pred_loss, _yval_loss);
-printf("|-> trained loss regressor. MAE on BOOTSRTAPPED cross validation set = %f  \n",_mae_reg);
+Xtrain_poly = polyFeatures(Xtrain_boot,p_opt); 
+rtheta = trainLinearReg(Xtrain_poly, ytrain_loss_boot, reg_lambda_opt, 400);
   
 Xval_poly = polyFeatures(Xval_reg,p_opt);
 pred_loss = predictLinearReg(Xval_poly,rtheta);
 pred_loss = (pred_loss < 0) .* 0 + (pred_loss > 100) .* 100 +  (pred_loss >= 0 & pred_loss <= 100) .*  pred_loss;
 [mae_reg] = MAE(pred_loss, yval_loss);
-printf("|-> trained loss regressor. MAE on REAL cross validation set = %f  \n",mae_reg);
+printf("|-> trained loss regressor. MAE on cross validation set = %f  \n",mae_reg);
   
 %%%%%%%%%%%%% COMBINED PRED %%%%%%%%%
 pred_comb_log = (pred_log == 0) .* 0 + (pred_log == 1) .* pred_loss;
