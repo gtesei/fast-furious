@@ -51,7 +51,7 @@ data = data(rand_indices,:);
 
 %FEAT = [270 522 523 620];
 
-FEAT = [270 522 523];
+FEAT = [270 522 523 404];
 
 %CAT_FEAT = [3];
 CAT_FEAT = [-1];
