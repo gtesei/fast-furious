@@ -9,9 +9,9 @@ trainFile = "train_NO_NA_oct.zat";
 %trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 
-testFile = "test_v2_NA_CI_oct.zat";   
+%testFile = "test_v2_NA_CI_oct.zat";   
 %testFile = "train_NO_NA_oct_10K.zat";  
-
+testFile = "test_impute_mean_oct.zat"
 
 bestMAE = -1; 
 bestMAE_P = -1;
