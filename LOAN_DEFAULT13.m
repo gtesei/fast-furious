@@ -33,9 +33,11 @@ bestMAE_ACC = -1;
 data = dlmread([curr_dir "/dataset/loan_default/" trainFile]); %%NA clean in R
 data_test = dlmread([curr_dir "/dataset/loan_default/" testFile]);
 
+%all_theta = [];
+%rtheta = [];
+
 ll = 100;
 maes = zeros(ll,1);
-
 for (in = 1:ll)
 printf("|--> iteration # %i  ..... FEATURES BUILDING ...\n",in);
 
@@ -116,8 +118,7 @@ yval_loss = yval(:,2);
 %%%%%%%%%%%%%%%%%%%%%%%% DEFAULT  CLASSIFIER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 printf("|--> DEFAULT CLASSIFIER  ...\n");
 
-%i = 95;
-for i = 78:110
+i = 95;
 %%%%%%%%%%%%% BOOTSTRAP %%%%%%%%%
 %%%% making training set 50% 0' & 50% 1'
 id0 = find(ytrain_loss == 0);
@@ -188,7 +189,6 @@ printf("|->        vs           --> bestMAE                     = %f  (bestMAE_R
 
 maes(in) = mae_log;
 
-
 if (mae_log < bestMAE | bestMAE < 0 )
 
 %%% update 
@@ -226,19 +226,19 @@ predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 ids = data_test(:,1);
 sub_comb = [ids predtest_comb];
 
-dlmwrite ('sub_comb_log12.csv', sub_comb,",");
+dlmwrite ('sub_comb_log.csv', sub_comb,",");
 
   
 endif 
 
-
-endfor 
+ 
 endfor 
 
 mae_mean = mean(maes);
 std_mean = std(maes);
 
 printf("|-> mae_mean=%f   mae_std=%f ...  \n",mae_mean,std_mean);
+
 
 
 

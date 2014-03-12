@@ -1,4 +1,4 @@
-function [theta] = trainLinearReg(X, y, lambda , iter = 200 )
+function [theta] = trainLinearReg(X, y, lambda , iter = 200 , _theta=[])
 %TRAINLINEARREG Trains linear regression given a dataset (X, y) and a
 %regularization parameter lambda
 %   [theta] = TRAINLINEARREG (X, y, lambda) trains linear regression using
@@ -6,7 +6,10 @@ function [theta] = trainLinearReg(X, y, lambda , iter = 200 )
 %   trained parameters theta.
 
 % Initialize Theta
-theta = zeros(size(X, 2), 1); 
+theta = zeros(size(X, 2), 1);
+if ( size(_theta,1) != 0 )
+theta = _theta;
+endif
 
 % Create "short hand" for the cost function to be minimized
 costFunction = @(t) linearRegCostFunction(X, y, t, lambda);
