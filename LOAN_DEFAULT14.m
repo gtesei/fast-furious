@@ -4,14 +4,17 @@
 menv;
 
 %%%%%%%%%% SEGMENTED REGRESSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% best th(scaled)=-0.125468 th(not scaled)=0.5 ,  F1=0.745897 ACCURACY=93.749759
+%%%% n1s = 24997 , n0s = 26943
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%trainFile = "train_NO_NA_oct.zat";
-trainFile = "train_NO_NA_oct_10K.zat"; 
+trainFile = "train_NO_NA_oct.zat";
+%trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 
 %testFile = "test_v2_NA_CI_oct.zat";   
-testFile = "train_NO_NA_oct_10K.zat";  
-%testFile = "test_impute_mean_oct.zat";
+%testFile = "train_NO_NA_oct_10K.zat";  
+testFile = "test_impute_mean_oct.zat";
 
 
 bestMAE = -1; 
@@ -91,7 +94,7 @@ for (i = 1:4)
 endfor
 
 %%%% final 
-X = [Xnorm(:,1) Xnorm(:,2) Xnorm(:,3) X(:,4)];
+X = [Xnorm(:,1) Xnorm(:,2) Xnorm(:,3) Xnorm(:,4)];
 
 printf("|-> AFTER SELECTING \n");
 for (i = 1:4)
@@ -112,53 +115,60 @@ y_def = (y_loss > 0) * 1 + (y_loss == 0)*0;
 y = [y_def y_loss];    
 
 %%%% constants 
-th0 = 0.35;
-ITER_MAX = 100;
-srange = 0:0.1:0.3;
+th0 = 0.10;
+ITER_MAX = 10;
+srange = 0:0.1:0.8;
+mu4 = mu(4);
+sd4 = sigma(4);
 
 %%%% out 
 bestTH = -1;
 bestF1 = -1;
 bestACC = -1;
 
-ths = zeros(length(srange),1);
-F1s = zeros(length(srange),1);
-ACCs = zeros(length(srange),1);
+gths = zeros(length(srange),1);
+gF1s = zeros(length(srange),1);
+gACCs = zeros(length(srange),1);
+n1s = zeros(length(srange),1);
+n0s = zeros(length(srange),1);
 
 for tt = 1:length(srange)
   t  = srange(tt);
-  th = th0+t;
+  _th = th0+t;
+  th = (_th-mu4)/sd4;
   
   F1s = zeros(ITER_MAX,1);
   ACCs = zeros(ITER_MAX,1);
-  
+  p = (X(:,4) > th);
+  ptv = p(1:mtrain,:);
+  ptest = p(mtrain+1:end,:);
+
+  n1s(tt) = sum(ptv);
+  n0s(tt) = length(ptv) - n1s(tt);
+
+  [Xtv_s1,Xtv_s0] = splitBy(Xtv,ptv);
+  [Xtest_s1,Xtest_s0] = splitBy(Xtest,ptest);
+  [y_s1,y_s0] = splitBy(y,ptv);
+
+
+  [Xtrain_s1,ytrain_s1,Xval_s1,yval_s1] = splitTrainValidation(Xtv_s1,y_s1,0.90); 
+  [Xtrain_s0,ytrain_s0,Xval_s0,yval_s0] = splitTrainValidation(Xtv_s0,y_s0,0.90); 
+
+
+  ytrain_def_s1 = ytrain_s1(:,1);
+  ytrain_loss_s1 = ytrain_s1(:,2);
+  yval_def_s1 = yval_s1(:,1);
+  yval_loss_s1 = yval_s1(:,2); 
+
+  ytrain_def_s0 = ytrain_s0(:,1); 
+  ytrain_loss_s0 = ytrain_s0(:,2);
+  yval_def_s0 = yval_s0(:,1);
+  yval_loss_s0 = yval_s0(:,2); 
+ 
   for iter = 1:ITER_MAX
         
-        printf("|----> threshold breakpoint:%f -- iter:%i/%i ...\n",th,iter,ITER_MAX);
+        printf("|----> threshold breakpoint:%f (scaled:%f) -- iter:%i/%i ...\n",_th,th,iter,ITER_MAX);
 
-	p = (X(:,4) > th);
-	ptv = p(1:mtrain,:);
-	ptest = p(mtrain+1:end,:);
-
-	[Xtv_s1,Xtv_s0] = splitBy(Xtv,ptv);
-	[Xtest_s1,Xtest_s0] = splitBy(Xtest,ptest);
-	[y_s1,y_s0] = splitBy(y,ptv);
-
-
-	[Xtrain_s1,ytrain_s1,Xval_s1,yval_s1] = splitTrainValidation(Xtv_s1,y_s1,0.90); 
-	[Xtrain_s0,ytrain_s0,Xval_s0,yval_s0] = splitTrainValidation(Xtv_s0,y_s0,0.90); 
-
-
-	ytrain_def_s1 = ytrain_s1(:,1);
-	ytrain_loss_s1 = ytrain_s1(:,2);
-	yval_def_s1 = yval_s1(:,1);
-	yval_loss_s1 = yval_s1(:,2); 
-
-	ytrain_def_s0 = ytrain_s0(:,1);
-	ytrain_loss_s0 = ytrain_s0(:,2);
-	yval_def_s0 = yval_s0(:,1);
-	yval_loss_s0 = yval_s0(:,2); 
-	
 	
 	%%%%%%%%%%%%%%%%%%%%%%%% DEFAULT  CLASSIFIER  S1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 	Xtrain = Xtrain_s1;
@@ -176,10 +186,10 @@ for tt = 1:length(srange)
 	%%%%%%%%%%%%% BOOTSTRAP %%%%%%%%%
 	id0 = find(ytrain_loss == 0);
 	id1 = find(ytrain_loss > 0);
-	printf("|--> 0/1 ratio:: %i / 100 .... found id0 - %i , id1- %i ... making equal length ...\n",i,length(id0),length(id1));
+	%printf("|--> 0/1 ratio:: %i / 100 .... found id0 - %i , id1- %i ... making equal length ...\n",i,length(id0),length(id1));
 	r01 = floor( length(id1) * i / 100 ); 
 	id0 = id0(1:r01,:);
-	printf("|--> made length(id0) == %i , length(id1) == %i ...\n",length(id0),length(id1));
+	%printf("|--> made length(id0) == %i , length(id1) == %i ...\n",length(id0),length(id1));
 	Xtrain_boot = [Xtrain(id1,:); Xtrain(id0,:)];
 	ytrain_boot = [ytrain(id1,:); ytrain(id0,:)];
 	
@@ -196,7 +206,7 @@ for tt = 1:length(srange)
 	[all_theta] = oneVsAll(Xtrain_boot, ytrain_def_boot, 1, lambda_log ,800);
 	pval = sigmoid(Xval * all_theta' );
 	[epsilon F1] = selectThreshold(yval_def, pval);
-	fprintf("\n found bestEpsilon: %f       F1:%f      \n",epsilon,F1);
+	%fprintf("\n found bestEpsilon: %f       F1:%f      \n",epsilon,F1);
 	pred_log = (pval > epsilon);
 	acc_log = mean(double(pred_log == yval_def)) * 100;
 	fprintf("\n Logistic classifier S1 - training set accuracy (p=%i,lambda=%f): %f\n", 1,lambda_log,acc_log);
@@ -223,10 +233,10 @@ for tt = 1:length(srange)
 	%%%%%%%%%%%%% BOOTSTRAP %%%%%%%%%
 	id0 = find(ytrain_loss == 0);
 	id1 = find(ytrain_loss > 0);
-	printf("|--> 0/1 ratio:: %i / 100 .... found id0 - %i , id1- %i ... making equal length ...\n",i,length(id0),length(id1));
+	%printf("|--> 0/1 ratio:: %i / 100 .... found id0 - %i , id1- %i ... making equal length ...\n",i,length(id0),length(id1));
 	r01 = floor( length(id1) * i / 100 ); 
 	id0 = id0(1:r01,:);
-	printf("|--> made length(id0) == %i , length(id1) == %i ...\n",length(id0),length(id1));
+	%printf("|--> made length(id0) == %i , length(id1) == %i ...\n",length(id0),length(id1));
 	Xtrain_boot = [Xtrain(id1,:); Xtrain(id0,:)];
 	ytrain_boot = [ytrain(id1,:); ytrain(id0,:)];
 
@@ -243,7 +253,7 @@ for tt = 1:length(srange)
 	[all_theta] = oneVsAll(Xtrain_boot, ytrain_def_boot, 1, lambda_log ,800);
 	pval = sigmoid(Xval * all_theta' );
 	[epsilon F1] = selectThreshold(yval_def, pval);
-	fprintf("\n found bestEpsilon: %f       F1:%f      \n",epsilon,F1);
+	%fprintf("\n found bestEpsilon: %f       F1:%f      \n",epsilon,F1);
 	pred_log = (pval > epsilon);
 	acc_log = mean(double(pred_log == yval_def)) * 100;
 	fprintf("\n Logistic classifier S0 - training set accuracy (p=%i,lambda=%f): %f\n", 1,lambda_log,acc_log);
@@ -270,28 +280,28 @@ for tt = 1:length(srange)
   F1_mean = mean(F1s);
   ACC_mean = mean(ACCs);
   
-  ths(tt) = th;
-  F1s(tt) = F1_mean;
-  ACCs(tt) = ACC_mean;
+  gths(tt) = th;
+  gF1s(tt) = F1_mean;
+  gACCs(tt) = ACC_mean;
   
   fprintf("\n Logistic classifier GLOBAL - END OF THERESOLD %f    F1=%f ACCURACY=%f\n", th, F1_mean, ACC_mean);
   
 endfor 
 
-  [bestF1 , idx] = max(F1s);
-  bestTH = ths(idx);
-  bestACC = ACCs(idx);
+  [bestF1 , idx] = max(gF1s);
+  bestTH = gths(idx);
+  bestACC = gACCs(idx);
   
   fprintf("\n Logistic classifier GLOBAL - best th=%f  F1=%f ACCURACY=%f\n", bestTH, bestF1, bestACC);
   
   %%plot 
-  plot(srange, F1s);
-  text(p_opt+1,J_opt+6,"Optimal Polynomial Degree","fontsize",10);
+  plot(srange, gF1s);
+  %text(p_opt+1,J_opt+6,"Optimal Polynomial Degree","fontsize",10);
   title(sprintf('Segmented Regression'));
   xlabel('Breakpoint X4')
   ylabel('F1-score')
   max_X = max(srange);
-  max_Y = max(F1s);
+  max_Y = max(gF1s);
   axis([0 max_X 0 max_Y]);
   %%legend('Train', 'Cross Validation')
 
