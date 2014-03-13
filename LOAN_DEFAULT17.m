@@ -325,5 +325,3 @@ endfor
   max_Y = max(gMAEs);
   axis([0 max_X 0 max_Y]);
   %%legend('Train', 'Cross Validation')
-
-

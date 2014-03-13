@@ -3,18 +3,18 @@
 %%%% setting enviroment 
 menv;
 
-%%%%%%%%%% SEGMENTED REGRESSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%% SEGMENTED REGRESSION DEFAULT CLASSIFIER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% best th(scaled)=-0.125468 th(not scaled)=0.5 ,  F1=0.745897 ACCURACY=93.749759
 %%%% n1s = 24997 , n0s = 26943
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-trainFile = "train_NO_NA_oct.zat";
-%trainFile = "train_NO_NA_oct_10K.zat"; 
+%trainFile = "train_NO_NA_oct.zat";
+trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 
 %testFile = "test_v2_NA_CI_oct.zat";   
-%testFile = "train_NO_NA_oct_10K.zat";  
-testFile = "test_impute_mean_oct.zat";
+testFile = "train_NO_NA_oct_10K.zat";  
+%testFile = "test_impute_mean_oct.zat";
 
 
 bestMAE = -1; 

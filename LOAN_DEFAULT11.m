@@ -1,18 +1,25 @@
 #! /opt/local/bin/octave -qf 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%% VARIANTE BASE 
+%%%%%%%%%%%%%%%%%%%% FEAT = [270 522 523 403]
+%%%%%%%%%%%%%%%%%%%%  
+%%%%%%%%%%%%%%%%%%%% MAE = 0.75 , 0.76 , 0.76 , 0.76 , 0.76 , 0.73
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%% setting enviroment 
 menv;
 
 REGRESSOR_BOOTSTRAP = 0; 
 
-trainFile = "train_NO_NA_oct.zat";
-%trainFile = "train_NO_NA_oct_10K.zat"; 
+%trainFile = "train_NO_NA_oct.zat";
+trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 
 %testFile = "test_v2_NA_CI_oct.zat";   
 %testFile = "train_NO_NA_oct_10K.zat";  
-%testFile = "train_NO_NA_oct_10K.zat";  
-testFile = "test_impute_mean_oct.zat"
+testFile = "train_NO_NA_oct_10K.zat";  
+%testFile = "test_impute_mean_oct.zat"
 
 
 bestMAE = -1; 
@@ -33,7 +40,7 @@ bestMAE_ACC = -1;
 data = dlmread([curr_dir "/dataset/loan_default/" trainFile]); %%NA clean in R
 data_test = dlmread([curr_dir "/dataset/loan_default/" testFile]);
 
-ll = 100;
+ll = 40;
 maes = zeros(ll,1);
 for (in = 1:ll)
 printf("|--> iteration # %i  ..... FEATURES BUILDING ...\n",in);
@@ -53,7 +60,7 @@ data = data(rand_indices,:);
 
 %FEAT = [270 522 523 620];
 
-FEAT = [270 522 523];
+FEAT = [270 522 523 403];
 
 %CAT_FEAT = [3];
 CAT_FEAT = [-1];
