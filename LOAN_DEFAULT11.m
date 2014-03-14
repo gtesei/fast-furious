@@ -10,16 +10,14 @@
 %%%% setting enviroment 
 menv;
 
-REGRESSOR_BOOTSTRAP = 0; 
-
-%trainFile = "train_NO_NA_oct.zat";
-trainFile = "train_NO_NA_oct_10K.zat"; 
+trainFile = "train_NO_NA_oct.zat";
+%trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 
 %testFile = "test_v2_NA_CI_oct.zat";   
 %testFile = "train_NO_NA_oct_10K.zat";  
-testFile = "train_NO_NA_oct_10K.zat";  
-%testFile = "test_impute_mean_oct.zat"
+%testFile = "train_NO_NA_oct_10K.zat";  
+testFile = "test_impute_mean_oct.zat"
 
 
 bestMAE = -1; 
@@ -58,7 +56,7 @@ data = data(rand_indices,:);
 %FEAT_REG = [270 522   523]; 
 %FEAT_CLASS = [270 522   523];
 
-%FEAT = [270 522 523 620];
+%FEAT = [468 404 759 757];
 
 FEAT = [270 522 523 403];
 
@@ -230,7 +228,7 @@ predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 ids = data_test(:,1);
 sub_comb = [ids predtest_comb];
 
-dlmwrite ('sub_comb_log.csv', sub_comb,",");
+dlmwrite ('sub_comb_log11.csv', sub_comb,",");
 
   
 endif 

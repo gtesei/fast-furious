@@ -1,15 +1,10 @@
 #! /opt/local/bin/octave -qf 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%% Obiettivo di questa variante è valutare performance inserendo più features 
-%%%%%%%%%%%%%%%%%%%% correlate con la differenza 0/1 
-%%%%%%%%%%%%%%%%%%%% FEAT di partenza = [270 522 523 403] .... aggiunti .. 321 280 598 404 ... 
-%%%%%%%%%%%%%%%%%%%% 321 - no 
-%%%%%%%%%%%%%%%%%%%% 280 - 0.77  no 
-%%%%%%%%%%%%%%%%%%%% 598 - 0.74 , 0.72 , 0.74 , 0.76 , 0.75 , 0.75 , 0.74 , 0.74 , 0.71, 0.77 , 0.72 
-%%%%%%%%%%%%%%%%%%%% 598 404 - 0.79 no
-%%%%%%%%%%%%%%%%%%%% 598 758 -  0.85 no 
-%%%%%%%%%%%%%%%%%%%% 598 759 -   0.75 , 0.77 , 
+%%%%%%%%%%%%%%%%%%%% VARIANTE quantilized features 
+%%%%%%%%%%%%%%%%%%%% FEAT = [270 522 523 403]
+%%%%%%%%%%%%%%%%%%%%  
+%%%%%%%%%%%%%%%%%%%% MAE = 0.75 , 0.76 , 0.76 , 0.76 , 0.76 , 0.73
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%% setting enviroment 
@@ -43,7 +38,7 @@ bestMAE_ACC = -1;
 data = dlmread([curr_dir "/dataset/loan_default/" trainFile]); %%NA clean in R
 data_test = dlmread([curr_dir "/dataset/loan_default/" testFile]);
 
-ll = 100;
+ll = 40;
 maes = zeros(ll,1);
 for (in = 1:ll)
 printf("|--> iteration # %i  ..... FEATURES BUILDING ...\n",in);
@@ -61,9 +56,9 @@ data = data(rand_indices,:);
 %FEAT_REG = [270 522   523]; 
 %FEAT_CLASS = [270 522   523];
 
-%FEAT = [270 522 523 620];
+%FEAT = [468 404 759 757];
 
-FEAT = [270 522 523 403 598];
+FEAT = [270 522 523 403];
 
 %CAT_FEAT = [3];
 CAT_FEAT = [-1];
@@ -83,8 +78,37 @@ endfor
 
 %%%%%%%%%%%%%%%
 
-X = [Xtrain; Xtest];
 
+_X = [Xtrain; Xtest];
+
+
+%%%%%%%%%%%%%%%%%% quantilization 
+X = zeros(size(_X,1),size(_X,2));
+qnts = 30; 
+q = quantile (_X, (1/qnts):(1/qnts):1   );
+for col = 1:size(_X,2)
+  for i = 1:length( (1/qnts):(1/qnts):1   ) 
+    %%X(:,col) = X(:,col) + (_X(:,col) >= q(3,col))*5 + (_X(:,col) < q(3,col) & _X(:,col) >= q(2,col)) .* 4  + (_X(:,col) < q(2,col) & _X(:,col) >= q(1,col) )*3 + ( _X(:,col) < q(1,col) ) ;
+    if ( i == 1  ) 
+
+      X(:,col) = X(:,col) + ( _X(:,col) < q(i,col) ) .* 2;
+
+    elseif ( i == length((1/qnts):(1/qnts):1) )
+
+      X(:,col) = X(:,col) + (_X(:,col) >= q(i,col)) .* (i+1);   
+
+    else 
+    
+    X(:,col) = X(:,col) + (_X(:,col) < q(i,col) & _X(:,col) >= q(i-1,col)) .* (i+1)  ; 
+
+    endif 
+
+  endfor 
+endfor
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% end of quantilization 
 mtrain = size(Xtrain,1);
 
 [Xnorm,mu,sigma] = featureNormalize(X);
@@ -233,7 +257,7 @@ predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 ids = data_test(:,1);
 sub_comb = [ids predtest_comb];
 
-dlmwrite ('sub_comb_log16.csv', sub_comb,",");
+dlmwrite ('sub_comb_log11.csv', sub_comb,",");
 
   
 endif 

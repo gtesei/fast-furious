@@ -10,19 +10,17 @@
 %%%% setting enviroment 
 menv;
 
-FREQ1 = 4;
+FREQ1 = 2;
 
 
-REGRESSOR_BOOTSTRAP = 0; 
-
-%trainFile = "train_NO_NA_oct.zat";
-trainFile = "train_NO_NA_oct_10K.zat"; 
+trainFile = "train_NO_NA_oct.zat";
+%trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 
 %testFile = "test_v2_NA_CI_oct.zat";   
 %testFile = "train_NO_NA_oct_10K.zat";  
-testFile = "train_NO_NA_oct_10K.zat";  
-%testFile = "test_impute_mean_oct.zat"
+%testFile = "train_NO_NA_oct_10K.zat";  
+testFile = "test_impute_mean_oct.zat"
 
 
 bestMAE = -1; 
@@ -158,7 +156,7 @@ _pred_log = (pval > epsilon);
 pred_log = zeros(length(_pred_log),1);
 cum1 = 0;
 for ss = 1:length(_pred_log) 
-  if ( _pred_log(ss) == 1 )
+  if ( _pred_log(ss) == 1 & Xval_class(ss,2) > 0.05 )
     cum1 = cum1 + 1;
     if (cum1 == FREQ1)
       pred_log(ss) = 0;
@@ -249,7 +247,7 @@ _predtest_log = (ptval > epsilon);
 predtest_log = zeros(length(_predtest_log),1);
 cum1 = 0;
 for ss = 1:length(_predtest_log) 
-  if ( _predtest_log(ss) == 1 )
+  if ( _predtest_log(ss) == 1 & Xtest_class(ss,2) > 0.05 )
     cum1 = cum1 + 1;
     if (cum1 == FREQ1)
       predtest_log(ss) = 0;
@@ -266,7 +264,7 @@ predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 ids = data_test(:,1);
 sub_comb = [ids predtest_comb];
 
-dlmwrite ('sub_comb_log.csv', sub_comb,",");
+dlmwrite ('sub_comb_log15.csv', sub_comb,",");
 
   
 endif 

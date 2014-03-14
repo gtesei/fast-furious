@@ -16,14 +16,14 @@ rtheta_hash = struct('key', 'value');
 
 REGRESSOR_BOOTSTRAP = 0; 
 
-%trainFile = "train_NO_NA_oct.zat";
-trainFile = "train_NO_NA_oct_10K.zat"; 
+trainFile = "train_NO_NA_oct.zat";
+%trainFile = "train_NO_NA_oct_10K.zat"; 
 %trainFile = "train_v2_NA_CI_oct.zat";
 
 %testFile = "test_v2_NA_CI_oct.zat";   
 %testFile = "train_NO_NA_oct_10K.zat";  
-testFile = "train_NO_NA_oct_10K.zat";  
-%testFile = "test_impute_mean_oct.zat"
+%testFile = "train_NO_NA_oct_10K.zat";  
+testFile = "test_impute_mean_oct.zat"
 
 
 bestMAE = -1; 
@@ -44,7 +44,7 @@ bestMAE_ACC = -1;
 data = dlmread([curr_dir "/dataset/loan_default/" trainFile]); %%NA clean in R
 data_test = dlmread([curr_dir "/dataset/loan_default/" testFile]);
 
-ll = 80;
+ll = 100;
 maes = zeros(ll,1);
 for (in = 1:ll)
 printf("|--> iteration # %i  ..... FEATURES BUILDING ...\n",in);
@@ -234,7 +234,7 @@ predtest_comb = (predtest_log == 0) .* 0 + (predtest_log == 1) .* predtest_loss;
 ids = data_test(:,1);
 sub_comb = [ids predtest_comb];
 
-dlmwrite ('sub_comb_log.csv', sub_comb,",");
+dlmwrite ('sub_comb_log18.csv', sub_comb,",");
 
   
 endif 
