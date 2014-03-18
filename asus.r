@@ -120,16 +120,37 @@ makeCumSales = function(x) {
 	ret
 }
 
+
+treatOutTargetIdMap = function(x) {
+	mods = as.numeric(lapply(strsplit(as.character(x$module_category), "M"), function(x) as.numeric(x[2])))
+	comps = as.numeric(lapply(strsplit(as.character(x$component_category), "P"), function(x) as.numeric(x[2])))
+	modComp = rep(0,length(comps))
+	for (i in 1:length(comps)) {
+		modComp[i] = as.numeric(paste(mods[i],comps[i],sep=''))
+	}	
+	 
+	tt_r = as.yearmon(strptime(   paste(x$year,'/',x$month,'/15',sep='')  , format = '%Y/%m/%d') ) 
+	 	    
+	tr = ( as.yearmon(strptime(   paste(x$year,'/',x$month,'/15',sep='')   , format = '%Y/%m/%d') )  - 
+	      as.yearmon(strptime(   '2005/1/15'                       , format = '%Y/%m/%d') )
+	    ) * 12
+      id = 1:(dim(x)[1])
+	data = data.frame( id , x, modComp, tt_r, tr )
+}
+
+
+
+
 ## load data set 
 repTrainFn = "dataset/pakdd-cup-2014/RepairTrain.csv"
 saleTrainFn = "dataset/pakdd-cup-2014/SaleTrain.csv"
 outTargetIdMapFn = "dataset/pakdd-cup-2014/Output_TargetID_Mapping.csv"
-#sampleSubFn = "dataset/pakdd-cup-2014/SampleSubmission.csv"
+sampleSubFn = "dataset/pakdd-cup-2014/SampleSubmission.csv"
 
 repTrain = read.csv(repTrainFn)
 saleTrain = read.csv(saleTrainFn)
 outTargetIdMap = read.csv(outTargetIdMapFn)
-#sampleSub = read.csv(sampleSubFn)
+sampleSub = read.csv(sampleSubFn)
 
 ## exploration 
 es = exploreSaleTrain(saleTrain)
@@ -142,5 +163,6 @@ plot(st$modComp,st$mu)
 par(mfrow=c(2,1))
 plot(st$modComp,st$mu)
 plot(st$modComp,st$sigma)
+
 
 
