@@ -164,5 +164,5 @@ par(mfrow=c(2,1))
 plot(st$modComp,st$mu)
 plot(st$modComp,st$sigma)
 
-
+outTargetIdMap  = treatOutTargetIdMap(outTargetIdMap)
 
