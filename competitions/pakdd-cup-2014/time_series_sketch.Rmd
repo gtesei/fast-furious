@@ -1,0 +1,149 @@
+Time Series R code sketches 
+========================================================
+
+Chapter 1  - plots, trends and seasonal variantions 
+--------------------------------------------------------
+
+Passengers aggregate annual series and seasonal values
+```{r}
+############# passengers aggregate annual series and seasonal values  
+data(AirPassengers)
+AP = AirPassengers
+par(mfrow=c(3,1))
+plot(AP , ylab = "Passengers (1000's)")
+plot(aggregate(AP) , ylab="Aggregated annual series")
+boxplot(AP ~ cycle(AP) , ylab = "Boxplot of seasonal values")
+```
+
+```{r echo=FALSE}
+hurl <- new.env(hash=T, parent=emptyenv())
+hurl[["maine.dat"]] = "http://elena.aut.ac.nz/~pcowpert/ts/Maine.dat"
+hurl[["wine.dat"]] = "http://elena.aut.ac.nz/~pcowpert/ts/wine.dat"
+
+
+getPerformance = function(pred , val) {
+    res = pred - val
+  	MAE = sum(abs(res)) / length(val) 
+  	RSS = sum(res^2)
+    #TSS = sum(  (val-mean(val) )^2   ) 
+  	MSE = RSS / length(val)
+  	RMSE = sqrt(MSE)
+  	#R2 = 1 - ( RSS  /  TSS )
+  	
+  	perf = data.frame(MAE,RSS,MSE,RMSE)
+}
+```
+
+
+Unemployment in Maine 
+```{r}
+#############  
+www = hurl[['maine.dat']]
+Maine.month = read.table(www,header=T)
+attach(Maine.month)
+Maine.month.ts = ts(unemploy,start=c(1996,1) , freq= 12)
+Maine.annual.ts = aggregate(Maine.month.ts)/12
+par(mfrow=c(2,1))
+plot(Maine.month.ts , ylab="Maine month unemployed %")
+plot(Maine.annual.ts , ylab="Maine annual unemployed %" )
+Maine.Feb = window(Maine.month.ts , start = c(1996,2) , freq = TRUE)
+Maine.Aug = window(Maine.month.ts , start = c(1996,8) , freq = TRUE)
+Feb.ratio = mean(Maine.Feb) / mean(Maine.month.ts)
+Aug.ratio = mean(Maine.Aug) / mean(Maine.month.ts)
+
+Feb.ratio
+Aug.ratio
+
+detach(Maine.month)
+```
+
+Chapter 3  - Holt-Winters
+--------------------------------------------------------
+
+**Sales of Australian wine**
+```{r}
+#############  
+www = hurl[['wine.dat']]
+wine.dat = read.table(www,header=T)
+attach(wine.dat)
+sweetw.ts = ts(sweetw , start = c(1980,1) , freq = 12)
+plot(sweetw.ts , xlab = "Time (months)" , ylab = "sales (1000 liters)" )
+sweetw.hw.mul = HoltWinters(sweetw.ts , seasonal= "mul")
+sweetw.hw.add = HoltWinters(sweetw.ts , seasonal= "add")
+sweetw.hw.mul;sweetw.hw.mul$coef;sweetw.hw.mul$SSE
+sweetw.hw.add;sweetw.hw.add$coef;sweetw.hw.add$SSE
+sqrt(sweetw.hw.mul$SSE/length(sweetw))
+sqrt(sweetw.hw.add$SSE/length(sweetw))
+sd(sweetw)
+plot(sweetw.hw.mul$fitted)
+plot(sweetw.hw.mul)
+plot(sweetw.hw.add$fitted)
+plot(sweetw.hw.add)
+########## HW in action - Australian wine 
+sweetw.train = window(sweetw.ts , end = c(1990,1) ) 
+sweetw.val = window(sweetw.ts , start = c(1990,2) )
+sweetw.hw.mul = HoltWinters(sweetw.train , seasonal= "mul")
+sweetw.hw.add = HoltWinters(sweetw.train , seasonal= "add")
+pred.sweetw.hw.mul = predict( sweetw.hw.mul , n.ahead=length(sweetw.val) ) 
+pred.sweetw.hw.add = predict( sweetw.hw.add , n.ahead=length(sweetw.val) ) 
+
+perf.sweetw.hw.mul = getPerformance(as.vector(pred.sweetw.hw.mul) , as.vector(sweetw.val))
+perf.sweetw.hw.add = getPerformance(as.vector(pred.sweetw.hw.add) , as.vector(sweetw.val))
+
+ts.plot(sweetw.ts,pred.sweetw.hw.mul,lty=1:2, col=1:2, ylab = "multiplicative")
+perf.sweetw.hw.mul
+ts.plot(sweetw.ts,pred.sweetw.hw.add,lty=1:2, col=1:2, ylab = "addictive")
+perf.sweetw.hw.add
+detach(wine.dat)
+```
+
+**Air Passengers data** 
+```{r}
+#############  
+AP.train = window(AP , end = c(1958 , 1) ) 
+AP.val = window(AP , start = c(1958 , 1) ) 
+AP.hw.mul = HoltWinters(AP.train , seasonal="mul")
+AP.hw.add = HoltWinters(AP.train , seasonal="add")
+pred.AP.hw.mul = predict( AP.hw.mul , n.ahead=length(AP.val) ) 
+pred.AP.hw.add = predict( AP.hw.add , n.ahead=length(AP.val) ) 
+
+perf.AP.hw.mul = getPerformance(as.vector(pred.AP.hw.mul) , as.vector(AP.val))
+perf.AP.hw.add = getPerformance(as.vector(pred.AP.hw.add) , as.vector(AP.val))
+
+ts.plot(AP,pred.AP.hw.mul,lty=1:2, col=1:2, ylab = "multiplicative")
+perf.AP.hw.mul
+ts.plot(AP,pred.AP.hw.add,lty=1:2, col=1:2 , ylab = "addictive")
+perf.AP.hw.add
+
+```
+
+
+Chapter 4  - AR(p)
+--------------------------------------------------------
+
+**Sales of Australian wine**
+```{r}
+sweetw.ar = ar(sweetw.train)
+sweetw.ar
+pred.sweetw.ar = predict( sweetw.ar , n.ahead=length(sweetw.val) )
+perf.sweetw.ar = getPerformance(as.vector(pred.sweetw.ar$pred) , as.vector(sweetw.val))
+perf.sweetw.ar
+perf.sweetw.hw.mul
+perf.sweetw.hw.add
+ts.plot(sweetw.ts , pred.sweetw.ar$pred , pred.sweetw.hw.mul , pred.sweetw.hw.add , col=1:4 , lty=1:4 )
+legend("topleft", c("Wine sales", "AR" , "HW mul" , "HW add"), lty=1:4, col=1:4)
+```
+
+**Air Passengers data** 
+```{r}
+AP.ar = ar(AP.train)
+AP.ar
+pred.AP.ar = predict( AP.ar , n.ahead=length(AP.val) )
+perf.AP.ar = getPerformance(as.vector(pred.AP.ar$pred) , as.vector(AP.val))
+perf.AP.ar
+perf.AP.hw.mul
+perf.AP.hw.add
+ts.plot(AP , pred.AP.ar$pred , pred.AP.hw.mul , pred.AP.hw.add , col=1:4 , lty=1:4 )
+legend("topleft", c("Air passengers", "AR" , "HW mul" , "HW add"), lty=1:4, col=1:4)
+```
+
