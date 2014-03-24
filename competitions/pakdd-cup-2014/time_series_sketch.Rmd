@@ -32,6 +32,22 @@ getPerformance = function(pred , val) {
   	
   	perf = data.frame(MAE,RSS,MSE,RMSE)
 }
+
+splitTrainXvat = function( tser , perc_train ) {
+  ntrain = floor(length(as.vector(tser)) * perc_train)
+  nval = length(as.vector(tser)) - ntrain
+
+  #ttrain = window(tser , start=start(tser) , end=start(tser) + ntrain*deltat(tser) )
+  #tval = window(tser ,  start = end(ttrain) + deltat(tser) )
+  
+  ttrain = ts(tser[1:ntrain] , start = start(tser) , frequency=frequency(tser) )
+  tval = ts(tser[ntrain+1:nval] , start=end(ttrain) + deltat(tser) , frequency=frequency(tser))
+  
+  stopifnot ( length(ttrain) == ntrain)
+  stopifnot ( length(tval) == nval)
+  
+  list(ttrain , tval)
+}
 ```
 
 
@@ -80,8 +96,11 @@ plot(sweetw.hw.mul)
 plot(sweetw.hw.add$fitted)
 plot(sweetw.hw.add)
 ########## HW in action - Australian wine 
-sweetw.train = window(sweetw.ts , end = c(1990,1) ) 
-sweetw.val = window(sweetw.ts , start = c(1990,2) )
+data = splitTrainXvat(sweetw.ts , 0.7)
+#sweetw.train = window(sweetw.ts , end = c(1990,1) ) 
+#sweetw.val = window(sweetw.ts , start = c(1990,2) )
+sweetw.train = data[[1]]
+sweetw.val = data[[2]]
 sweetw.hw.mul = HoltWinters(sweetw.train , seasonal= "mul")
 sweetw.hw.add = HoltWinters(sweetw.train , seasonal= "add")
 pred.sweetw.hw.mul = predict( sweetw.hw.mul , n.ahead=length(sweetw.val) ) 
@@ -100,8 +119,11 @@ detach(wine.dat)
 **Air Passengers data** 
 ```{r}
 #############  
-AP.train = window(AP , end = c(1958 , 1) ) 
-AP.val = window(AP , start = c(1958 , 1) ) 
+#AP.train = window(AP , end = c(1958 , 1) ) 
+#AP.val = window(AP , start = c(1958 , 1) ) 
+data = splitTrainXvat(AP , 0.7)
+AP.train = data[[1]]
+AP.val = data[[2]]
 AP.hw.mul = HoltWinters(AP.train , seasonal="mul")
 AP.hw.add = HoltWinters(AP.train , seasonal="add")
 pred.AP.hw.mul = predict( AP.hw.mul , n.ahead=length(AP.val) ) 
@@ -147,3 +169,167 @@ ts.plot(AP , pred.AP.ar$pred , pred.AP.hw.mul , pred.AP.hw.add , col=1:4 , lty=1
 legend("topleft", c("Air passengers", "AR" , "HW mul" , "HW add"), lty=1:4, col=1:4)
 ```
 
+Chapter 5  - Regression
+--------------------------------------------------------
+
+**Sales of Australian wine**
+```{r}
+Seas = cycle(sweetw.train)
+Time = time(sweetw.train)
+sweetw.reg = lm(sweetw.train ~ Time ) 
+sweetw.reg
+sweetw.reg.2 = lm(sweetw.train ~ 0 + Time + factor(Seas) ) 
+sweetw.reg.2
+#### Harmonic model fitted 
+SIN = COS = matrix(nr = length(sweetw.train) , nc = 6)
+for (i in 1:6) {
+  COS[,i] = cos(2*pi*i*Time)
+  SIN[,i] = sin(2*pi*i*Time)
+}
+#Tscal = (Time - mean(Time)) / sd(Time)
+Tscal = Time 
+sweetw.reg.3.all = lm(sweetw.train ~ Time + I(Time^2) 
+                  + COS[,1] + SIN[,1] + COS[,2] + SIN[,2] 
+                  + COS[,3] + SIN[,3] + COS[,4] + SIN[,4] 
+                  + COS[,5] + SIN[,5] + COS[,4] + SIN[,4] )
+coef(sweetw.reg.3.all) / sqrt(diag(vcov(sweetw.reg.3.all)))
+sweetw.reg.3 = lm(sweetw.train ~ Tscal + I(Tscal^2) + SIN[, 1] + SIN[, 2] + SIN[, 3] )
+coef(sweetw.reg.3)
+AIC(sweetw.reg)
+AIC(sweetw.reg.2)
+AIC(sweetw.reg.3.all)
+AIC(sweetw.reg.3)
+plot(Tscal , resid(sweetw.reg.3) , type="l")
+abline(0,0,col="red")
+acf(resid(sweetw.reg.3))
+pacf(resid(sweetw.reg.3))
+sweetw.reg.3.res.ar = ar(resid(sweetw.reg.3) , method="mle")
+sweetw.reg.3.res.ar$order
+sweetw.reg.3.res.ar$ar
+sd(sweetw.reg.3.res.ar$res[-(1:sweetw.reg.3.res.ar$order)])
+acf(sweetw.reg.3.res.ar$res[-(1:sweetw.reg.3.res.ar$order)])
+#### end of Harmonic model fitted 
+new.t = as.vector(time(sweetw.val))
+pred.sweetw.reg = sweetw.reg$coeff[1] + sweetw.reg$coeff[2] * new.t
+beta = c(rep(coef(sweetw.reg.2)[2:13] , floor (length(sweetw.val)/12) ) , coef(sweetw.reg.2)[2:((length(sweetw.val) %% 12)+1)] )
+pred.sweetw.reg.2 = sweetw.reg.2$coeff[1]*new.t + beta 
+
+####### prediction of Harmonic model fitted 
+Time.val = time(sweetw.val)
+SIN = COS = matrix(nr = length(sweetw.val) , nc = 6)
+for (i in 1:6) {
+  COS[,i] = cos(2*pi*i*Time.val)
+  SIN[,i] = sin(2*pi*i*Time.val)
+}
+#new.t.scal = (Time.val - mean(Time.val)) / sd(Time.val)
+new.t.scal = Time.val
+pred.sweetw.reg.3.res.ar = predict( sweetw.reg.3.res.ar , n.ahead=length(sweetw.val) )
+pred.sweetw.reg.3 = sweetw.reg.3$coeff[1] + sweetw.reg.3$coeff[2] * new.t.scal +  
+  sweetw.reg.3$coeff[3] * I(new.t.scal^2) + sweetw.reg.3$coeff[4] * SIN[, 1] + 
+  sweetw.reg.3$coeff[5] * SIN[, 2] + sweetw.reg.3$coeff[6] * SIN[, 3] 
+pred.sweetw.reg.3.res.ar = as.vector(pred.sweetw.reg.3) + as.vector(pred.sweetw.reg.3.res.ar$pred)
+####### end of prediction of Harmonic model fitted 
+perf.sweetw.reg = getPerformance(as.vector(pred.sweetw.reg) , as.vector(sweetw.val) )
+perf.sweetw.reg.2 = getPerformance(as.vector(pred.sweetw.reg.2) , as.vector(sweetw.val) )
+perf.sweetw.reg.3 = getPerformance(as.vector(pred.sweetw.reg.3) , as.vector(sweetw.val) )
+perf.sweetw.reg.3.res.ar = getPerformance(as.vector(pred.sweetw.reg.3.res.ar) , as.vector(sweetw.val) )
+perf.sweetw.reg
+perf.sweetw.reg.2
+perf.sweetw.reg.3
+perf.sweetw.reg.3.res.ar
+
+perf.sweetw.ar
+perf.sweetw.hw.mul
+perf.sweetw.hw.add
+ts.plot(sweetw.ts , pred.sweetw.ar$pred , pred.sweetw.hw.mul , pred.sweetw.hw.add , 
+        ts(pred.sweetw.reg , start=start(sweetw.val) , frequency=frequency(sweetw.val)), 
+        ts(pred.sweetw.reg.2 , start=start(sweetw.val) , frequency=frequency(sweetw.val)) , 
+        ts(pred.sweetw.reg.3 , start=start(sweetw.val) , frequency=frequency(sweetw.val)) ,
+        ts(pred.sweetw.reg.3.res.ar , start=start(sweetw.val) , frequency=frequency(sweetw.val)) ,
+        col=1:8 , lty=1:8 )
+legend("topleft", c("Wine sales", "AR" , "HW mul" , "HW add" , "Reg" , "Reg2" , "Reg3" , "Reg3.res.ar"), 
+      lty=1:8, col=1:8)
+```
+
+**Air Passengers data** 
+```{r}
+Seas = cycle(AP.train)
+Time = time(AP.train)
+AP.reg = lm(AP.train ~ Time ) 
+AP.reg
+AP.reg.2 = lm(AP.train ~ 0 + Time + factor(Seas) ) 
+AP.reg.2
+#### Harmonic model fitted 
+SIN = COS = matrix(nr = length(AP.train) , nc = 6)
+for (i in 1:6) {
+  COS[,i] = cos(2*pi*i*Time)
+  SIN[,i] = sin(2*pi*i*Time)
+}
+#Tscal = (Time - mean(Time)) / sd(Time)
+Tscal = Time 
+AP.reg.3.all = lm(AP.train ~ Time + I(Time^2) +
+                  + COS[,1] + SIN[,1] + COS[,2] + SIN[,2] 
+                  + COS[,3] + SIN[,3] + COS[,4] + SIN[,4] 
+                  + COS[,5] + SIN[,5] + COS[,4] + SIN[,4] )
+coef(AP.reg.3.all) / sqrt(diag(vcov(AP.reg.3.all)))
+AP.reg.3 = lm(AP.train ~ Tscal + I(Tscal^2) + COS[, 1] + SIN[, 1] + COS[, 2] + 
+                SIN[, 2] + SIN[, 3] + SIN[, 4] + SIN[, 5]  )
+coef(AP.reg.3)
+AIC(AP.reg)
+AIC(AP.reg.2)
+AIC(AP.reg.3.all)
+AIC(AP.reg.3)
+plot(Tscal , resid(AP.reg.3) , type="l")
+abline(0,0,col="red")
+acf(resid(AP.reg.3))
+pacf(resid(AP.reg.3))
+AP.reg.3.res.ar = ar(resid(AP.reg.3) , method="mle")
+AP.reg.3.res.ar$order
+AP.reg.3.res.ar$ar
+sd(AP.reg.3.res.ar$res[-(1:AP.reg.3.res.ar$order)])
+acf(AP.reg.3.res.ar$res[-(1:AP.reg.3.res.ar$order)])
+#### end of Harmonic model fitted 
+
+new.t = as.vector(time(AP.val))
+pred.AP.reg = AP.reg$coeff[1] + AP.reg$coeff[2] * new.t
+beta = c(rep(coef(AP.reg.2)[2:13] , floor (length(AP.val)/12) ) , coef(AP.reg.2)[2:((length(AP.val) %% 12)+1)] )
+pred.AP.reg.2 = AP.reg.2$coeff[1]*new.t + beta 
+perf.AP.reg = getPerformance(as.vector(pred.AP.reg) , as.vector(AP.val) )
+perf.AP.reg.2 = getPerformance(as.vector(pred.AP.reg.2) , as.vector(AP.val) )
+perf.AP.reg
+perf.AP.reg.2
+####### prediction of Harmonic model fitted 
+Time.val = time(AP.val)
+SIN = COS = matrix(nr = length(AP.val) , nc = 6)
+for (i in 1:6) {
+  COS[,i] = cos(2*pi*i*Time.val)
+  SIN[,i] = sin(2*pi*i*Time.val)
+}
+#new.t.scal = (Time.val - mean(Time.val)) / sd(Time.val)
+new.t.scal = Time.val
+pred.AP.reg.3.res.ar = predict( AP.reg.3.res.ar , n.ahead=length(AP.val) )
+pred.AP.reg.3 = AP.reg.3$coeff[1] + AP.reg.3$coeff[2] * new.t.scal +  
+  AP.reg.3$coeff[3] * I(new.t.scal^2) + AP.reg.3$coeff[4] * COS[, 1] +
+  AP.reg.3$coeff[5] * SIN[, 1] + AP.reg.3$coeff[6] * COS[, 2] + 
+  AP.reg.3$coeff[7] * SIN[, 2] + AP.reg.3$coeff[8] * SIN[, 3] + 
+  AP.reg.3$coeff[9] * SIN[, 4] + AP.reg.3$coeff[10] * SIN[, 5] 
+pred.AP.reg.3.res.ar = as.vector(pred.AP.reg.3) + as.vector(pred.AP.reg.3.res.ar$pred)
+####### end of prediction of Harmonic model fitted 
+perf.AP.reg.3 = getPerformance(as.vector(pred.AP.reg.3) , as.vector(AP.val) )
+perf.AP.reg.3.res.ar = getPerformance(as.vector(pred.AP.reg.3.res.ar) , as.vector(AP.val) )
+perf.AP.reg.3
+perf.AP.reg.3.res.ar
+AP.ar = ar(AP.train)
+AP.ar
+perf.AP.ar
+perf.AP.hw.mul
+perf.AP.hw.add
+ts.plot(AP , pred.AP.ar$pred , pred.AP.hw.mul , pred.AP.hw.add , 
+        ts(pred.AP.reg , start=start(AP.val) , frequency=frequency(AP.val)), 
+        ts(pred.AP.reg.2 , start=start(AP.val) , frequency=frequency(AP.val)) , 
+        ts(pred.AP.reg.3 , start=start(AP.val) , frequency=frequency(AP.val)) ,
+        ts(pred.AP.reg.3.res.ar , start=start(AP.val) , frequency=frequency(AP.val)) ,
+        col=1:8 , lty=1:8 )
+legend("topleft", c("Air passengers", "AR" , "HW mul" , "HW add", "Reg1" , "Reg2", "Reg3" , "Reg3.res.ar"), 
+       lty=1:8, col=1:8)
+```

@@ -142,10 +142,10 @@ treatOutTargetIdMap = function(x) {
 
 
 ## load data set 
-repTrainFn = "dataset/pakdd-cup-2014/RepairTrain.csv"
-saleTrainFn = "dataset/pakdd-cup-2014/SaleTrain.csv"
-outTargetIdMapFn = "dataset/pakdd-cup-2014/Output_TargetID_Mapping.csv"
-sampleSubFn = "dataset/pakdd-cup-2014/SampleSubmission.csv"
+repTrainFn = "dataset/pakdd-cup-2014/RepairTrain.zat"
+saleTrainFn = "dataset/pakdd-cup-2014/SaleTrain.zat"
+outTargetIdMapFn = "dataset/pakdd-cup-2014/Output_TargetID_Mapping.zat"
+sampleSubFn = "dataset/pakdd-cup-2014/SampleSubmission.zat"
 
 repTrain = read.csv(repTrainFn)
 saleTrain = read.csv(saleTrainFn)
