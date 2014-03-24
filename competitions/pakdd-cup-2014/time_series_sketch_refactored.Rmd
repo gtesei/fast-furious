@@ -1,0 +1,167 @@
+Time Series R code sketches - REFACTORED 
+========================================================
+
+Refactored version.  
+
+Commons  
+--------------------------------------------------------
+**Commons**
+
+```{r echo=FALSE}
+
+########################### data 
+hurl <- new.env(hash=T, parent=emptyenv())
+hurl[["maine.dat"]] = "http://elena.aut.ac.nz/~pcowpert/ts/Maine.dat"
+hurl[["wine.dat"]] = "http://elena.aut.ac.nz/~pcowpert/ts/wine.dat"
+
+data(AirPassengers)
+AP = AirPassengers
+
+########################### functions 
+get.best.arima <- function(x.ts, maxord = c(1,1,1,1,1,1))
+  {
+  best.aic <- 1e8
+  n <- length(x.ts)
+  for (p in 0:maxord[1]) for(d in 0:maxord[2]) for(q in 0:maxord[3])
+    for (P in 0:maxord[4]) for(D in 0:maxord[5]) for(Q in 0:maxord[6])
+      {
+      fit <- arima(x.ts, order = c(p,d,q),
+                   seas = list(order = c(P,D,Q),
+                               frequency(x.ts)), method = "CSS")
+      fit.aic <- -2 * fit$loglik + (log(n) + 1) * length(fit$coef)
+      if (fit.aic < best.aic)
+        {
+        
+        best.aic <- fit.aic
+        best.fit <- fit
+        best.model <- c(p,d,q,P,D,Q)
+        }
+      }
+  list(best.aic, best.fit, best.model)
+  }
+
+#### Harmonic model fitted 
+buildHarmonicModel = function(myts) {   
+  SIN = COS = matrix(nr = length(sweetw.train) , nc = 6)
+  for (i in 1:6) {
+    COS[,i] = cos(2*pi*i*Time)
+    SIN[,i] = sin(2*pi*i*Time)
+    }
+  #Tscal = (Time - mean(Time)) / sd(Time)
+  Tscal = Time 
+  sweetw.reg.3.all = lm(sweetw.train ~ Time + I(Time^2) 
+                        + COS[,1] + SIN[,1] + COS[,2] + SIN[,2] 
+                        + COS[,3] + SIN[,3] + COS[,4] + SIN[,4] 
+                        + COS[,5] + SIN[,5] + COS[,4] + SIN[,4] )
+  coef(sweetw.reg.3.all) / sqrt(diag(vcov(sweetw.reg.3.all)))
+  sweetw.reg.3 = lm(sweetw.train ~ Tscal + I(Tscal^2) + SIN[, 1] + SIN[, 2] + SIN[, 3] )
+  coef(sweetw.reg.3)
+  AIC(sweetw.reg)
+  AIC(sweetw.reg.2)
+  AIC(sweetw.reg.3.all)
+  AIC(sweetw.reg.3)
+  plot(Tscal , resid(sweetw.reg.3) , type="l")
+  abline(0,0,col="red")
+  acf(resid(sweetw.reg.3))
+  pacf(resid(sweetw.reg.3))
+  sweetw.reg.3.res.ar = ar(resid(sweetw.reg.3) , method="mle")
+  sweetw.reg.3.res.ar$order
+  sweetw.reg.3.res.ar$ar
+  sd(sweetw.reg.3.res.ar$res[-(1:sweetw.reg.3.res.ar$order)])
+  acf(sweetw.reg.3.res.ar$res[-(1:sweetw.reg.3.res.ar$order)])
+  }
+#### end of Harmonic model fitted 
+
+
+getPerformance = function(pred , val) {
+    res = pred - val
+    MAE = sum(abs(res)) / length(val) 
+  	RSS = sum(res^2)
+    #TSS = sum(  (val-mean(val) )^2   ) 
+  	MSE = RSS / length(val)
+  	RMSE = sqrt(MSE)
+  	#R2 = 1 - ( RSS  /  TSS )
+  	
+  	perf = data.frame(MAE,RSS,MSE,RMSE)
+}
+
+splitTrainXvat = function( tser , perc_train ) {
+  ntrain = floor(length(as.vector(tser)) * perc_train)
+  nval = length(as.vector(tser)) - ntrain
+
+  #ttrain = window(tser , start=start(tser) , end=start(tser) + ntrain*deltat(tser) )
+  #tval = window(tser ,  start = end(ttrain) + deltat(tser) )
+  
+  ttrain = ts(tser[1:ntrain] , start = start(tser) , frequency=frequency(tser) )
+  tval = ts(tser[ntrain+1:nval] , start=end(ttrain) + deltat(tser) , frequency=frequency(tser))
+  
+  stopifnot ( length(ttrain) == ntrain)
+  stopifnot ( length(tval) == nval)
+  
+  list(ttrain , tval)
+}
+```
+
+**Sales of Australian wine**
+```{r}
+#############  
+www = hurl[['wine.dat']]
+wine.dat = read.table(www,header=T)
+attach(wine.dat)
+sweetw.ts = ts(sweetw , start = c(1980,1) , freq = 12)
+Seas = cycle(sweetw.train)
+Time = time(sweetw.train)
+
+data = splitTrainXvat(sweetw.ts , 0.7)
+sweetw.train = data[[1]]
+sweetw.val = data[[2]]
+sweetw.hw.mul = HoltWinters(sweetw.train , seasonal= "mul")
+sweetw.hw.add = HoltWinters(sweetw.train , seasonal= "add")
+pred.sweetw.hw.mul = predict( sweetw.hw.mul , n.ahead=length(sweetw.val) ) 
+pred.sweetw.hw.add = predict( sweetw.hw.add , n.ahead=length(sweetw.val) ) 
+perf.sweetw.hw.mul = getPerformance(as.vector(pred.sweetw.hw.mul) , as.vector(sweetw.val))
+perf.sweetw.hw.add = getPerformance(as.vector(pred.sweetw.hw.add) , as.vector(sweetw.val))
+perf.sweetw.hw.mul
+perf.sweetw.hw.add
+sweetw.reg = lm(sweetw.train ~ Time ) 
+sweetw.reg
+sweetw.reg.2 = lm(sweetw.train ~ 0 + Time + factor(Seas) ) 
+sweetw.reg.2
+
+
+new.t = as.vector(time(sweetw.val))
+pred.sweetw.reg = sweetw.reg$coeff[1] + sweetw.reg$coeff[2] * new.t
+beta = c(rep(coef(sweetw.reg.2)[2:13] , floor (length(sweetw.val)/12) ) , coef(sweetw.reg.2)[2:((length(sweetw.val) %% 12)+1)] )
+pred.sweetw.reg.2 = sweetw.reg.2$coeff[1]*new.t + beta 
+
+####### prediction of Harmonic model fitted 
+Time.val = time(sweetw.val)
+SIN = COS = matrix(nr = length(sweetw.val) , nc = 6)
+for (i in 1:6) {
+  COS[,i] = cos(2*pi*i*Time.val)
+  SIN[,i] = sin(2*pi*i*Time.val)
+}
+#new.t.scal = (Time.val - mean(Time.val)) / sd(Time.val)
+new.t.scal = Time.val
+pred.sweetw.reg.3.res.ar = predict( sweetw.reg.3.res.ar , n.ahead=length(sweetw.val) )
+pred.sweetw.reg.3 = sweetw.reg.3$coeff[1] + sweetw.reg.3$coeff[2] * new.t.scal +  
+  sweetw.reg.3$coeff[3] * I(new.t.scal^2) + sweetw.reg.3$coeff[4] * SIN[, 1] + 
+  sweetw.reg.3$coeff[5] * SIN[, 2] + sweetw.reg.3$coeff[6] * SIN[, 3] 
+pred.sweetw.reg.3.res.ar = as.vector(pred.sweetw.reg.3) + as.vector(pred.sweetw.reg.3.res.ar$pred)
+####### end of prediction of Harmonic model fitted 
+perf.sweetw.reg = getPerformance(as.vector(pred.sweetw.reg) , as.vector(sweetw.val) )
+perf.sweetw.reg.2 = getPerformance(as.vector(pred.sweetw.reg.2) , as.vector(sweetw.val) )
+perf.sweetw.reg.3 = getPerformance(as.vector(pred.sweetw.reg.3) , as.vector(sweetw.val) )
+perf.sweetw.reg.3.res.ar = getPerformance(as.vector(pred.sweetw.reg.3.res.ar) , as.vector(sweetw.val) )
+perf.sweetw.reg
+perf.sweetw.reg.2
+perf.sweetw.reg.3
+perf.sweetw.reg.3.res.ar
+
+perf.sweetw.ar
+perf.sweetw.hw.mul
+perf.sweetw.hw.add
+
+
+detach(wine.dat)
+```

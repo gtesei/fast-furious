@@ -21,6 +21,30 @@ hurl[["maine.dat"]] = "http://elena.aut.ac.nz/~pcowpert/ts/Maine.dat"
 hurl[["wine.dat"]] = "http://elena.aut.ac.nz/~pcowpert/ts/wine.dat"
 
 
+
+get.best.arima <- function(x.ts, maxord = c(1,1,1,1,1,1))
+  {
+  best.aic <- 1e8
+  n <- length(x.ts)
+  for (p in 0:maxord[1]) for(d in 0:maxord[2]) for(q in 0:maxord[3])
+    for (P in 0:maxord[4]) for(D in 0:maxord[5]) for(Q in 0:maxord[6])
+      {
+      fit <- arima(x.ts, order = c(p,d,q),
+                   seas = list(order = c(P,D,Q),
+                               frequency(x.ts)), method = "CSS")
+      fit.aic <- -2 * fit$loglik + (log(n) + 1) * length(fit$coef)
+      if (fit.aic < best.aic)
+        {
+        
+        best.aic <- fit.aic
+        best.fit <- fit
+        best.model <- c(p,d,q,P,D,Q)
+        }
+      }
+  list(best.aic, best.fit, best.model)
+  }
+
+
 getPerformance = function(pred , val) {
     res = pred - val
   	MAE = sum(abs(res)) / length(val) 
@@ -332,4 +356,124 @@ ts.plot(AP , pred.AP.ar$pred , pred.AP.hw.mul , pred.AP.hw.add ,
         col=1:8 , lty=1:8 )
 legend("topleft", c("Air passengers", "AR" , "HW mul" , "HW add", "Reg1" , "Reg2", "Reg3" , "Reg3.res.ar"), 
        lty=1:8, col=1:8)
+```
+
+Chapter 7  - SARIMA
+--------------------------------------------------------
+**Sales of Australian wine**
+```{r}
+Seas = cycle(sweetw.train)
+Time = time(sweetw.train)
+sweetw.reg = lm(sweetw.train ~ Time ) 
+sweetw.reg
+sweetw.reg.2 = lm(sweetw.train ~ 0 + Time + factor(Seas) ) 
+sweetw.reg.2
+#### ARIMA model
+best.arima <- get.best.arima( sweetw.train, maxord = c(2,2,2,2,2,2))
+sweetw.arima <- best.arima[[2]]
+acf( resid(sweetw.arima) )
+best.arima[[3]]
+
+best.arima.log <- get.best.arima( log(sweetw.train), maxord = c(2,2,2,2,2,2))
+sweetw.arima.log <- best.arima.log[[2]]
+acf( resid(sweetw.arima.log) )
+best.arima.log[[3]]
+#### end of ARIMA model 
+new.t = as.vector(time(sweetw.val))
+pred.sweetw.reg = sweetw.reg$coeff[1] + sweetw.reg$coeff[2] * new.t
+beta = c(rep(coef(sweetw.reg.2)[2:13] , floor (length(sweetw.val)/12) ) , coef(sweetw.reg.2)[2:((length(sweetw.val) %% 12)+1)] )
+pred.sweetw.reg.2 = sweetw.reg.2$coeff[1]*new.t + beta 
+####### prediction of ARIMA
+pred.sweetw.arima <- predict(sweetw.arima, n.ahead = length(sweetw.val))$pred
+pred.sweetw.arima.log <- exp(predict(sweetw.arima.log, n.ahead = length(sweetw.val))$pred)
+####### end of ARIMA 
+perf.sweetw.arima = getPerformance(as.vector(pred.sweetw.arima) , as.vector(sweetw.val) )
+perf.sweetw.arima.log = getPerformance(as.vector(pred.sweetw.arima.log) , as.vector(sweetw.val) )
+
+perf.sweetw.reg
+perf.sweetw.reg.2
+perf.sweetw.reg.3
+perf.sweetw.reg.3.res.ar
+perf.sweetw.arima
+perf.sweetw.arima.log
+
+perf.sweetw.ar
+perf.sweetw.hw.mul
+perf.sweetw.hw.add
+ts.plot(sweetw.ts , pred.sweetw.ar$pred , pred.sweetw.hw.mul , pred.sweetw.hw.add , 
+        #ts(pred.sweetw.reg , start=start(sweetw.val) , frequency=frequency(sweetw.val)), 
+        #ts(pred.sweetw.reg.2 , start=start(sweetw.val) , frequency=frequency(sweetw.val)) , 
+        #ts(pred.sweetw.reg.3 , start=start(sweetw.val) , frequency=frequency(sweetw.val)) ,
+        #ts(pred.sweetw.reg.3.res.ar , start=start(sweetw.val) , frequency=frequency(sweetw.val)) ,
+        ts(pred.sweetw.arima , start=start(sweetw.val) , frequency=frequency(sweetw.val)) ,
+        ts(pred.sweetw.arima.log , start=start(sweetw.val) , frequency=frequency(sweetw.val)) ,
+        col=1:6 , lty=1:6 )
+legend("topleft", c("Wine sales", "AR" , "HW mul" , "HW add" , 
+                    #"Reg" , 
+                    #"Reg2" , 
+                    #"Reg3" , 
+                    #"Reg3.res.ar" , 
+                    "SARIMA" , 
+                    "SARIMA.log"), 
+      lty=1:6, col=1:6)
+```
+
+**Air Passengers data** 
+```{r}
+Seas = cycle(AP.train)
+Time = time(AP.train)
+AP.reg = lm(AP.train ~ Time ) 
+AP.reg
+AP.reg.2 = lm(AP.train ~ 0 + Time + factor(Seas) ) 
+AP.reg.2
+#### SARIMA model fitted 
+AP.best.arima <- get.best.arima( AP.train, maxord = c(2,2,2,2,2,2))
+AP.arima <- AP.best.arima[[2]]
+acf( resid(AP.arima) )
+AP.best.arima[[3]]
+
+AP.best.arima.log <- get.best.arima( log(AP.train), maxord = c(2,2,2,2,2,2))
+AP.arima.log <- AP.best.arima.log[[2]]
+acf( resid(AP.arima.log) )
+AP.best.arima.log[[3]]
+#### end of SARIMA model fitted 
+
+new.t = as.vector(time(AP.val))
+pred.AP.reg = AP.reg$coeff[1] + AP.reg$coeff[2] * new.t
+beta = c(rep(coef(AP.reg.2)[2:13] , floor (length(AP.val)/12) ) , coef(AP.reg.2)[2:((length(AP.val) %% 12)+1)] )
+pred.AP.reg.2 = AP.reg.2$coeff[1]*new.t + beta 
+perf.AP.reg = getPerformance(as.vector(pred.AP.reg) , as.vector(AP.val) )
+perf.AP.reg.2 = getPerformance(as.vector(pred.AP.reg.2) , as.vector(AP.val) )
+perf.AP.reg
+perf.AP.reg.2
+####### prediction of SARIMA
+pred.AP.arima <- predict(AP.arima, n.ahead = length(AP.val))$pred
+pred.AP.arima.log <- exp(predict(AP.arima.log, n.ahead = length(AP.val))$pred)
+####### end of prediction of SARIMA
+perf.AP.arima = getPerformance(as.vector(pred.AP.arima) , as.vector(AP.val) )
+perf.AP.arima.log = getPerformance(as.vector(pred.AP.arima.log) , as.vector(AP.val) )
+
+
+perf.AP.reg.3
+perf.AP.reg.3.res.ar
+AP.ar = ar(AP.train)
+AP.ar
+perf.AP.ar
+perf.AP.hw.mul
+perf.AP.hw.add
+perf.AP.arima
+perf.AP.arima.log
+
+ts.plot(AP , pred.AP.ar$pred , pred.AP.hw.mul , pred.AP.hw.add , 
+        #ts(pred.AP.reg , start=start(AP.val) , frequency=frequency(AP.val)), 
+        #ts(pred.AP.reg.2 , start=start(AP.val) , frequency=frequency(AP.val)) , 
+        #ts(pred.AP.reg.3 , start=start(AP.val) , frequency=frequency(AP.val)) ,
+        #ts(pred.AP.reg.3.res.ar , start=start(AP.val) , frequency=frequency(AP.val)) ,
+        ts(pred.AP.arima , start=start(AP.val) , frequency=frequency(AP.val)) ,
+        ts(pred.AP.arima.log , start=start(AP.val) , frequency=frequency(AP.val)) ,
+        col=1:6 , lty=1:6 )
+legend("topleft", c("Air passengers", "AR" , "HW mul" , "HW add", 
+                    #"Reg1" , "Reg2", "Reg3" , "Reg3.res.ar"
+                    "SARIMA" , "SARIMA.log"), 
+       lty=1:6, col=1:6)
 ```
