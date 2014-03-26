@@ -287,13 +287,27 @@ makeCumSales = function(x) {
 	
 	umodComp = unique(data$modComp)
 	cum = matrix(  1:(38*length(umodComp)*3) , ncol=3 , nrow=38*length(umodComp) )
+
+      ####init
+	rrow = 1
+	for (mod in umodComp) {
+		for (m in 0:37) {
+		  cum[rrow , 1] = mod
+		  cum[rrow , 2] = m
+		  cum[rrow , 3] = 0 		  
+		  rrow = rrow + 1
+		}
+	}
+		
+	#### fill matrix
 	rrow = 1
 	for (mod in umodComp) {
 		for (m in 0:37) {
 		  cum[rrow , 1] = mod
 		  cum[rrow , 2] = m
 		  ## NB: consideriamo le vendite cumulate al netto dei ritiri (=sales_log < 0)
-		  cum[rrow , 3] = ifelse(m>0,cum[ (rrow-1), 3] + sum(data[data$modComp == mod & data$t == m , 4  ]) , sum(data[data$modComp == mod & data$t == m , 4  ]) ) 		  
+		  ##cum[rrow , 3] = ifelse(m>0,cum[ (rrow-1), 3] + sum(data[data$modComp == mod & data$t == m , 4  ]) , sum(data[data$modComp == mod & data$t == m , 4  ]) ) 		
+              cum[rrow , 3] = sum(data[data$modComp == mod & data$t <= (m+0.5) & data$t > (m-0.5) , 5  ])  		  
 		  rrow = rrow + 1
 		}
 	}
