@@ -28,8 +28,8 @@ get.best.arima <- function(x.ts, maxord = c(1,1,1,1,1,1))
     for (P in 0:maxord[4]) for(D in 0:maxord[5]) for(Q in 0:maxord[6])
       {
       fit <- arima(x.ts, order = c(p,d,q),
-                   seas = list(order = c(P,D,Q),
-                               frequency(x.ts)), method = "CSS")
+                   seas = list(order = c(P,D,Q),  
+                               frequency(x.ts)), method = "CSS" )
       fit.aic <- -2 * fit$loglik + (log(n) + 1) * length(fit$coef)
       if (fit.aic < best.aic)
         {
@@ -212,15 +212,44 @@ splitTrainXvat = function( tser , perc_train ) {
 
 **M2 P24**
 ```{r,warning=F} 
-www = "C:/docs/ff/gitHub/fast-furious/dataset/pakdd-cup-2014/cr.csv"
+##www = "C:/docs/ff/gitHub/fast-furious/dataset/pakdd-cup-2014/cr.csv"
+www = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/pakdd-cup-2014/cr.csv"
+www2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/pakdd-cup-2014/cs.csv"
 cr = read.csv(www)
+cs = read.csv(www2)
+
 cr224 = cr[cr$modComp == 224,]
+cr224$cum_repairs = cr224$cum_repairs + 1
 cr224.ts = ts(cr224$cum_repairs, start = c(2005, 2), freq = 12)
-cr224.ts = window(cr224.ts , start=c(2007,4) , frequency=12 )
+#cr224.ts = window(cr224.ts , start=c(2007,4) , frequency=12 )
 ts.plot(cr224.ts)
 data = splitTrainXvat(cr224.ts, 0.7)
 ts.train = data[[1]]
 ts.val = data[[2]]
+
+i = 0
+for (c in unique(cs$modComp)) {
+  print(c)
+  cri = cr[cr$modComp == c,]
+  csi = cs[cs$modComp == c,]
+  
+  cri.ts = ts(cri$cum_repairs, start = c(2005, 2), freq = 12)
+  csi.ts = ts(csi$cum_sales, start = c(2005, 1), freq = 12)
+  
+  ts.plot(cri.ts,csi.ts,col=1:2 , lty=1:2)
+  legend("topleft", c("REP","Sales" ), 
+           lty=1:2, col=1:2)
+  ts.plot(csi.ts , col=2,lty=2)
+  legend("topleft", c("Sales" ), 
+           lty=2:2, col=2:2)
+  ts.plot(cri.ts)
+  legend("topleft", c("REP"), 
+           lty=1:1, col=1:1)
+  
+  i = i +1 
+  if (i == 20) 
+    break
+}
 
 
 
@@ -229,7 +258,7 @@ ts_train = ts.train
 ts_val = ts.val
 
 
-
+library(zoo)
 ###### models 
   mod.ar = ar(ts_train)
   mod.hw.mul = HoltWinters(ts_train , seasonal= "mul")
@@ -240,6 +269,7 @@ ts_val = ts.val
 #   harmonicBoundle = buildHarmonicModel(ts_train)
 #   mod.reg.3 = harmonicBoundle[[2]]
 #   mod.reg.3.res.ar = harmonicBoundle[[1]]
+  
   mod.arima <- get.best.arima( ts_train, maxord = c(2,2,2,2,2,2))[[2]]
   mod.arima.log <- get.best.arima( log(ts_train), maxord = c(2,2,2,2,2,2))[[2]]
   
@@ -252,15 +282,15 @@ ts_val = ts.val
   ###### predictions 
   pred.ar = predict( mod.ar , n.ahead=length(ts_val) )   
   pred.hw.mul = predict( mod.hw.mul , n.ahead=length(ts_val) ) 
-  pred.hw.add = predict( mod.hw.add , n.ahead=length(ts_val) ) 
-  predRegBoundle = predictLinearRegSeas(ts_val,regBoundle)
-  pred.reg = predRegBoundle[[2]]
+  pred.hw.add = predict( mod.hw.add , n.ahead=length(ts_val) )  
+  predRegBoundle = predictLinearRegSeas(ts_val,regBoundle) 
+  pred.reg = predRegBoundle[[2]] 
   pred.reg.2 = predRegBoundle[[1]]
 #   predHarmonicBoundle = predictHarmonicModel (ts_val , harmonicBoundle)
 #   pred.reg.3 = predHarmonicBoundle[[1]]
 #   pred.reg.3.res.ar = predHarmonicBoundle[[2]]
-  pred.arima <- predict(mod.arima, n.ahead = length(ts_val))$pred
-  pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts_val))$pred)
+  pred.arima <- predict(mod.arima, n.ahead = length(ts_val))$pred 
+  pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts_val))$pred) 
   
   ####### performance  
   perf.ar = cbind( type = c("AR") , getPerformance(as.vector(pred.ar$pred) , as.vector(ts_val)))
@@ -287,7 +317,7 @@ ts_val = ts.val
             pred.ar$pred , 
              pred.hw.mul , 
             pred.hw.add , 
-            ts(pred.reg , start=start(ts_val) , frequency=frequency(ts_all)), 
+            ts(pred.reg  , start=start(ts_val) , frequency=frequency(ts_all)), 
             col=1:5 , lty=1:5 )
     legend("topleft", c("TS", "AR" , "HW.mul" , 
                          "HW.add" , 

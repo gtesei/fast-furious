@@ -294,7 +294,7 @@ makeCumSales = function(x) {
 		for (m in 0:37) {
 		  cum[rrow , 1] = mod
 		  cum[rrow , 2] = m
-		  cum[rrow , 3] = 0 		  
+		  cum[rrow , 3] = 0		  
 		  rrow = rrow + 1
 		}
 	}
@@ -400,10 +400,12 @@ plot(st$modComp,st$sigma)
 outTargetIdMap  = treatOutTargetIdMap(outTargetIdMap)
 
 write.csv(cr,quote=F,row.names=F,file="dataset/pakdd-cup-2014/cr.csv")
+write.csv(cs,quote=F,row.names=F,file="dataset/pakdd-cup-2014/cs.csv")
 
 ##focus on mod = 224
 er224 = er[er$modComp == 224,]
 cr224 = cr[cr$modComp == 224,]
+cs224 = cs[cs$modComp == 224,]
 cr224.ts = ts(cr224$cum_repairs, start = c(2005, 2), freq = 12)
 data = splitTrainXvat(cr224.ts, 0.7)
 ts.train = data[[1]]
@@ -414,7 +416,10 @@ comparisons[1]
 ##focus on mod = 29
 er29 = er[er$modComp == 29,]
 cr29 = cr[cr$modComp == 29,]
+
 cr29.ts = ts(cr29$cum_repairs, start = c(2005, 2), freq = 12)
+cs29 = cs[cs$modComp == 29,]
+cs29.ts = ts(cs29$cum_sales, start = c(2005, 1), freq = 12)
 data = splitTrainXvat(cr29.ts, 0.7)
 ts.train = data[[1]]
 ts.val = data[[2]]
