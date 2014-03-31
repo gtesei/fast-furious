@@ -1,0 +1,40 @@
+Comparing Submission 
+========================================================
+
+Comparing submissions 
+
+```{r,warning=F} 
+library(xts)
+
+s54f = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/competitions/pakdd-cup-2014/sub_54.zat"
+s36f = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/competitions/pakdd-cup-2014/sub_36.zat"
+s5f = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/competitions/pakdd-cup-2014/sub_5.zat"
+tsubf = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/pakdd-cup-2014/sub_best_model.csv"
+
+s54 = read.csv(s54f)
+s36 = read.csv(s36f)
+s5 = read.csv(s5f)
+tsub = read.csv(tsubf)
+
+id.max = length(s5$id)
+
+plot(x = 1:id.max,s54$target )
+
+m5 = sum(s5$target) / id.max 
+m54 = sum(s54$target) / id.max 
+m36 = sum(s36$target) / id.max 
+mtsub = sum(tsub$target) / id.max
+
+print(m54)
+print(m36)
+print(m5)
+print(mtsub)
+
+print(mtsub/5.6)
+
+### la media 5 / media 54 ha un fattore 1/53
+
+
+
+```
+

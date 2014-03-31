@@ -352,6 +352,41 @@ makeCumRepairs = function(x) {
 	ret
 }
 
+estimePr = function(er,cs){
+	
+	umodComp = unique(er$modComp)
+	
+	smax = max(cs$t)
+	kmax = max(er$tr)
+	
+	dr = array(rep(0,(smax+1)*(kmax+1)*1000) , c(smax+1,kmax+1,1000)        )
+	
+	### es mod = 26
+	
+	for (mod in umodComp) {
+		for (s in 1:smax){
+			for (k in 1:kmax) {
+				dr[s,k+1,mod] = 
+				sum( er[er$modComp == mod & 
+				er$tr <= (k+0.5) & er$tr > (k-0.5)  & 
+				er$delta <= ((k-s+1)+0.5) & er$tr > ((k-s+1)-0.5) ,5 ] ) / 
+				sum (cs[cs$modComp == mod & cs$t <= (s+0.5) & cs$t > (s-0.5) , 3] )		
+			}
+		} 
+	}
+	
+	comp.number = length(umodComp)
+	mdr = array(rep(0,(kmax+1)*1000) , c(kmax+1,1000) )
+	for (mod in umodComp) {
+		for (k in 1:kmax) {
+			
+		}
+	}
+	
+	
+	
+}
+
 
 treatOutTargetIdMap = function(x) {
 	mods = as.numeric(lapply(strsplit(as.character(x$module_category), "M"), function(x) as.numeric(x[2])))

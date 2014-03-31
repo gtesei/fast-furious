@@ -16,8 +16,10 @@ hurl[["wine.dat"]] = "http://elena.aut.ac.nz/~pcowpert/ts/wine.dat"
 hurl[["motororg.dat"]] = "http://elena.aut.ac.nz/~pcowpert/ts/motororg.dat"
 hurl[["cbe.dat"]] = "http://elena.aut.ac.nz/~pcowpert/ts/cbe.dat"
 
+
 data(AirPassengers)
 AP = AirPassengers
+
 
 ########################### functions 
 get.best.arima <- function(x.ts, maxord = c(1,1,1,1,1,1))
@@ -79,8 +81,13 @@ predictHarmonicModel = function(valts , boundle){
   pred = mod$coeff[1] + mod$coeff[2] * new.t.scal +  
     mod$coeff[3] * I(new.t.scal^2) + mod$coeff[4] * SIN[, 1] + 
     mod$coeff[5] * SIN[, 2] + mod$coeff[6] * SIN[, 3] 
-  pred.res.ar = as.vector(pred) + as.vector(res.ar$pred)  
-  list(pred,pred.res.ar)
+  
+  pred.ar = pmax(pred, 0 * new.t.scal)
+  
+  pred.res.ar = pmax(as.vector(pred) + as.vector(res.ar$pred)  ,  0 * new.t.scal)
+  
+  
+  list(pred.ar,pred.res.ar)
 }
 
 buildLinearRegSeas = function(myts){
@@ -88,19 +95,45 @@ buildLinearRegSeas = function(myts){
   Seas = cycle(myts)
   lm = lm(myts ~ Time )
   lmSeas = lm(myts ~ 0 + Time + factor(Seas) )
-  list(lmSeas,lm)
+  
+  list(lmSeas,lm,lm)
 }
 predictLinearRegSeas = function(valts,regBoundle) {
   lm = regBoundle[[2]]
   lmSeas = regBoundle[[1]]
+  lm.0 = regBoundle[[3]]
   
   new.t = as.vector(time(valts))
   
-  pred.lm = lm$coeff[1] + lm$coeff[2] * new.t
+  pred.lm = pmax(lm$coeff[1] + lm$coeff[2] * new.t , 0*new.t)
   beta = c(rep(coef(lmSeas)[2:13] , floor (length(valts)/12) ) , coef(lmSeas)[2:((length(valts) %% 12)+1)] )
-  pred.lmSeas = lmSeas$coeff[1]*new.t + beta 
+  pred.lmSeas = pmax(lmSeas$coeff[1]*new.t + beta,   0*new.t)
   
-  list(pred.lmSeas,pred.lm)
+  pred.0 = 0 + 0 * new.t
+  
+  list(pred.lmSeas,pred.lm,pred.0)
+}
+
+predictLinearRegSeas.test = function(valts,regBoundle,ahead) {
+  lm = regBoundle[[2]]
+  lmSeas = regBoundle[[1]]
+  lm.0 = regBoundle[[3]]
+  
+  old.t = as.vector(time(valts))
+  
+  b = rep((1/12),ahead)
+  b[1] = old.t[length(old.t)] + 1/12
+  for (i in (2:length(b)) ) b[i] = b[i-1] + 1/12
+  
+  new.t = c(old.t,b)
+  
+  pred.lm = pmax(lm$coeff[1] + lm$coeff[2] * new.t , 0*new.t)
+  beta = c(rep(coef(lmSeas)[2:13] , floor (length(valts)/12) ) , coef(lmSeas)[2:((length(valts) %% 12)+1)] )
+  pred.lmSeas = pmax(lmSeas$coeff[1]*new.t + beta,   0*new.t)
+  
+  pred.0 = 0 + 0 * new.t
+  
+  list(pred.lmSeas,pred.lm,pred.0)
 }
 
 compareModels = function(ts_train,ts_val,doPlot=T){
@@ -114,14 +147,15 @@ compareModels = function(ts_train,ts_val,doPlot=T){
 #   harmonicBoundle = buildHarmonicModel(ts_train)
 #   mod.reg.3 = harmonicBoundle[[2]]
 #   mod.reg.3.res.ar = harmonicBoundle[[1]]
-  mod.arima <- get.best.arima( ts_train, maxord = c(2,2,2,2,2,2))[[2]]
-  mod.arima.log <- get.best.arima( log(ts_train), maxord = c(2,2,2,2,2,2))[[2]]
+#   mod.arima <- get.best.arima( ts_train, maxord = c(2,2,2,2,2,2))[[2]]
+#   mod.arima.log <- get.best.arima( log(ts_train), maxord = c(2,2,2,2,2,2))[[2]]
   
   models = c(mod.ar,
 #              mod.hw.mul,
              mod.hw.add,mod.reg,mod.reg.2,
 #              mod.reg.3,mod.reg.3.res.ar,
-             mod.arima,mod.arima.log)
+#              mod.arima,mod.arima.log
+)
   
   ###### predictions 
   pred.ar = predict( mod.ar , n.ahead=length(ts_val) )
@@ -133,8 +167,8 @@ compareModels = function(ts_train,ts_val,doPlot=T){
 #   predHarmonicBoundle = predictHarmonicModel (ts_val , harmonicBoundle)
 #   pred.reg.3 = predHarmonicBoundle[[1]]
 #   pred.reg.3.res.ar = predHarmonicBoundle[[2]]
-  pred.arima <- predict(mod.arima, n.ahead = length(ts_val))$pred
-  pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts_val))$pred)
+#   pred.arima <- predict(mod.arima, n.ahead = length(ts_val))$pred
+#   pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts_val))$pred)
   
   ####### performance  
   perf.ar = cbind( type = c("AR") , getPerformance(as.vector(pred.ar$pred) , as.vector(ts_val)))
@@ -144,15 +178,15 @@ compareModels = function(ts_train,ts_val,doPlot=T){
   perf.reg.2 = cbind( type = c("Reg.seas") , getPerformance(as.vector(pred.reg.2) , as.vector(ts_val) ))
 #   perf.reg.3 = cbind( type = c("Reg.harm") , getPerformance(as.vector(pred.reg.3) , as.vector(ts_val) ))
 #   perf.reg.3.res.ar = cbind( type = c("Reg.harm.res.ar") , getPerformance(as.vector(pred.reg.3.res.ar) , as.vector(ts_val) ))
-  perf.arima = cbind( type = c("SARIMA") ,getPerformance(as.vector(pred.arima) , as.vector(ts_val) ) )
-  perf.arima.log = cbind( type = c("SARIMA.log") ,getPerformance(as.vector(pred.arima.log) , as.vector(ts_val) ) )
+#   perf.arima = cbind( type = c("SARIMA") ,getPerformance(as.vector(pred.arima) , as.vector(ts_val) ) )
+#   perf.arima.log = cbind( type = c("SARIMA.log") ,getPerformance(as.vector(pred.arima.log) , as.vector(ts_val) ) )
   
   perf = rbind(
     perf.ar , 
 #     perf.hw.mul, 
     perf.hw.add, perf.reg, perf.reg.2, 
 #     perf.reg.3, perf.reg.3.res.ar, 
-    perf.arima, perf.arima.log
+#     perf.arima, perf.arima.log
     )
   
   if (doPlot) {
@@ -172,13 +206,14 @@ compareModels = function(ts_train,ts_val,doPlot=T){
             ts(pred.reg.2 , start=start(ts_val) , frequency=frequency(ts_all)) , 
             #ts(pred.reg.3 , start=start(ts_val) , frequency=frequency(ts_all)) ,
             #ts(pred.reg.3.res.ar , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            ts(pred.arima , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            ts(pred.arima.log , start=start(ts_val) , frequency=frequency(ts_all)) ,
+#             ts(pred.arima , start=start(ts_val) , frequency=frequency(ts_all)) ,
+#             ts(pred.arima.log , start=start(ts_val) , frequency=frequency(ts_all)) ,
             col=1:4 , lty=1:4 )
     legend("topleft", c("TS","Reg.seas" , 
 #                         "Reg.harm" , "Reg.harm.seas.ar" , 
-                        "SARIMA" , "SARIMA.log"), 
-           lty=1:4, col=1:4)
+#                         "SARIMA" , "SARIMA.log"
+          ), 
+           lty=1:2, col=1:2)
     }
   
   list(perf[order(perf$MAE) , ] , models[order(perf$MAE)])
@@ -208,15 +243,37 @@ splitTrainXvat = function( tser , perc_train ) {
   
   list(ttrain , tval)
 }
+
+treatOutTargetIdMap = function(x) {
+  mods = as.numeric(lapply(strsplit(as.character(x$module_category), "M"), function(x) as.numeric(x[2])))
+	comps = as.numeric(lapply(strsplit(as.character(x$component_category), "P"), function(x) as.numeric(x[2])))
+	modComp = rep(0,length(comps))
+	for (i in 1:length(comps)) {
+		modComp[i] = as.numeric(paste(mods[i],comps[i],sep=''))
+	}	
+	 
+	tt_r = as.yearmon(strptime(   paste(x$year,'/',x$month,'/15',sep='')  , format = '%Y/%m/%d') ) 
+	 	    
+	tr = ( as.yearmon(strptime(   paste(x$year,'/',x$month,'/15',sep='')   , format = '%Y/%m/%d') )  - 
+	      as.yearmon(strptime(   '2009/12/15'                       , format = '%Y/%m/%d') )
+	    ) * 12
+      id = 1:(dim(x)[1])
+	data = data.frame( id , x, modComp, tt_r, tr )
+}
+
+
 ```
 
 **M2 P24**
 ```{r,warning=F} 
+library(xts)
 ##www = "C:/docs/ff/gitHub/fast-furious/dataset/pakdd-cup-2014/cr.csv"
 www = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/pakdd-cup-2014/cr.csv"
 www2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/pakdd-cup-2014/cs.csv"
 cr = read.csv(www)
 cs = read.csv(www2)
+
+outTargetIdMap  = treatOutTargetIdMap(read.csv("/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/pakdd-cup-2014/Output_TargetID_Mapping.zat"))
 
 cr224 = cr[cr$modComp == 224,]
 cr224$cum_repairs = cr224$cum_repairs + 1
@@ -227,8 +284,39 @@ data = splitTrainXvat(cr224.ts, 0.7)
 ts.train = data[[1]]
 ts.val = data[[2]]
 
+## mean 
+rep.mod = length(unique(cr$modComp))
+print(rep.mod)
+models = unique(cr$modComp)
+print(models)
+crsum = rep(-10,length(unique(cr$modComp)))
+rep.mean = matrix(rep(-10,rep.mod*2) , ncol = 2 , nrow =  rep.mod )
+i = 1
+for (c in models) {
+  crsum[i] = (sum(cr[cr$modComp == c , 3]) / 59)
+  rep.mean[i,1] = c
+  rep.mean[i,2] = crsum[i]
+  i = i + 1
+  }
+
+plot(1:rep.mod,crsum)
+
+hist(crsum )
+
+rep.mean.df = data.frame(rep.mean)
+colnames(rep.mean.df) = c('mod','mu')
+
+## prediction 
+#mod.winner = rep(-1,rep.mod)
+mod.winner.type = rep(NA,rep.mod)
+
+#1/2010 - 7/2011 = 19
+#repTrain finisce a 12/2009 -> offset = 0 
+pred.test = matrix(rep.mod*(19+1),nrow=rep.mod,ncol=(19+1))
+
+
 i = 0
-for (c in unique(cs$modComp)) {
+for (c in models) {
   print(c)
   cri = cr[cr$modComp == c,]
   csi = cs[cs$modComp == c,]
@@ -236,22 +324,33 @@ for (c in unique(cs$modComp)) {
   cri.ts = ts(cri$cum_repairs, start = c(2005, 2), freq = 12)
   csi.ts = ts(csi$cum_sales, start = c(2005, 1), freq = 12)
   
+  
+  Time = time(cri.ts)
+  lm = lm(cri.ts ~ Time )
+  pred.lm = lm$coeff[1] + lm$coeff[2] * Time
+  
   ts.plot(cri.ts,csi.ts,col=1:2 , lty=1:2)
   legend("topleft", c("REP","Sales" ), 
            lty=1:2, col=1:2)
-  ts.plot(csi.ts , col=2,lty=2)
+  
+  ts.plot(csi.ts , col=3,lty=3)
   legend("topleft", c("Sales" ), 
-           lty=2:2, col=2:2)
-  ts.plot(cri.ts)
-  legend("topleft", c("REP"), 
-           lty=1:1, col=1:1)
+           lty=3, col=3)
+  
+  ts.plot(cri.ts  , pred.lm , lty=1:2, col=1:2 )
+  legend("topleft", c("REP",'REG'), 
+           lty=1:2, col=1:2)
+  
+  #print(rep.mean.df[rep.mean.df$mod == c , 2])
   
   i = i +1 
-  if (i == 20) 
-    break
-}
 
-
+  
+  data = splitTrainXvat(cri.ts, 0.7)
+  ts.train = data[[1]]
+  ts.val = data[[2]]
+  
+  #compareModels(ts.train,ts.val,doPlot=T)
 
 doPlot=T
 ts_train = ts.train 
@@ -260,82 +359,176 @@ ts_val = ts.val
 
 library(zoo)
 ###### models 
-  mod.ar = ar(ts_train)
-  mod.hw.mul = HoltWinters(ts_train , seasonal= "mul")
+  #mod.ar = ar(ts_train)
+  #mod.ar = tryCatch({ ar(ts_train)  } , error=function(cond) { return (NA) } )
   mod.hw.add = HoltWinters(ts_train , seasonal= "add")
   regBoundle = buildLinearRegSeas(ts_train)
   mod.reg = regBoundle[[1]] 
   mod.reg.2 = regBoundle[[2]]
-#   harmonicBoundle = buildHarmonicModel(ts_train)
-#   mod.reg.3 = harmonicBoundle[[2]]
-#   mod.reg.3.res.ar = harmonicBoundle[[1]]
-  
-  mod.arima <- get.best.arima( ts_train, maxord = c(2,2,2,2,2,2))[[2]]
-  mod.arima.log <- get.best.arima( log(ts_train), maxord = c(2,2,2,2,2,2))[[2]]
-  
-  models = c(mod.ar,
-             mod.hw.mul,
-             mod.hw.add,mod.reg,mod.reg.2,
-#              mod.reg.3,mod.reg.3.res.ar,
-             mod.arima,mod.arima.log)
+   
+  models = c(mod.hw.add,mod.reg,mod.reg.2)
   
   ###### predictions 
-  pred.ar = predict( mod.ar , n.ahead=length(ts_val) )   
-  pred.hw.mul = predict( mod.hw.mul , n.ahead=length(ts_val) ) 
+  print(length(ts_val))
   pred.hw.add = predict( mod.hw.add , n.ahead=length(ts_val) )  
   predRegBoundle = predictLinearRegSeas(ts_val,regBoundle) 
   pred.reg = predRegBoundle[[2]] 
   pred.reg.2 = predRegBoundle[[1]]
-#   predHarmonicBoundle = predictHarmonicModel (ts_val , harmonicBoundle)
-#   pred.reg.3 = predHarmonicBoundle[[1]]
-#   pred.reg.3.res.ar = predHarmonicBoundle[[2]]
-  pred.arima <- predict(mod.arima, n.ahead = length(ts_val))$pred 
-  pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts_val))$pred) 
+  pred.0 = predRegBoundle[[3]]
+  #pred.ar = ifelse( is.na(mod.ar), NA, predict( mod.ar , n.ahead=length(ts_val) )  ) 
   
   ####### performance  
-  perf.ar = cbind( type = c("AR") , getPerformance(as.vector(pred.ar$pred) , as.vector(ts_val)))
-  perf.hw.mul = cbind( type = c("HW.mul") , getPerformance(as.vector(pred.hw.mul) , as.vector(ts_val)))
-  perf.hw.add = cbind( type = c("HW.add") , getPerformance(as.vector(pred.hw.add) , as.vector(ts_val)))
-  perf.reg = cbind( type = c("Reg") , getPerformance(as.vector(pred.reg) , as.vector(ts_val) ))
-  perf.reg.2 = cbind( type = c("Reg.seas") , getPerformance(as.vector(pred.reg.2) , as.vector(ts_val) ))
-#   perf.reg.3 = cbind( type = c("Reg.harm") , getPerformance(as.vector(pred.reg.3) , as.vector(ts_val) ))
-#   perf.reg.3.res.ar = cbind( type = c("Reg.harm.res.ar") , getPerformance(as.vector(pred.reg.3.res.ar) , as.vector(ts_val) ))
-  perf.arima = cbind( type = c("SARIMA") ,getPerformance(as.vector(pred.arima) , as.vector(ts_val) ) )
-  perf.arima.log = cbind( type = c("SARIMA.log") ,getPerformance(as.vector(pred.arima.log) , as.vector(ts_val) ) )
+#   perf.ar = NA
+#   if (! is.na(mod.ar)) perf.ar = cbind( type = c("AR") , ctype=1, getPerformance(as.vector(pred.ar$pred) , as.vector(ts_val)))
   
-  perf = rbind(
-    perf.ar , 
-    perf.hw.mul, 
-    perf.hw.add, perf.reg, perf.reg.2, 
-#     perf.reg.3, perf.reg.3.res.ar, 
-    perf.arima, perf.arima.log
+  perf.hw.add = cbind( type = c("HW.add") , ctype=2, getPerformance(as.vector(pred.hw.add) , as.vector(ts_val)))
+  perf.reg = cbind( type = c("Reg") , ctype=3, getPerformance(as.vector(pred.reg) , as.vector(ts_val) ))
+  perf.reg.2 = cbind( type = c("Reg.seas") , ctype=4, getPerformance(as.vector(pred.reg.2) , as.vector(ts_val) ))
+perf.0 = cbind( type = c("Mod.0") , ctype=5, getPerformance(as.vector(pred.0) , as.vector(ts_val) ))
+
+
+perf = rbind(perf.0,
+    perf.hw.add, perf.reg, perf.reg.2 
     )
-  
+
+
+
+print(perf)
+min.mae = min(perf$MAE)
+winner.type = perf[perf$MAE == min.mae , 2]
+print(winner.type)
+mod.winner.type[i] = winner.type
+
+pred.test[i,1] = c
+
+ahead.val = length(ts_val) 
+ahead = ahead.val + 19
+
+if (winner.type == 1)  {
+  #mod.winner[i] = mod.ar
+  pred.ar.test = predict( mod.ar , n.ahead=ahead )
+  pred.test[i,-1] = as.vector(pred.ar.test$pred)[(ahead.val+1):(ahead.val+19)]
+} else if (winner.type == 2) {
+  #mod.winner[i] = mod.hw.add
+  pred.hw.add.test = predict( mod.hw.add , n.ahead=ahead ) 
+  pred.test[i,-1] = as.vector(pred.hw.add.test)[(ahead.val+1):(ahead.val+19)]
+} else if (winner.type == 3) {
+  #mod.winner[i] = mod.reg
+  predRegBoundle.test = predictLinearRegSeas.test(ts_val,regBoundle,19) 
+  pred.reg.test = predRegBoundle.test[[2]] 
+  pred.test[i,-1] = as.vector(pred.reg.test)[(ahead.val+1):(ahead.val+19)]
+} else if (winner.type == 4) {
+  #mod.winner[i] = mod.reg.2
+  predRegBoundle.test = predictLinearRegSeas.test(ts_val,regBoundle,19) 
+  pred.reg.2.test = predRegBoundle.test[[1]]
+  pred.test[i,-1] = as.vector(pred.reg.2.test)[(ahead.val+1):(ahead.val+19)]
+} else if (winner.type == 5) {
+  #mod.winner[i] = NA
+  pred.test[i,-1] = rep(0,19)
+}
+else stop ("unrecognized winner type") 
+
+
+
+
+
   if (doPlot) {
-    ts_all = ts( c(as.vector(ts_train),as.vector(ts_val)) , start=start(ts_train) , frequency=frequency(ts_train) )
+  
+   
+      ts_all = ts( c(as.vector(ts_train),as.vector(ts_val)) , start=start(ts_train) , frequency=frequency(ts_train) )
     ts.plot(ts_all, 
-            pred.ar$pred , 
-             pred.hw.mul , 
+            ts(pred.0  , start=start(ts_val) , frequency=frequency(ts_all)),
             pred.hw.add , 
             ts(pred.reg  , start=start(ts_val) , frequency=frequency(ts_all)), 
+            ts(pred.reg.2 , start=start(ts_val) , frequency=frequency(ts_all)) ,
             col=1:5 , lty=1:5 )
-    legend("topleft", c("TS", "AR" , "HW.mul" , 
-                         "HW.add" , 
-                        "Reg" ), 
-           lty=1:5, col=1:5)
+    legend("topleft", c("REP","MOD.0"  , "HW.add" ,  "Reg" , "Reg.Seas"), lty=1:5, col=1:5)
+     
+      
     
-    ts.plot(ts_all , 
-            ts(pred.reg.2 , start=start(ts_val) , frequency=frequency(ts_all)) , 
-            #ts(pred.reg.3 , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            #ts(pred.reg.3.res.ar , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            ts(pred.arima , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            ts(pred.arima.log , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            col=1:4 , lty=1:4 )
-    legend("topleft", c("TS","Reg.seas" , 
-#                         "Reg.harm" , "Reg.harm.seas.ar" , 
-                        "SARIMA" , "SARIMA.log"), 
-           lty=1:4, col=1:4)
-    }
+    
+    ts_pred = ts( as.vector(pred.test[i,-1]) , start=c(2010,1) , frequency=12 )
+    ts.plot(ts_all, ts_pred , col=1:2 , lty=1:2)
+    legend("topleft", c("REP","PRED"), lty=1:2, col=1:2)
+    
+
+}
+}
+
+########## sub mean 
+id.length = length(outTargetIdMap$id)
+sub = matrix(rep(-10,id.length*2) , ncol = 2 , nrow = id.length)
+for(id in outTargetIdMap$id) {
+  mod = outTargetIdMap[outTargetIdMap$id == id  , 6 ]
+  sub[id,1] = id
+  sub[id,2] = rep.mean.df[rep.mean.df$mod == mod , 2]
+}
+
+sub.df = data.frame(sub)
+colnames(sub.df) = c('id' , 'target' )
+
+write.csv(sub.df,quote=F,row.names=F,file="/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/pakdd-cup-2014/sub_mean.csv")
+
+hist(sub[,2])
+
+print(sub[,2])
+########## sub best model  
+
+print(pred.test)
+
+
+sub.bestmodel = matrix(rep(-10,id.length*2) , ncol = 2 , nrow = id.length)
+for(id in outTargetIdMap$id) {
+  mod = outTargetIdMap[outTargetIdMap$id == id  , 6 ]
+  rtind = outTargetIdMap[outTargetIdMap$id == id  , 8 ]
+  tind = -1
+  if ( rtind > 0.8 & rtind < 1.2) tind = 1
+  else if ( rtind > 1.8 & rtind < 2.2) tind = 2
+  else if ( rtind > 2.8 & rtind < 3.2) tind = 3
+  else if ( rtind > 3.8 & rtind < 4.2) tind = 4
+  else if ( rtind > 4.8 & rtind < 5.2) tind = 5
+  else if ( rtind > 5.8 & rtind < 6.2) tind = 6
+  else if ( rtind > 6.8 & rtind < 7.2) tind = 7
+  else if ( rtind > 7.8 & rtind < 8.2) tind = 8
+  else if ( rtind > 8.8 & rtind < 9.2) tind = 9
+  else if ( rtind > 9.8 & rtind < 10.2) tind = 10
+  else if ( rtind > 10.8 & rtind < 11.2) tind = 11
+  else if ( rtind > 11.8 & rtind < 12.2) tind = 12
+  else if ( rtind > 12.8 & rtind < 13.2) tind = 13
+  else if ( rtind > 13.8 & rtind < 14.2) tind = 14
+  else if ( rtind > 14.8 & rtind < 15.2) tind = 15
+  else if ( rtind > 15.8 & rtind < 16.2) tind = 16
+  else if ( rtind > 16.8 & rtind < 17.2) tind = 17
+  else if ( rtind > 17.8 & rtind < 18.2) tind = 18
+  else if ( rtind > 18.8 & rtind < 19.2) tind = 19
+  else stop ('bad rtind')
+  
+  #print(tind)
+  
+  sub.bestmodel[id,1] = id
+  ##sub[id,2] = rep.mean.df[rep.mean.df$mod == mod , 2]
+  mod_winner_type = mod.winner.type[mod]
+  
+  my.pred = pred.test[pred.test[,1] == mod, tind ]
+  
+  mu = rep.mean.df[rep.mean.df$mod == mod , 2]
+ 
+  my.pred = pmax(my.pred / 12.02 , 0)
+  
+  
+  sub.bestmodel[id,2] = my.pred 
+  
+}
+
+sub.bestmodel.df = data.frame(sub.bestmodel)
+colnames(sub.bestmodel.df) = c('id' , 'target' )
+
+write.csv(sub.bestmodel.df,quote=F,row.names=F,file="/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/pakdd-cup-2014/sub_best_model.csv")
+
+hist(sub.bestmodel[,2])
+
+print(sub.bestmodel[,2])
+
 ```
 
 
