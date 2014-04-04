@@ -3,15 +3,45 @@
 Introduction
 --------------------------------------------------------
 Time series are analysed to understand the past and to predict the future, enabling managers or policy makers to make properly informed decisions.
-In this post, a subset of typical time series forecasting models are compared in datasets split up in train set (70%) and cross validation set (30%). Performances on cross validation sets are compared in terms of 
+Here a subset of typical time series forecasting models are compared in datasets split up in train set (70%) and cross validation set (30%). Performances on cross validation sets are compared in terms of 
 * __MAE__ (Mean Average Error)
 * __RSS__ (Residual Sum Squares)
 * __MSE__ (Mean Squared Error)
 * __RMSE__ (Root Mean Squared Error) 
 
+```{r,warning=F} 
+getPerformance = function(pred , val) {
+    res = pred - val
+    MAE = sum(abs(res)) / length(val) 
+    RSS = sum(res^2)
+  	MSE = RSS / length(val)
+  	RMSE = sqrt(MSE)
+  	perf = data.frame(MAE,RSS,MSE,RMSE)
+}
+splitTrainXvat = function( tser , perc_train ) {
+  ntrain = floor(length(as.vector(tser)) * perc_train)
+  nval = length(as.vector(tser)) - ntrain
+  
+  ttrain = ts(as.vector(tser[1:ntrain]) , start = start(tser) , frequency=frequency(tser) )
+  tval = ts(as.vector(tser[ntrain+1:nval]) , start=end(ttrain) + deltat(tser) , frequency=frequency(tser))
+  
+  stopifnot ( length(ttrain) == ntrain)
+  stopifnot ( length(tval) == nval)
+  
+  list(ttrain , tval)
+}
+```
+
 Data sets
 --------------------------------------------------------
-Models are compared on the following data sets. 
+Models are compared on the following data sets: 
+* __Sales of Australian wine__ 
+* __Air Passengers__ 
+* __Unemployment: Maine__ 
+* __Supply of Australian Chocolate, Electricity and Beer__ 
+* __Complaints to a motoring organisation__ 
+
+
 
 ### Sales of Australian wine
 The data in the file wine.dat are monthly sales of Australian wine by category,
@@ -62,13 +92,18 @@ a moving average method.
 plot(decompose(AP))
 ```
 
+A summary of the values for each season can be viewed. 
+```{r,warning=F} 
+boxplot(AP ~ cycle(AP))
+```
+
+
 ### Unemployment: Maine
 Unemployment rates are one of the main economic indicators used by politicians
 and other decision makers. For example, they influence policies for regional
 development and welfare provision. Here we I consider the monthly unemployment rate
 for the US state of Maine from January 1996 until August 2006.
 
-**Unemployment: Maine**
 ```{r,warning=F} 
 www = hurl[['maine.dat']]
 Maine.month = read.table(www,header=T)
@@ -102,7 +137,7 @@ Choc.ts <- ts(choc, start = c(1958, 1), freq = 12)
 Elec.ts <- ts(elec, start = c(1958, 1), freq = 12)
 Beer.ts <- ts(beer, start = c(1958, 1), freq = 12)
 detach(CBE)
-plot(cbind(Elec.ts, Beer.ts, Choc.ts) , xlab="Time (months)" , main="Choc (tonnes), Elec(kwh), Beer (Ml)"  )
+plot(cbind(Elec.ts, Beer.ts, Choc.ts) , xlab="Time (months)" , main="Choc (tonnes), Elec (kwh), Beer (Ml)"  )
 ```
 
 It follows a decomposition of **chocolate supply** in trend and seasonal effects using
@@ -154,6 +189,12 @@ plot(decompose(Comp.ts))
 
 Forecasting models 
 --------------------------------------------------------
+The following forecasting models are compared: 
+* __Autoregressive models__ 
+* __Holt-Winters models__ 
+* __Linear regression models with and without seasonal features__
+* __Harmonic seasonal models__ 
+* __SARIMA models and log-transformed SARIMA models__ 
 
 ### Autoregressive models
 The series $\{{x_{t}}\}$ is an autoregressive process of order p, abbreviated to AR(p), if
@@ -162,7 +203,7 @@ The series $\{{x_{t}}\}$ is an autoregressive process of order p, abbreviated to
 ${x_{t}}$ = ${x_{t-1}}$ ${a_{t-1}}$ + ${x_{t-2}}$ ${a_{t-2}}$ + ... + ${x_{t-p}}$ ${a_{t-p}}$ + ${w_{t}}$
 
 
-where ${w_{t}}$ is white noise. Further details in [3]. 
+where ${w_{t}}$ is white noise. Further details in [3]. AR(p) models will be fitted to data using the R ```ar``` function.
 
 
 ### Holt-Winters models
@@ -172,23 +213,365 @@ were working in the School of Industrial Administration at Carnegie Institute
 of Technology, and uses exponentially weighted moving averages to update
 estimates of the seasonally adjusted mean (called the level ), slope, and seasonals. Further details in [3].
 Here are considered HW models with both additive and multiplicative seasonal components.
+HW models models will be fitted to data using the R ```HoltWinters``` function.
 
-### Linear regression models 
+### Linear regression models with and without seasonal features
 
-### Linear regression models with seasonal variables
+A model for a time series $\{{x_{t}}\}$ is linear if it can be expressed as
+
+${x_{t}}$ = ${a_{0}}$ + ${a_{1}}$ ${u_{1,t}}$ + ${a_{2}}$ ${u_{2,t}}$ + ... + ${a_{m}}$ ${u_{m,t}}$ + ${z_{t}}$
+
+where ${u_{i,t}}$ is the value of the i-th predictor (or explanatory) variable at time
+t (i = 1, . . . ,m; t = 1, . . . , n),  ${z_{t}}$ is the error at time t, and ${a_{0}}$, ${a_{1}}$, ..., ${a_{m}}$
+are model parameters, which can be estimated by least squares. 
+
+Linear models for time series are non-stationary when they include functions
+of time. Differencing can often transform a non-stationary series with a deterministic
+trend to a stationary series. 
+
+A seasonal indicator model for a time series $\{{x_{t}}\}$  containing ${s}$ seasons and a trend ${m_{t}}$  is given by
+
+${x_{t}}$ = ${m_{t}}$ + ${s_{t}}$ + ${z_{t}}$
+
+where ${s_{t}}$ = ${b_{i}}$  when t falls in the i-th season (t = 1, . . . , n; i = 1, . . . , s) and
+${z_{t}}$ is the residual error series, which may be autocorrelated. Further details in [3]. Linear regression models with and without seasonal features are here fitted to data and used to make predictions as follows.
+
+
+```{r,warning=F} 
+buildLinearRegSeas = function(myts){
+  Time = time(myts)
+  Seas = cycle(myts)
+  lm = lm(myts ~ Time )
+  lmSeas = lm(myts ~ 0 + Time + factor(Seas) )
+  list(lmSeas,lm)
+}
+predictLinearRegSeas = function(valts,regBoundle,freq=12) {
+  lm = regBoundle[[2]]
+  lmSeas = regBoundle[[1]]
+  
+  new.t = as.vector(time(valts))
+  
+  pred.lm = lm$coeff[1] + lm$coeff[2] * new.t
+  beta = c(rep(coef(lmSeas)[2:13] , floor (length(valts)/freq) ) , coef(lmSeas)[2:((length(valts) %% freq)+1)] )
+  pred.lmSeas = lmSeas$coeff[1]*new.t + beta 
+  
+  list(pred.lmSeas,pred.lm)
+}
+```
 
 ### Harmonic seasonal models
+Seasonal effects often vary smoothly over the seasons, so that it may be more
+parameter-efficient to use a smooth function instead of separate indices.
+Sine and cosine functions can be used to build smooth variation into a
+seasonal model, e.g. a sine wave with frequency f (cycles per sampling interval),
+amplitude A. Further details in [3]. Harmonic seasonal models are here, where used, fitted to data and used to make predictions as follows.
 
-### SARIMA models
+```{r,warning=F} 
+buildHarmonicModel = function(myts) {  
+  Time = time(myts)
+  terms = c("Time","I(Time^2)","COS[,1]","SIN[,1]",
+            "COS[,2]","SIN[,2]","COS[,3]","SIN[,3]",
+            "COS[,4]","SIN[,4]","COS[,5]","SIN[,5]", "COS[,6]","SIN[,6]" )
+  SIN = COS = matrix(nr = length(myts) , nc = 6)
+  for (i in 1:6) {
+    COS[,i] = cos(2*pi*i*Time)
+    SIN[,i] = sin(2*pi*i*Time)
+    }
+  Tscal = Time 
+  mod.all = lm(myts ~ Time + I(Time^2) 
+               + COS[,1] + SIN[,1] + COS[,2] + SIN[,2] 
+               + COS[,3] + SIN[,3] + COS[,4] + SIN[,4] 
+               + COS[,5] + SIN[,5] + COS[,6] + SIN[,6] )
+  tscore = coef(mod.all) / sqrt(diag(vcov(mod.all)))
+  fmla <- as.formula(paste("myts ~ " , paste(terms[abs(tscore)>2] , collapse= "+")))
+  mod = lm(fmla)
+  mod.res.ar = ar(resid(mod) , method="mle")
+  list(mod.res.ar,mod)
+} 
 
-### Log-transformed SARIMA models
+predictHarmonicModel = function(valts , boundle){
+  mod = boundle[[2]] 
+  mod.res.ar = boundle[[1]]
+
+  Time.val = time(valts)
+  SIN = COS = matrix(nr = length(valts) , nc = 6)
+  for (i in 1:6) {
+    COS[,i] = cos(2*pi*i*Time.val)
+    SIN[,i] = sin(2*pi*i*Time.val)
+    }
+  new.t.scal = Time.val
+  res.ar = predict( mod.res.ar , n.ahead=length(valts) )
+  pred = mod$coeff[1] + mod$coeff[2] * new.t.scal +  
+    mod$coeff[3] * I(new.t.scal^2) + mod$coeff[4] * SIN[, 1] + 
+    mod$coeff[5] * SIN[, 2] + mod$coeff[6] * SIN[, 3] 
+  pred.res.ar = as.vector(pred) + as.vector(res.ar$pred)  
+  list(pred,pred.res.ar)
+}
+```
+### SARIMA models and log-transformed SARIMA models
+
+Differencing a series ${x_{t}}$ can remove trends, whether these trends are stochastic,
+as in a random walk, or deterministic, as in the case of a linear trend. In the case of a random walk, ${x_{t}}$ = ${x_{t-1}}$ + ${w_{t}}$, the first-order differenced series is white noise ${w_{t}}$ (i.e., ${diff(x_{t})}$ = ${x_{t}}$ − ${x_{t-1}}$ = ${w_{t}}$) and so is stationary. In contrast, if ${x_{t}}$ = ${a}$ + ${b}$${t}$ + ${w_{t}}$, a linear trend with white noise errors, then ${diff(x_{t})}$ =  ${x_{t}}$ − ${x_{t-1}}$ = ${b}$ + ${w_{t}}$-${w_{t-1}}$, which is a stationary moving average process rather than white noise. Notice that the consequence of differencing a linear
+trend with white noise is an MA(1) process, whereas subtraction of the trend would give white noise. As the differenced series needs to be aggregated (or ‘integrated’) to recover the original series, the underlying stochastic process
+is called autoregressive integrated moving average, which is abbreviated to ARIMA. The ARIMA process can be extended to include seasonal terms, giving a non-stationary seasonal ARIMA (SARIMA) process. 
+
+Many non-linear models can be transformed to linear models. For example,
+an exponential model for the series ${x_{t}}$ can be transformed by taking
+natural logarithms to obtain a linear model for the series ${y_{t}}$:
+
+${y_{t}}$ = ${log(x_{t})}$ = ${a_{o}}$ + ${a_{1}}$ ${t}$ + ${z_{t}}$ 
+
+Further details in [3]. SARIMA models and log-transformed SARIMA models are here fitted to data and used to make predictions as follows.
 
 
+```{r,warning=F} 
+get.best.arima <- function(x.ts, maxord = c(1,1,1,1,1,1))
+  {
+  best.aic <- 1e8
+  n <- length(x.ts)
+  for (p in 0:maxord[1]) 
+    
+    for(d in 0:maxord[2]) 
+      
+      for(q in 0:maxord[3])
+        
+        for (P in 0:maxord[4]) 
+          
+          for(D in 0:maxord[5]) 
+            
+            for(Q in 0:maxord[6]) {
+              
+              tryCatch({
+                fit <- arima(x.ts, order = c(p,d,q), seas = list(order = c(P,D,Q), frequency(x.ts)), method = "CSS")
+                fit.aic <- -2 * fit$loglik + (log(n) + 1) * length(fit$coef)
+                if (fit.aic < best.aic) {
+                  best.aic <- fit.aic
+                  best.fit <- fit
+                  best.model <- c(p,d,q,P,D,Q)
+              }
+              
+            } , error = function(e) {
+              
+            })
+      }
+  list(best.aic, best.fit, best.model)
+  }
+
+```
 
 
+Contest #1: predicting sales of Australian wine
+--------------------------------------------------------
+Using above definitions, let's see how such forecasting models perform in predicting sales of Australian wine. 
 
+```{r,warning=F} 
+compareModels = function(contestName, ts_train,ts_val,doPlot=T,harm=F){
+  ###### models 
+  mod.ar = ar(ts_train)
+  mod.hw.mul = HoltWinters(ts_train , seasonal= "mul")
+  mod.hw.add = HoltWinters(ts_train , seasonal= "add")
+  regBoundle = buildLinearRegSeas(ts_train)
+  mod.reg = regBoundle[[1]] 
+  mod.reg.2 = regBoundle[[2]]
+  mod.arima <- get.best.arima( ts_train, maxord = c(2,2,2,2,2,2))[[2]]
+  mod.arima.log <- get.best.arima( log(ts_train), maxord = c(2,2,2,2,2,2))[[2]]
+  
 
+  models = c(mod.ar,mod.hw.mul,mod.hw.add,mod.reg,mod.reg.2,
+             mod.arima,mod.arima.log)
 
+if (harm) {
+  harmonicBoundle = buildHarmonicModel(ts_train)
+  mod.reg.3 = harmonicBoundle[[2]]
+  mod.reg.3.res.ar = harmonicBoundle[[1]]
+  models = c(mod.ar,mod.hw.mul,mod.hw.add,mod.reg,mod.reg.2,
+              mod.reg.3,mod.reg.3.res.ar,
+             mod.arima,mod.arima.log)
+} 
+  
+  ###### predictions 
+  pred.ar = predict( mod.ar , n.ahead=length(ts_val) )
+  pred.hw.mul = predict( mod.hw.mul , n.ahead=length(ts_val) ) 
+  pred.hw.add = predict( mod.hw.add , n.ahead=length(ts_val) ) 
+  predRegBoundle = predictLinearRegSeas(ts_val,regBoundle)
+  pred.reg = predRegBoundle[[2]]
+  pred.reg.2 = predRegBoundle[[1]]
+  pred.arima <- predict(mod.arima, n.ahead = length(ts_val))$pred
+  pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts_val))$pred)
+  
+  ####### performance  
+  perf.ar = cbind( type = c("AR") , getPerformance(as.vector(pred.ar$pred) , as.vector(ts_val)))
+  perf.hw.mul = cbind( type = c("HW.mul") , getPerformance(as.vector(pred.hw.mul) , as.vector(ts_val)))
+  perf.hw.add = cbind( type = c("HW.add") , getPerformance(as.vector(pred.hw.add) , as.vector(ts_val)))
+  perf.reg = cbind( type = c("Reg") , getPerformance(as.vector(pred.reg) , as.vector(ts_val) ))
+  perf.reg.2 = cbind( type = c("Reg.seas") , getPerformance(as.vector(pred.reg.2) , as.vector(ts_val) ))
+  perf.arima = cbind( type = c("SARIMA") ,getPerformance(as.vector(pred.arima) , as.vector(ts_val) ) )
+  perf.arima.log = cbind( type = c("SARIMA.log") ,getPerformance(as.vector(pred.arima.log) , as.vector(ts_val) ) )
+  
+  perf = rbind(
+    perf.ar , perf.hw.mul, perf.hw.add, perf.reg, perf.reg.2,  
+    perf.arima, perf.arima.log
+    )
+
+if (harm) {
+  predHarmonicBoundle = predictHarmonicModel (ts_val , harmonicBoundle)
+  pred.reg.3 = predHarmonicBoundle[[1]]
+  pred.reg.3.res.ar = predHarmonicBoundle[[2]]
+  
+  perf.reg.3 = cbind( type = c("Reg.harm") , getPerformance(as.vector(pred.reg.3) , as.vector(ts_val) ))
+  perf.reg.3.res.ar = cbind( type = c("Reg.harm.res.ar") , getPerformance(as.vector(pred.reg.3.res.ar) , as.vector(ts_val) ))
+ 
+  perf = rbind(
+    perf.ar , perf.hw.mul, perf.hw.add, perf.reg, perf.reg.2, 
+    perf.reg.3, perf.reg.3.res.ar, 
+    perf.arima, perf.arima.log
+    )
+}
+  
+if (doPlot) {
+  ts_all = ts( c(as.vector(ts_train),as.vector(ts_val)) , start=start(ts_train) , frequency=frequency(ts_train) )
+  ts.plot(ts_all, 
+          pred.ar$pred , 
+          pred.hw.mul , 
+          pred.hw.add , 
+          ts(pred.reg , start=start(ts_val) , frequency=frequency(ts_all)), 
+          col=1:5 , lty=1:5 )
+  legend("topleft", c(contestName, "AR" , "HW.mul" , "HW.add" , "Reg" ), 
+         lty=1:5, col=1:5)
+  
+  if (! harm) {
+    ts.plot(ts_all , 
+            ts(pred.reg.2 , start=start(ts_val) , frequency=frequency(ts_all)) , 
+            ts(pred.arima , start=start(ts_val) , frequency=frequency(ts_all)) ,
+            ts(pred.arima.log , start=start(ts_val) , frequency=frequency(ts_all)) ,
+            col=1:4 , lty=1:4 )
+    legend("topleft", c(contestName,"Reg.seas" , "SARIMA" , "SARIMA.log"), 
+           lty=1:4, col=1:4)
+    } else {
+      ts.plot(ts_all , 
+            ts(pred.reg.2 , start=start(ts_val) , frequency=frequency(ts_all)) , 
+            ts(pred.reg.3 , start=start(ts_val) , frequency=frequency(ts_all)) ,
+            ts(pred.reg.3.res.ar , start=start(ts_val) , frequency=frequency(ts_all)) ,
+            ts(pred.arima , start=start(ts_val) , frequency=frequency(ts_all)) ,
+            ts(pred.arima.log , start=start(ts_val) , frequency=frequency(ts_all)) ,
+            col=1:6 , lty=1:6 )
+      legend("topleft", c(contestName,"Reg.seas" ,  "Reg.harm" , "Reg.harm.seas.ar" , "SARIMA" , "SARIMA.log"), 
+           lty=1:6, col=1:6)
+    }
+  }
+  
+  list(perf[order(perf$MAE) , ] , models[order(perf$MAE)])
+}
+
+####### the contest 
+data = splitTrainXvat(sweetw.ts , 0.7)
+ts.train = data[[1]]
+ts.val = data[[2]]
+comparisons = compareModels("Sales of Australian wine", ts.train,ts.val,doPlot=T,harm=T)
+comparisons[1]
+```
+
+__The Winner is__:
+```{r echo=FALSE,warning=F} 
+as.character(comparisons[[1]][1,1])
+```
+
+Contest #2: predicting Air Passengers
+--------------------------------------------------------
+Using above definitions, let's see how such forecasting models perform in predicting Air Passengers.
+
+```{r,warning=F} 
+data = splitTrainXvat(AP , 0.7)
+ts.train = data[[1]]
+ts.val = data[[2]]
+comparisons = compareModels("Air Passengers",ts.train,ts.val,doPlot=T)
+comparisons[1]
+```
+
+__The Winner is__:
+```{r echo=FALSE,warning=F} 
+as.character(comparisons[[1]][1,1])
+```
+
+Contest #3: predicting unemployment in Maine
+--------------------------------------------------------
+Using above definitions, let's see how such forecasting models perform in predicting unemployment in Maine. 
+
+```{r,warning=F} 
+data = splitTrainXvat(Maine.month.ts , 0.7)
+ts.train = data[[1]]
+ts.val = data[[2]]
+comparisons = compareModels("% unemployment",ts.train,ts.val,doPlot=T)
+comparisons[1]
+```
+
+__The Winner is__:
+```{r echo=FALSE,warning=F} 
+as.character(comparisons[[1]][1,1])
+```
+
+Contest #4: predicting supply of Australian chocolate, electricity and beer
+--------------------------------------------------------
+Using above definitions, let's see how such forecasting models perform in predicting supply of Australian chocolate, electricity and beer. 
+
+### Australian chocolate
+```{r,warning=F} 
+data = splitTrainXvat(Choc.ts , 0.7)
+ts.train = data[[1]]
+ts.val = data[[2]]
+comparisons = compareModels("Choc (tonnes)",ts.train,ts.val,doPlot=T)
+comparisons[1]
+```
+
+__The Winner is__:
+```{r echo=FALSE,warning=F} 
+as.character(comparisons[[1]][1,1])
+```
+
+### Australian electricity 
+```{r,warning=F} 
+data = splitTrainXvat(Elec.ts , 0.7)
+ts.train = data[[1]]
+ts.val = data[[2]]
+comparisons = compareModels("Elec (kwh)",ts.train,ts.val,doPlot=T)
+comparisons[1]
+```
+
+__The Winner is__:
+```{r echo=FALSE,warning=F} 
+as.character(comparisons[[1]][1,1])
+```
+
+### Australian beer 
+```{r,warning=F} 
+data = splitTrainXvat(Beer.ts , 0.7)
+ts.train = data[[1]]
+ts.val = data[[2]]
+comparisons = compareModels("Beer (Ml)",ts.train,ts.val,doPlot=T)
+comparisons[1]
+```
+
+__The Winner is__:
+```{r echo=FALSE,warning=F} 
+as.character(comparisons[[1]][1,1])
+```
+
+Contest #5: predicting complaints to a motoring organisation
+--------------------------------------------------------
+Using above definitions, let's see how such forecasting models perform in predicting complaints to a motoring organisation. 
+
+```{r,warning=F} 
+data = splitTrainXvat(Comp.ts , 0.7)
+ts.train = data[[1]]
+ts.val = data[[2]]
+comparisons = compareModels("Complaints",ts.train,ts.val,doPlot=T)
+comparisons[1]
+```
+
+__The Winner is__:
+```{r echo=FALSE,warning=F} 
+as.character(comparisons[[1]][1,1])
+```
 
 References
 --------------------------------------------------------
