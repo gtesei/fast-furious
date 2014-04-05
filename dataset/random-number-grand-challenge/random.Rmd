@@ -1,0 +1,19 @@
+Random
+========================================================
+
+```{r}
+
+
+for (i in 1:10) {
+  www = "http://www.random.org/integers/?num=10000&min=800000&max=2000000&col=1&base=10&format=plain&rnd=new"
+  data = read.table(www)
+  sub = data.frame(Id=0:9999 , Predicted=data$V1)
+  
+  fn = paste("/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/random-number-grand-challenge/",paste(paste("sub",i,sep=''),".csv",sep=''),sep='')
+  
+  write.csv(sub,quote=F,row.names=F,file=fn)
+  
+  }
+
+```
+
