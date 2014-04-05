@@ -194,7 +194,7 @@ The following forecasting models are compared:
 * __Holt-Winters models__ 
 * __Linear regression models with and without seasonal features__
 * __Harmonic seasonal models__ 
-* __SARIMA models and log-transformed SARIMA models__ 
+* __Seasonal Autoregressive Integrated Moving Average models (SARIMA) and log-transformed SARIMA models__ 
 
 ### Autoregressive models
 The series $\{{x_{t}}\}$ is an autoregressive process of order p, abbreviated to AR(p), if
@@ -308,7 +308,7 @@ predictHarmonicModel = function(valts , boundle){
   list(pred,pred.res.ar)
 }
 ```
-### SARIMA models and log-transformed SARIMA models
+### Seasonal Autoregressive Integrated Moving Average models (SARIMA) and log-transformed SARIMA models
 
 Differencing a series ${x_{t}}$ can remove trends, whether these trends are stochastic,
 as in a random walk, or deterministic, as in the case of a linear trend. In the case of a random walk, ${x_{t}}$ = ${x_{t-1}}$ + ${w_{t}}$, the first-order differenced series is white noise ${w_{t}}$ (i.e., ${diff(x_{t})}$ = ${x_{t}}$ − ${x_{t-1}}$ = ${w_{t}}$) and so is stationary. In contrast, if ${x_{t}}$ = ${a}$ + ${b}$${t}$ + ${w_{t}}$, a linear trend with white noise errors, then ${diff(x_{t})}$ =  ${x_{t}}$ − ${x_{t-1}}$ = ${b}$ + ${w_{t}}$-${w_{t-1}}$, which is a stationary moving average process rather than white noise. Notice that the consequence of differencing a linear
@@ -376,7 +376,6 @@ compareModels = function(contestName, ts_train,ts_val,doPlot=T,harm=F){
   mod.arima <- get.best.arima( ts_train, maxord = c(2,2,2,2,2,2))[[2]]
   mod.arima.log <- get.best.arima( log(ts_train), maxord = c(2,2,2,2,2,2))[[2]]
   
-
   models = c(mod.ar,mod.hw.mul,mod.hw.add,mod.reg,mod.reg.2,
              mod.arima,mod.arima.log)
 
@@ -459,7 +458,7 @@ if (doPlot) {
            lty=1:6, col=1:6)
     }
   }
-  
+
   list(perf[order(perf$MAE) , ] , models[order(perf$MAE)])
 }
 
@@ -475,6 +474,44 @@ __The Winner is__:
 ```{r echo=FALSE,warning=F} 
 as.character(comparisons[[1]][1,1])
 ```
+
+Partial autocorrelations of residuals of SARIMA.log (the winner model) is almost white noise. It has one (marginally) significant value at lag 0 and another (marginally) significant value at lag 0.8. On the other hand, SARIMA has only one (marginally) significant value at lag 1.4. 
+
+```{r warning=F} 
+mod.arima.log <- get.best.arima( log(ts.train), maxord = c(2,2,2,2,2,2))[[2]]
+mod.arima <- get.best.arima( ts.train, maxord = c(2,2,2,2,2,2))[[2]]
+
+pacf( mod.arima.log$res )
+pacf( mod.arima$res )
+```
+
+The point here is how much these componets are significant, as they are just above the statistical threshold. Hence, let's try to fit the residual series of SARIMA.log with an AR(8).   
+
+```{r warning=F} 
+pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts.val))$pred)
+pred.arima <- predict(mod.arima, n.ahead = length(ts.val))$pred
+
+res.ar <- ar(mod.arima.log$res, order = 8 ,  method = "mle")
+pred.res.ar <- predict(res.ar, n.ahead = length(ts.val))$pred
+
+pred.arima.log.new <- as.vector(pred.arima.log) + as.vector(pred.res.ar)
+
+ts_all = 
+  ts( c(as.vector(ts.train),as.vector(ts.val)) , start=start(ts.train) , frequency=frequency(ts.train))
+ts.plot(ts_all, 
+            ts(pred.arima , start=start(ts.val) , frequency=12) ,
+            ts(pred.arima.log , start=start(ts.val) , frequency=12) ,
+            ts(pred.arima.log.new , start=start(ts.val) , frequency=12) ,
+            col=1:4 , lty=1:4 )
+    legend("topleft", c("Sales of Australian wine","SARIMA" , "SARIMA.log" , "SARIMA.log.new"), 
+           lty=1:4, col=1:4)
+
+perf.sarima.log.new = getPerformance(pred.arima.log.new , ts.val)
+perf.sarima.log.new
+```
+
+Performances of SARIMA.log.new are equal to the ones of SARIMA.log confirming that the latter provides a pretty good fit to data (beeing simpler than the former). 
+
 
 Contest #2: predicting Air Passengers
 --------------------------------------------------------
@@ -492,6 +529,8 @@ __The Winner is__:
 ```{r echo=FALSE,warning=F} 
 as.character(comparisons[[1]][1,1])
 ```
+
+
 
 Contest #3: predicting unemployment in Maine
 --------------------------------------------------------
@@ -573,10 +612,27 @@ __The Winner is__:
 as.character(comparisons[[1]][1,1])
 ```
 
+
+Conclusions 
+--------------------------------------------------------
+
+In conclusion, there's no a *one size fits all* forecasting model, though SARIMA, HW.add and AR performances appear better than other models. A brief summary of these performances follows.  
+
+Data set                           | Winner            | 2nd place        
+---------------------------------- | ----------------- | -------------
+*Sales of Australian wine*         | **SARIMA.log**    | AR
+*Air Passengers*                   | **HW.add**        | HW.mul
+*Unemployment: Maine*              | **AR**            | HW.add
+*Supply of Australian Chocolate*   | **SARIMA**        | Reg.seas
+*Supply of Australian Electricity* | **SARIMA**        | HW.mul
+*Supply of Australian Beer*        | **HW.add**        | HW.mul
+*Complaints to a motoring org.*    | **AR**            | Reg
+
+
 References
 --------------------------------------------------------
 1. J. Friedman, T. Hastie, R. Tibshirani, *The Elements of Statistical Learning*, Springer, 2009 
-2. G. James, D. Witten, T. Hastie, R. Tibshirani, *The Elements of Statistical Learning*, Springer, 2013 
+2. G. James, D. Witten, T. Hastie, R. Tibshirani, *An Introduction to Statistical Learning*, Springer, 2013 
 3. Paul S.P. Cowpertwait, Andrew V. Metcalfe, *Introductory Time Series with R*, Springer, 2009 
 
 
