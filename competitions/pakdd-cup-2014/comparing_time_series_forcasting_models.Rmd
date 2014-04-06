@@ -1,5 +1,19 @@
 [R] Comparing time series forecasting models in action  
 ========================================================
+
+Contents  
+-------------------------
+1. **Introduction**
+2. **Data sets**
+3. **Forecasting models**
+4. **Contest #1: predicting sales of Australian wine**
+5. **Contest #2: predicting Air Passengers**
+6. **Contest #3: predicting unemployment in Maine**
+7. **Contest #4: predicting supply of Australian chocolate, electricity and beer**
+8. **Contest #5: predicting complaints to a motoring organisation**
+9. **Conclusions**
+10. **References**
+
 Introduction
 --------------------------------------------------------
 Time series are analysed to understand the past and to predict the future, enabling managers or policy makers to make properly informed decisions.
@@ -18,6 +32,8 @@ getPerformance = function(pred , val) {
   	RMSE = sqrt(MSE)
   	perf = data.frame(MAE,RSS,MSE,RMSE)
 }
+
+
 splitTrainXvat = function( tser , perc_train ) {
   ntrain = floor(length(as.vector(tser)) * perc_train)
   nval = length(as.vector(tser)) - ntrain
@@ -510,7 +526,7 @@ perf.sarima.log.new = getPerformance(pred.arima.log.new , ts.val)
 perf.sarima.log.new
 ```
 
-Performances of SARIMA.log.new are equal to the ones of SARIMA.log confirming that the latter provides a pretty good fit to data (beeing simpler than the former). 
+Performances of SARIMA.log.new are equal to the ones of SARIMA.log confirming that the latter provides a pretty good fit to data (being simpler than the former). 
 
 
 Contest #2: predicting Air Passengers
