@@ -1,0 +1,154 @@
+Walmart Recruiting Store Sales Forecasting
+========================================================
+
+Content 
+-------------------------
+1. **Generating a feature set (file) for each dept and store**
+2. **Fitting with a liner regressor and see submitted results**
+3. **Fitting sales time series and see submitted results**
+
+.
+
+1. Generating a feature set (file) for each dept and store
+-------------------------
+
+```{r,warning=F} 
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+train.fn = paste(base.path,"train.zat",sep="")
+test.fn = paste(base.path,"test.zat",sep="")
+sampleSubmission.fn = paste(base.path,"sampleSubmission.zat",sep="")
+features.fn = paste(base.path,"features.zat",sep="")
+stores.fn = paste(base.path,"stores.zat",sep="")
+
+train.csv = read.csv(train.fn)
+test.csv = read.csv(test.fn)
+sampleSubmission.csv = read.csv(sampleSubmission.fn)
+features.csv = read.csv(features.fn)
+stores.csv = read.csv(stores.fn)
+
+##
+train.csv$Date = as.character(train.csv$Date)
+test.csv$Date = as.character(test.csv$Date)
+features.csv$Date = as.character(features.csv$Date)
+
+##### utils  
+
+# returns string w/o leading or trailing whitespace
+trim = function (x) gsub("^\\s+|\\s+$", "", x)
+
+# build id as concatenation of Store and Dept 
+buildId = function(x) {  
+  prefix = paste(trim(as.character(x[1])),'_',sep='') 
+  id = paste(prefix,trim(as.character(x[2])),sep='')
+}
+
+# hastables id <--> train / test data.frames
+hash.train <- new.env(hash=T, parent=emptyenv())
+hash.test <- new.env(hash=T, parent=emptyenv())
+
+#####
+depts <- new.env(hash=T, parent=emptyenv())
+
+test.csv$id = apply(test.csv,1, buildId)
+train.csv$id = apply(train.csv,1, buildId)
+
+head(test.csv)
+tail(test.csv)
+ids = unique(test.csv$id)
+ids.num = length(ids)
+gen.log = data.frame(id = ids , train.size = rep(NA,ids.num) , test.size = rep(NA,ids.num))
+```
+
+So, in the test set there're 3169 different combinations of (store,dept). We're going to create a different train and test dataset for each combination storing in distinct csv files. 
+
+```{r,warning=F} 
+
+miss.id.train = NULL
+diff.id.train = NULL
+
+for (id in ids) {
+  df.train = train.csv[train.csv$id == id ,  ]
+  df.test = test.csv[test.csv$id == id ,  ]
+  store = unique(df.test$Store)
+  dept = unique(df.test$Dept)
+  store.train = unique(df.train$Store)
+  dept.train = unique(df.train$Dept)
+  
+  stopifnot (length(store) == 1)
+  stopifnot (length(dept) == 1)
+  
+  gen.log[gen.log$id == id , 2] = dim(df.train)[1]
+  gen.log[gen.log$id == id , 3] = dim(df.test)[1]
+  
+  
+  #stopifnot ( store.train = store )
+  #stopifnot (dept.traind == dept)
+  if (dim(df.train)[1] == 0) { 
+    if (is.null(miss.id.train)) 
+      miss.id.train = c(id)
+    else 
+      miss.id.train = c(miss.id.train,id)
+  } else if (store.train != store | dept.train != dept) {
+    if (is.null(diff.id.train)) 
+      diff.id.train = c(id)
+    else 
+      diff.id.train = c(diff.id.train,id)
+  }
+  
+  
+  ##### store.type , store.size 
+  store.type = stores.csv[stores.csv$Store == store , 2]
+  store.size = stores.csv[stores.csv$Store == store , 3]
+  
+  if (dim(df.train)[1] > 0) {
+    df.train$store.type = store.type
+    df.train$store.size = store.size 
+  }
+  
+  df.test$store.type = store.type
+  df.test$store.size = store.size 
+  
+  ## enriching features
+  if (dim(df.train)[1] > 0) {
+    df.train = merge(df.train,features.csv,by.x=c("Date","Store"),by.y=c("Date","Store"),all.x=T,all.y=F)
+  }
+  df.test = merge(df.test,features.csv,by.x=c("Date","Store"),by.y=c("Date","Store"),all.x=T,all.y=F)
+  
+ ## update hastables 
+ hash.train[[id]] = df.train
+ hash.test[[id]] = df.test
+ 
+ ## store 
+ fn.tr = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_train.zat',sep='')
+ write.csv(df.train,quote=F,row.names=F,file=fn.tr)
+ 
+ fn.ts = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_test.zat',sep='')
+ write.csv(df.test,quote=F,row.names=F,file=fn.ts)
+}
+
+gen.log[order(gen.log$train.size , decreasing=TRUE) , ]
+
+miss.id.train 
+diff.id.train 
+
+```
+
+Let's do some check. 
+
+```{r,warning=F} 
+dim(train.csv)[1]
+sum(gen.log$train.size)
+dim(train.csv)[1] - sum(gen.log$train.size)
+
+dim(test.csv)[1]
+sum(gen.log$test.size)
+dim(test.csv)[1] - sum(gen.log$test.size)
+```
+
+2. Fitting with a liner regressor and see submitted results 
+-------------------------
+
+
+3. Fitting sales time series and see submitted results 
+-------------------------
