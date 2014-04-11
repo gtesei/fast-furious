@@ -200,3 +200,22 @@ bestlam
 lasso.pred=predict(lasso.mod,s=bestlam ,newx=x[test,])
 mean((lasso.pred-y.test)^2)
 ```
+
+Non-linear Modeling
+-------------------------
+
+```{r}
+library (ISLR)
+attach (Wage)
+fit=lm(wage~poly(age ,4) ,data=Wage)
+coef(summary (fit))
+fit2=lm(wage~poly(age ,4, raw =T),data=Wage)
+coef(summary (fit2))
+fit2a=lm(wage ~ age+I(age ^2)+I(age ^3)+I(age ^4) ,data=Wage)
+coef(fit2a)
+fit2b=lm(wage~cbind(age ,age ^2, age ^3, age ^4) ,data=Wage)
+
+
+
+```
+
