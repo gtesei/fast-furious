@@ -30,10 +30,10 @@ predict.regsubsets =function (object ,newdata ,id ,...){
   mat[,xvars]%*%coefi 
 }
 
-getWMAE = function(pred, data) {
+getWMAE = function(pred, data  ) {
     ares = abs(pred - data$Weekly_Sales)
     l = dim(data)[1] 
-    w = 1 * (!data$IsHoliday[folds==j ]) + 5 * data$IsHoliday[folds==j ]
+    w = 1 * (!data$IsHoliday) + 5 * data$IsHoliday
     wmae = sum(ares * w) / (sum(w))
 }
 
@@ -47,7 +47,10 @@ buildId = function(x) {
 }
 
 ### load files 
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
 
 train.fn = paste(base.path,"train.zat",sep="")
 test.fn = paste(base.path,"test.zat",sep="")
@@ -136,17 +139,18 @@ for (id in ids) {
       cv.errors[j,i] = mean((train.data.full$Weekly_Sales[folds==j]-pred)^2)
       cv.mae[j,i] = mean(abs((train.data.full$Weekly_Sales[folds==j]-pred)))
       cv.wmae[j,i] = getWMAE(pred , train.data.full[folds==j , ] )
+      #print(cv.wmae[j,i])
     } 
   }
   
   ## WMAE
   mean.cv.wmae=apply(cv.wmae ,2,mean)
-  mean.cv.wmae
-  min(mean.cv.wmae)
+  print(mean.cv.wmae)
+  print(min(mean.cv.wmae))
   m = which.min(mean.cv.wmae)
-  as.numeric(m)
+  print(as.numeric(m))
   #par(mfrow=c(1,1))
-  #plot(mean.cv.wmae ,type="b")
+  plot(mean.cv.wmae ,type="b")
   
   c = c + 1
   if (c > 10) break 
