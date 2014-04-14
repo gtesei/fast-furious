@@ -1,0 +1,157 @@
+Walmart Recruiting Store Sales Forecasting
+========================================================
+
+Content 
+-------------------------
+1. **Generating a feature set (file) for each dept and store**
+2. **Fitting with a liner regressor and see submitted results**
+3. **Fitting sales time series and see submitted results**
+
+.
+
+1. Generating a feature set (file) for each dept and store
+-------------------------
+
+see walmart1.Rmd 
+
+2. Fitting with a liner regressor and see submitted results 
+-------------------------
+
+```{r,warning=F} 
+
+##### utils  
+library(leaps)
+
+predict.regsubsets =function (object ,newdata ,id ,...){
+  form=as.formula(object$call [[2]])
+  mat=model.matrix(form,newdata)
+  coefi=coef(object ,id=id)
+  xvars=names(coefi)
+  mat[,xvars]%*%coefi 
+}
+
+getWMAE = function(pred, data) {
+    ares = abs(pred - data$Weekly_Sales)
+    l = dim(data)[1] 
+    w = 1 * (!data$IsHoliday[folds==j ]) + 5 * data$IsHoliday[folds==j ]
+    wmae = sum(ares * w) / (sum(w))
+}
+
+# returns string w/o leading or trailing whitespace
+trim = function (x) gsub("^\\s+|\\s+$", "", x)
+
+# build id as concatenation of Store and Dept 
+buildId = function(x) {  
+  prefix = paste(trim(as.character(x[1])),'_',sep='') 
+  id = paste(prefix,trim(as.character(x[2])),sep='')
+}
+
+### load files 
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+train.fn = paste(base.path,"train.zat",sep="")
+test.fn = paste(base.path,"test.zat",sep="")
+sampleSubmission.fn = paste(base.path,"sampleSubmission.zat",sep="")
+features.fn = paste(base.path,"features.zat",sep="")
+stores.fn = paste(base.path,"stores.zat",sep="")
+
+#train.csv = read.csv(train.fn)
+test.csv = read.csv(test.fn)
+#sampleSubmission.csv = read.csv(sampleSubmission.fn)
+#features.csv = read.csv(features.fn)
+#stores.csv = read.csv(stores.fn)
+
+##
+#train.csv$Date = as.character(train.csv$Date)
+test.csv$Date = as.character(test.csv$Date)
+#features.csv$Date = as.character(features.csv$Date)
+
+test.csv$id = apply(test.csv,1, buildId)
+#train.csv$id = apply(train.csv,1, buildId)
+
+head(test.csv)
+tail(test.csv)
+ids = unique(test.csv$id)
+ids.num = length(ids)
+
+ids.num
+
+```
+
+Processing each id 
+
+```{r,warning=F} 
+
+miss.id.train = NULL
+
+c = 0
+for (id in ids) {
+  
+  fn.tr = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_train.zat',sep='')
+  fn.ts = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_test.zat',sep='')
+  
+  if (! file.exists(fn.tr) ){
+    print(paste("no train set present for id ",id,sep=''))
+    if (is.null(miss.id.train)) 
+      miss.id.train = c(id)
+    else 
+      miss.id.train = c(miss.id.train,id)
+  } 
+  
+  train.csv = read.csv(fn.tr)
+  test.csv = read.csv(fn.tr)
+  
+  #######
+  train.data.full = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , 
+                               Temperature = train.csv$Temperature, Fuel_Price = train.csv$Fuel_Price ,
+                               CPI = train.csv$CPI , Unemployment = train.csv$Unemployment , 
+                               IsHoliday = train.csv$IsHoliday.y , MarkDown1 = train.csv$MarkDown1 , 
+                               MarkDown2 = train.csv$MarkDown2 , 
+                               MarkDown3 = train.csv$MarkDown3 , MarkDown4 = train.csv$MarkDown4 ,
+                               MarkDown5 = train.csv$MarkDown5 )
+
+  train.data.red = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , 
+                              Temperature = train.csv$Temperature, Fuel_Price = train.csv$Fuel_Price , 
+                              CPI = train.csv$CPI , Unemployment = train.csv$Unemployment , 
+                              IsHoliday = train.csv$IsHoliday.y )
+  
+  
+  train.data.full = na.omit(train.data.full)
+  train.data.red = na.omit(train.data.red)
+  
+  ##### Model Selection 
+  # k-fold
+  var.feat = length(names(train.data.full)) - 1
+  k=4
+  set.seed(1)
+  folds=sample(1:k,nrow(train.data.full),replace=TRUE)
+  cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+
+  for(j in 1:k) {
+    best.fit = regsubsets( Weekly_Sales ~ . , data = train.data.full[folds!=j,], nvmax = var.feat)
+    for (i in (1:var.feat) ) {
+      pred = predict(best.fit , train.data.full[folds==j,] , id = i)
+      cv.errors[j,i] = mean((train.data.full$Weekly_Sales[folds==j]-pred)^2)
+      cv.mae[j,i] = mean(abs((train.data.full$Weekly_Sales[folds==j]-pred)))
+      cv.wmae[j,i] = getWMAE(pred , train.data.full[folds==j , ] )
+    } 
+  }
+  
+  ## WMAE
+  mean.cv.wmae=apply(cv.wmae ,2,mean)
+  mean.cv.wmae
+  min(mean.cv.wmae)
+  m = which.min(mean.cv.wmae)
+  as.numeric(m)
+  #par(mfrow=c(1,1))
+  #plot(mean.cv.wmae ,type="b")
+  
+  c = c + 1
+  if (c > 10) break 
+}
+
+miss.id.train 
+
+```

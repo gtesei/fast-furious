@@ -14,19 +14,26 @@ summary(regfit.full)
 
 regfit.full=regsubsets(Salary ~ . ,data=Hitters ,nvmax=19)
 reg.summary=summary(regfit.full)
+reg.summary
 names(reg.summary)
-reg.summary$rsq
-par(mfrow=c(2,2))
-plot(reg.summary$rss ,xlab="Number of Variables ",ylab="RSS",type="l")
+RSQ = reg.summary$rsq
+
+plot(RSQ , xlab="Number of Variables", ylab="RSS" , type="l" )
+
 plot(reg.summary$adjr2 ,xlab="Number of Variables ",ylab="Adjusted RSq",type="l")
-which.max(reg.summary$adjr2)
 points(11,reg.summary$adjr2[11], col="red",cex=2,pch=20)
+
 plot(reg.summary$cp ,xlab="Number of Variables ",ylab="Cp", type="l")
-which.min(reg.summary$cp )
 points(10,reg.summary$cp [10],col="red",cex=2,pch=20)
-which.min(reg.summary$bic )
+
 plot(reg.summary$bic ,xlab="Number of Variables ",ylab="BIC",type="l")
 points(6,reg.summary$bic [6],col="red",cex=2,pch=20)
+
+
+which.max(reg.summary$adjr2)
+which.min(reg.summary$cp )
+which.min(reg.summary$bic )
+
 plot(regfit.full,scale="r2")
 plot(regfit.full,scale="adjr2")
 plot(regfit.full,scale="Cp")
@@ -191,7 +198,7 @@ lasso.coef=predict(out,type="coefficients",s=bestlam)[1:20,]
 lasso.coef
 ```
 
-### k-fold?
+### k-fold
 ```{r}
 cv.out=cv.glmnet(x[train ,],y[train],alpha=1)
 plot(cv.out)
@@ -201,21 +208,4 @@ lasso.pred=predict(lasso.mod,s=bestlam ,newx=x[test,])
 mean((lasso.pred-y.test)^2)
 ```
 
-Non-linear Modeling
--------------------------
-
-```{r}
-library (ISLR)
-attach (Wage)
-fit=lm(wage~poly(age ,4) ,data=Wage)
-coef(summary (fit))
-fit2=lm(wage~poly(age ,4, raw =T),data=Wage)
-coef(summary (fit2))
-fit2a=lm(wage ~ age+I(age ^2)+I(age ^3)+I(age ^4) ,data=Wage)
-coef(fit2a)
-fit2b=lm(wage~cbind(age ,age ^2, age ^3, age ^4) ,data=Wage)
-
-
-
-```
 

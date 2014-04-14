@@ -1,0 +1,328 @@
+Walmart Recruiting Store Sales Forecasting
+========================================================
+
+Content 
+-------------------------
+1. **Generating a feature set (file) for each dept and store**
+2. **Fitting with a liner regressor and see submitted results**
+3. **Fitting sales time series and see submitted results**
+
+.
+
+1. Generating a feature set (file) for each dept and store
+-------------------------
+
+see walmart1.Rmd 
+
+2. Fitting with a liner regressor and see submitted results / test mode 
+-------------------------
+
+```{r,warning=F} 
+
+##### utils  
+
+getWMAE = function(pred, data) {
+    ares = abs(pred - data$Weekly_Sales)
+    l = dim(data)[1] 
+    w = 1 * (!train.data$IsHoliday[folds==j ]) + 5 * train.data$IsHoliday[folds==j ]
+    wmae = sum(ares * w) / (sum(w))
+}
+
+# returns string w/o leading or trailing whitespace
+trim = function (x) gsub("^\\s+|\\s+$", "", x)
+
+# build id as concatenation of Store and Dept 
+buildId = function(x) {  
+  prefix = paste(trim(as.character(x[1])),'_',sep='') 
+  id = paste(prefix,trim(as.character(x[2])),sep='')
+}
+
+### load files 
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/gen/"
+
+##TODO in loop on files 
+
+train.fn = paste(base.path,"1_12_train.zat",sep="")
+test.fn = paste(base.path,"1_12_test.zat",sep="")
+
+train.csv = read.csv(train.fn)
+test.csv = read.csv(test.fn)
+
+
+train.csv
+
+names(train.csv)
+```
+
+it seems already orderes on date 2010-02-05 / 2012-10-26 
+
+```{r,warning=F} 
+train.ts = ts(train.csv$Weekly_Sales, start = c(2010, 2) , frequency=52 )
+plot(train.ts, xlab = "Time (weeks)", ylab = "sales" )
+plot(decompose(train.ts))
+```
+
+building features set ... 
+
+
+```{r,warning=F} 
+# train.data = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , Temperature = train.csv$Temperature, 
+#                         Fuel_Price = train.csv$Fuel_Price , CPI = train.csv$CPI , 
+#                         Unemployment = train.csv$Unemployment , IsHoliday = train.csv$IsHoliday.y , 
+#                         MarkDown1 = train.csv$MarkDown1 , MarkDown2 = train.csv$MarkDown2 , 
+#                         MarkDown3 = train.csv$MarkDown3 , MarkDown4 = train.csv$MarkDown4 ,
+#                         MarkDown5 = train.csv$MarkDown5 )
+
+train.data = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , Temperature = train.csv$Temperature, 
+                        Fuel_Price = train.csv$Fuel_Price , CPI = train.csv$CPI , 
+                        Unemployment = train.csv$Unemployment , IsHoliday = train.csv$IsHoliday.y )
+
+head(train.data)
+head(train.csv)
+
+var.feat = length(names(train.data)) - 1
+
+train.data = na.omit(train.data)
+dim(train.data)
+
+```
+
+## model selection 
+
+```{r,warning=F} 
+library(leaps)
+
+predict.regsubsets =function (object ,newdata ,id ,...){
+  form=as.formula(object$call [[2]])
+  mat=model.matrix(form,newdata)
+  coefi=coef(object ,id=id)
+  xvars=names(coefi)
+  mat[,xvars]%*%coefi 
+}
+
+regfit.fwd=regsubsets (Weekly_Sales ~ . , data = train.data ,nvmax=var.feat, method ="forward")
+summary(regfit.fwd)
+
+# k-fold
+k=4
+set.seed(1)
+folds=sample(1:k,nrow(train.data),replace=TRUE)
+cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+
+for(j in 1:k) {
+  best.fit = regsubsets( Weekly_Sales ~ . , data = train.data[folds!=j,], nvmax = var.feat)
+  for (i in (1:var.feat) ) {
+    pred = predict(best.fit , train.data[folds==j,] , id = i)
+    cv.errors[j,i] = mean((train.data$Weekly_Sales[folds==j]-pred)^2)
+    cv.mae[j,i] = mean(abs((train.data$Weekly_Sales[folds==j]-pred)))
+    cv.wmae[j,i] = getWMAE(pred , train.data[folds==j , ] )
+  } 
+}
+
+## errors MSS
+mean.cv.errors=apply(cv.errors ,2,mean)
+mean.cv.errors
+min(mean.cv.errors)
+m = which.min(mean.cv.errors)
+as.numeric(m)
+#par(mfrow=c(1,1))
+plot(mean.cv.errors ,type="b")
+
+## MAE
+mean.cv.mae=apply(cv.mae ,2,mean)
+mean.cv.mae
+min(mean.cv.mae)
+m = which.min(mean.cv.mae)
+as.numeric(m)
+#par(mfrow=c(1,1))
+plot(mean.cv.mae ,type="b")
+
+## WMAE
+mean.cv.wmae=apply(cv.wmae ,2,mean)
+mean.cv.wmae
+min(mean.cv.wmae)
+m = which.min(mean.cv.wmae)
+as.numeric(m)
+#par(mfrow=c(1,1))
+plot(mean.cv.wmae ,type="b")
+
+##
+reg.best=regsubsets (Weekly_Sales ~.,data=train.data , nvmax=var.feat)
+coef(reg.best ,m)
+
+
+### plot 
+pred = predict(best.fit , train.data , id = m)
+plot( pred , (train.data$Weekly_Sales - pred) , cex=.5,col="darkgrey" )
+plot(train.data$Weekly_Sales,train.data$Temperature, cex=.5,col="darkgrey")
+plot(train.data$Weekly_Sales,train.data$Fuel_Price, cex=.5,col="darkgrey")
+plot(train.data$Weekly_Sales,train.data$CPI, cex=.5,col="darkgrey")
+plot(train.data$Weekly_Sales,train.data$Unemployment, cex=.5,col="darkgrey")
+plot(train.data$Weekly_Sales,train.data$MarkDown1, cex=.5,col="darkgrey")
+plot(train.data$Weekly_Sales,train.data$MarkDown2, cex=.5,col="darkgrey")
+plot(train.data$Weekly_Sales,train.data$MarkDown3, cex=.5,col="darkgrey")
+plot(train.data$Weekly_Sales,train.data$MarkDown4, cex=.5,col="darkgrey")
+plot(train.data$Weekly_Sales,train.data$MarkDown5, cex=.5,col="darkgrey")
+```
+
+
+
+### Ridge Regression 
+
+```{r}
+library(glmnet)
+
+x=model.matrix(Weekly_Sales~.,train.data)[,-1]
+y=train.data$Weekly_Sales
+grid=10^seq(10,-2,length=100)
+ridge.mod=glmnet(x,y,alpha=0,lambda=grid)
+dim(coef(ridge.mod))
+ridge.mod$lambda [50]
+coef(ridge.mod)[,50]
+sqrt(sum(coef(ridge.mod)[-1,50]^2))
+ridge.mod$lambda [60]
+coef(ridge.mod)[,60]
+sqrt(sum(coef(ridge.mod)[-1,60]^2))
+predict(ridge.mod,s=50,type="coefficients")[1:(var.feat+1),]
+```
+
+
+**X-val**
+
+In general, instead of arbitrarily choosing λ = 4, it would be better to use cross-validation to choose the tuning parameter λ. We can do this using the built-in cross-validation function, cv.glmnet(). By default, the function performs ten-fold cross-validation, though this can be changed using the argument folds. Note that we set a random seed first so our results will be reproducible, since the choice of the cross-validation folds is random. 
+
+```{r}
+
+set.seed(1)
+
+train = sample(1:nrow(x), nrow(x)/2)
+test = (-train)
+
+y.test=y[test]
+ridge.mod=glmnet(x[train,],y[train],alpha=0,lambda=grid, thresh=1e-12)
+ridge.pred=predict(ridge.mod,s=4,newx=x[test,])
+mean((ridge.pred-y.test)^2)
+
+set.seed(1)
+cv.out=cv.glmnet(x[train ,],y[train],alpha=0 , nfolds=4)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+bestlam
+ridge.pred=predict(cv.out,s=bestlam ,newx=x[test,])
+mean((ridge.pred-y.test)^2)
+
+mean(abs(ridge.pred-y.test))
+
+predict(ridge.mod, s = bestlam, type = "coefficients")[1:(var.feat + 1), ]
+
+```
+
+### Lasso Regression 
+```{r}
+lasso.mod=glmnet(x[train ,],y[train],alpha=1,lambda=grid)
+plot(lasso.mod)
+
+set.seed(1)
+cv.out=cv.glmnet(x[train ,],y[train],alpha=1 , nfolds=4)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+lasso.pred=predict(cv.out,s=bestlam ,newx=x[test,])
+mean((lasso.pred-y.test)^2)
+mean(abs(ridge.pred-y.test))
+
+out=glmnet(x,y,alpha=1,lambda=grid)
+lasso.coef=predict(out,type="coefficients",s=bestlam)[1:(var.feat+1),]
+lasso.coef
+
+cv.out=cv.glmnet(x[train ,],y[train],alpha=1 , nfolds=4)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+bestlam
+lasso.pred=predict(lasso.mod,s=bestlam ,newx=x[test,])
+mean((lasso.pred-y.test)^2)
+
+mean(abs(ridge.pred-y.test))
+
+
+```
+
+### Splines and GAMs 
+```{r}
+d = dim(train.data)[1]
+dtr = floor(d*0.7)
+
+tr = c(rep(TRUE,dtr),rep(FALSE,(d-dtr)))
+xval = (! tr)
+
+
+library(gam)
+gam.m1=gam(Weekly_Sales~s(Temperature ,4)+s(Fuel_Price ,4)+Temperature+Fuel_Price+MarkDown3 ,data=train.data[tr,])
+##plot(gam.m1, se=TRUE,col="blue")
+pred=predict(gam.m1,newdata=train.data[xval,])
+mean(abs(pred-train.data$Weekly_Sales[xval]))
+wmae = getWMAE(pred , train.data[xval , ] )
+wmae
+
+gam.m1=gam(Weekly_Sales~Temperature+Fuel_Price+MarkDown3 ,data=train.data[tr,])
+##plot(gam.m1, se=TRUE,col="blue")
+pred=predict(gam.m1,newdata=train.data[xval,])
+mean(abs(pred-train.data$Weekly_Sales[xval]))
+wmae = getWMAE(pred , train.data[xval , ] )
+wmae
+
+gam.m1=gam(Weekly_Sales~s(Temperature ,2)+Temperature+Fuel_Price+MarkDown3 ,data=train.data[tr,])
+##plot(gam.m1, se=TRUE,col="blue")
+pred=predict(gam.m1,newdata=train.data[xval,])
+mean(abs(pred-train.data$Weekly_Sales[xval]))
+wmae = getWMAE(pred , train.data[xval , ] )
+wmae
+
+gam.m1=gam(Weekly_Sales~s(Fuel_Price ,2)+Temperature+Fuel_Price+MarkDown3 ,data=train.data[tr,])
+##plot(gam.m1, se=TRUE,col="blue")
+pred=predict(gam.m1,newdata=train.data[xval,])
+mean(abs(pred-train.data$Weekly_Sales[xval]))
+wmae = getWMAE(pred , train.data[xval , ] )
+wmae
+
+gam.m1=gam(Weekly_Sales~s(MarkDown3 ,2)+Temperature+Fuel_Price+MarkDown3 ,data=train.data[tr,])
+##plot(gam.m1, se=TRUE,col="blue")
+pred=predict(gam.m1,newdata=train.data[xval,])
+mean(abs(pred-train.data$Weekly_Sales[xval]))
+wmae = getWMAE(pred , train.data[xval , ] )
+wmae
+
+gam.m1=gam(Weekly_Sales~lo(Temperature ,2)+Temperature+Fuel_Price+MarkDown3 ,data=train.data[tr,])
+##plot(gam.m1, se=TRUE,col="blue")
+pred=predict(gam.m1,newdata=train.data[xval,])
+mean(abs(pred-train.data$Weekly_Sales[xval]))
+wmae = getWMAE(pred , train.data[xval , ] )
+wmae
+
+gam.m1=gam(Weekly_Sales~lo(Temperature ,span=0.5)+Temperature+Fuel_Price+MarkDown3 ,data=train.data[tr,])
+##plot(gam.m1, se=TRUE,col="blue")
+pred=predict(gam.m1,newdata=train.data[xval,])
+mean(abs(pred-train.data$Weekly_Sales[xval]))
+wmae = getWMAE(pred , train.data[xval , ] )
+wmae
+
+gam.m1=gam(Weekly_Sales~lo(Temperature ,span=0.8)+Temperature+Fuel_Price+MarkDown3 ,data=train.data[tr,])
+##plot(gam.m1, se=TRUE,col="blue")
+pred=predict(gam.m1,newdata=train.data[xval,])
+mean(abs(pred-train.data$Weekly_Sales[xval]))
+wmae = getWMAE(pred , train.data[xval , ] )
+wmae
+
+gam.m1=gam(Weekly_Sales~lo(Fuel_Price ,span=0.5)+Temperature+Fuel_Price+MarkDown3 ,data=train.data[tr,])
+##plot(gam.m1, se=TRUE,col="blue")
+pred=predict(gam.m1,newdata=train.data[xval,])
+mean(abs(pred-train.data$Weekly_Sales[xval]))
+wmae = getWMAE(pred , train.data[xval , ] )
+wmae
+
+```
+
+
+3. Fitting sales time series and see submitted results 
+-------------------------
