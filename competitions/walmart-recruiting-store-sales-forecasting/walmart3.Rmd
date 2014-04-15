@@ -22,6 +22,8 @@ see walmart1.Rmd
 ##### utils  
 library(leaps)
 library(glmnet)
+library (pls)
+library (splines)
 
 predict.regsubsets =function (reg , formula , newdata ,id ,...){
   #form=as.formula(reg$call [[2]])
@@ -49,9 +51,9 @@ buildId = function(x) {
 }
 
 ### load files 
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 
 train.fn = paste(base.path,"train.zat",sep="")
@@ -87,7 +89,7 @@ Processing each id
 
 ```{r,warning=F} 
 
-selectModel = function (traindata) {
+selectModel = function (traindata , form="Weekly_Sales ~ .") {
   # k-fold
   var.feat = length(names(traindata)) - 1
   k=4
@@ -101,7 +103,7 @@ selectModel = function (traindata) {
     best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[folds!=j,], nvmax = var.feat)
     #print(summary(best.fit))
     for (i in (1:var.feat) ) {
-      pred = predict(best.fit , "Weekly_Sales ~ .", traindata[folds==j,] , id = i)
+      pred = predict(best.fit , form, traindata[folds==j,] , id = i)
       cv.errors[j,i] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
       cv.mae[j,i] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
       cv.wmae[j,i] = getWMAE(pred , traindata[folds==j , ] )
@@ -200,6 +202,20 @@ for (id in ids) {
   print("MAE:")
   print(mean(abs(ridge.pred-y.test)))
   predict(ridge.mod, s = bestlam, type = "coefficients")[1:(var.feat + 1), ]
+  
+  ##### PCA Regression 
+  train = cbind(rep(TRUE,floor(length(train.data.red)/2)), rep(FALSE,length(train.data.red) - floor(length(train.data.red)/2) ))
+  test = (! train)
+  pcr.fit=pcr(Weekly_Sales~., data=train.data.red[train,]  ,scale =TRUE , validation ="CV")
+  validationplot(pcr.fit ,val.type="MSEP")
+  pcr.pred=predict (pcr.fit ,newdata=train.data.red[test ,], ncomp =4)
+  print(mean(abs(pcr.pred -y[test])))
+  
+  ##### Splines
+  print("Splines ... ")
+  fform = "Weekly_Sales ~ .+ ns(Temperature) + ns(Fuel_Price) + ns(CPI)  + ns(Unemployment)  "
+  selectModel(train.data.red , form=fform)
+ 
   
   
   
