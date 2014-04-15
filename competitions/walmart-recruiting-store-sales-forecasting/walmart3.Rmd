@@ -21,11 +21,13 @@ see walmart1.Rmd
 
 ##### utils  
 library(leaps)
+library(glmnet)
 
-predict.regsubsets =function (object ,newdata ,id ,...){
-  form=as.formula(object$call [[2]])
+predict.regsubsets =function (reg , formula , newdata ,id ,...){
+  #form=as.formula(reg$call [[2]])
+  form = as.formula(formula)
   mat=model.matrix(form,newdata)
-  coefi=coef(object ,id=id)
+  coefi=coef(reg ,id=id)
   xvars=names(coefi)
   mat[,xvars]%*%coefi 
 }
@@ -47,9 +49,9 @@ buildId = function(x) {
 }
 
 ### load files 
-#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 
 train.fn = paste(base.path,"train.zat",sep="")
@@ -85,11 +87,58 @@ Processing each id
 
 ```{r,warning=F} 
 
+selectModel = function (traindata) {
+  # k-fold
+  var.feat = length(names(traindata)) - 1
+  k=4
+  #set.seed(1)
+  folds=sample(1:k,nrow(traindata),replace=TRUE)
+  cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  
+  for(j in 1:k) {
+    best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[folds!=j,], nvmax = var.feat)
+    #print(summary(best.fit))
+    for (i in (1:var.feat) ) {
+      pred = predict(best.fit , "Weekly_Sales ~ .", traindata[folds==j,] , id = i)
+      cv.errors[j,i] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+      cv.mae[j,i] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+      cv.wmae[j,i] = getWMAE(pred , traindata[folds==j , ] )
+      #print(cv.wmae[j,i])
+      } 
+    }
+  
+  ## WMAE
+  mean.cv.wmae=apply(cv.wmae ,2,mean)
+  print(mean.cv.wmae)
+  print("min WMAE:")
+  print(min(mean.cv.wmae))
+  m = which.min(mean.cv.wmae)
+  print(as.numeric(m))
+  #par(mfrow=c(1,1))
+  plot(mean.cv.wmae ,type="b")
+  
+  ##
+  train=sample(c(TRUE,FALSE), nrow(traindata),rep=TRUE)
+  test =(!train)
+  tl = length(traindata[test,1])
+  best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[train,], nvmax = var.feat)
+  pred = predict(best.fit , "Weekly_Sales ~ .", traindata[test,] , id = m)
+  plot( x=c((1:tl),(1:tl)) ,  y=c(traindata[ test , 1] , pred) , col=1:2 , lty=1:2 )
+  legend("topleft", c("weekly sales", "Reg" ) , lty = 1:2, col = 1:2)
+  hist(  (traindata[ test , 1] - pred) )
+  plot( pred , (traindata[ test , 1] - pred)^2 )
+  
+  
+}
+
 miss.id.train = NULL
 
 c = 0
 for (id in ids) {
-  
+  print("processing id:")
+  print(id)
   fn.tr = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_train.zat',sep='')
   fn.ts = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_test.zat',sep='')
   
@@ -103,6 +152,8 @@ for (id in ids) {
   
   train.csv = read.csv(fn.tr)
   test.csv = read.csv(fn.tr)
+  
+  print(head(train.csv))
   
   #######
   train.data.full = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , 
@@ -123,34 +174,34 @@ for (id in ids) {
   train.data.red = na.omit(train.data.red)
   
   ##### Model Selection 
-  # k-fold
-  var.feat = length(names(train.data.full)) - 1
-  k=4
-  set.seed(1)
-  folds=sample(1:k,nrow(train.data.full),replace=TRUE)
-  cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
-  cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
-  cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
-
-  for(j in 1:k) {
-    best.fit = regsubsets( Weekly_Sales ~ . , data = train.data.full[folds!=j,], nvmax = var.feat)
-    for (i in (1:var.feat) ) {
-      pred = predict(best.fit , train.data.full[folds==j,] , id = i)
-      cv.errors[j,i] = mean((train.data.full$Weekly_Sales[folds==j]-pred)^2)
-      cv.mae[j,i] = mean(abs((train.data.full$Weekly_Sales[folds==j]-pred)))
-      cv.wmae[j,i] = getWMAE(pred , train.data.full[folds==j , ] )
-      #print(cv.wmae[j,i])
-    } 
-  }
+  selectModel(train.data.full)
+  selectModel(train.data.red)
   
-  ## WMAE
-  mean.cv.wmae=apply(cv.wmae ,2,mean)
-  print(mean.cv.wmae)
-  print(min(mean.cv.wmae))
-  m = which.min(mean.cv.wmae)
-  print(as.numeric(m))
-  #par(mfrow=c(1,1))
-  plot(mean.cv.wmae ,type="b")
+  ##### Ridge Regression 
+  train.data = train.data.full
+  var.feat = length(names(train.data)) - 1
+  
+  x=model.matrix(Weekly_Sales~.,train.data)[,-1]
+  y=train.data$Weekly_Sales
+  grid=10^seq(10,-2,length=100)
+  ridge.mod=glmnet(x,y,alpha=0,lambda=grid)
+  
+  #set.seed(1)
+  train = sample(1:nrow(x), nrow(x)/2)
+  test = (-train) 
+  y.test=y[test]
+  cv.out=cv.glmnet(x[train ,],y[train],alpha=0 , nfolds=10)
+  plot(cv.out)
+  bestlam=cv.out$lambda.min
+  print("bestlam:")
+  print(bestlam)
+  ridge.pred=predict(cv.out,s=bestlam ,newx=x[test,])
+  #mean((ridge.pred-y.test)^2)
+  print("MAE:")
+  print(mean(abs(ridge.pred-y.test)))
+  predict(ridge.mod, s = bestlam, type = "coefficients")[1:(var.feat + 1), ]
+  
+  
   
   c = c + 1
   if (c > 10) break 
