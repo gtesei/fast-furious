@@ -51,9 +51,9 @@ buildId = function(x) {
 }
 
 ### load files 
-#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 
 train.fn = paste(base.path,"train.zat",sep="")
@@ -133,6 +133,8 @@ selectModel = function (traindata , form="Weekly_Sales ~ .") {
   plot( pred , (traindata[ test , 1] - pred)^2 )
   
   
+  c(best.fit,m)
+  
 }
 
 miss.id.train = NULL
@@ -176,8 +178,132 @@ for (id in ids) {
   train.data.red = na.omit(train.data.red)
   
   ##### Model Selection 
-  selectModel(train.data.full)
-  selectModel(train.data.red)
+  #selectModel(train.data.full)
+  #selectModel(train.data.red)
+  
+  #####################
+  traindata = train.data.full
+  train = c(rep(T,floor(length(traindata)*0.6)) , rep(F,length(traindata) - floor(length(traindata)*0.6)) )
+  test = (!train)
+  form="Weekly_Sales ~ ."
+  # k-fold
+  var.feat = length(names(traindata)) - 1
+  k=4
+  #set.seed(1)
+  folds=sample(1:k,nrow(traindata[train,]),replace=TRUE)
+  cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  
+  for(j in 1:k) {
+    best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[folds!=j,], nvmax = var.feat)
+    #print(summary(best.fit))
+    for (i in (1:var.feat) ) {
+      pred = predict(best.fit , form, traindata[folds==j,] , id = i)
+      cv.errors[j,i] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+      cv.mae[j,i] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+      cv.wmae[j,i] = getWMAE(pred , traindata[folds==j , ] )
+      #print(cv.wmae[j,i])
+      } 
+    }
+  
+  ## MAE
+  mean.cv.mae=apply(cv.mae ,2,mean)
+  print(mean.cv.mae)
+  print("min MAE full (train) :")
+  print(min(mean.cv.mae))
+  m = which.min(mean.cv.mae)
+  print("min m full (train):")
+  print(as.numeric(m))
+  #par(mfrow=c(1,1))
+  #plot(mean.cv.wmae ,type="b")
+  
+  ##
+  tl = length(traindata[test,1])
+  best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[train,], nvmax = var.feat)
+  pred = predict(best.fit , "Weekly_Sales ~ .", traindata[test,] , id = m)
+  score = mean(abs(pred-traindata[ test , 1]))
+  print("min MAE full (test) :")
+  print(score)
+  
+  #######################
+  
+  ### Splines 
+  tryCatch({
+  print("####Splines####")
+  mod.prd = predict(best.fit , "Weekly_Sales ~ .", traindata[train,] , id = m)
+  spl.fit = smooth.spline(x=mod.prd,y=traindata[train,1],cv=TRUE , tol = 1e-6)
+  print(summary(spl.fit))
+  mod.prd.test = predict(best.fit , "Weekly_Sales ~ .", traindata[test,] , id = m)
+  spl.prd = predict(spl.fit , mod.prd.test   )
+  score = mean(abs(spl.prd$y-traindata[ test , 1]))
+  print("min MAE spline (full/test) :")
+  print(score)
+  plot( x=c((1:tl),(1:tl),(1:tl)) ,  y=c(traindata[ test , 1] , mod.prd.test , spl.prd$y ) , col=1:3 , lty=1:3 )
+  legend("topleft", c("weekly sales", "Reg" , "Smooth.spline") , lty = 1:3, col = 1:3)
+  }, error = function(e) {
+
+  })
+  #####################
+  traindata = train.data.red
+  train = c(rep(T,floor(length(traindata)*0.6)) , rep(F,length(traindata) - floor(length(traindata)*0.6)) )
+  test = (!train)
+  form="Weekly_Sales ~ ."
+  # k-fold
+  var.feat = length(names(traindata)) - 1
+  k=10
+  #set.seed(1)
+  folds=sample(1:k,nrow(traindata[train,]),replace=TRUE)
+  cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  
+  for(j in 1:k) {
+    best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[folds!=j,], nvmax = var.feat)
+    #print(summary(best.fit))
+    for (i in (1:var.feat) ) {
+      pred = predict(best.fit , form, traindata[folds==j,] , id = i)
+      cv.errors[j,i] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+      cv.mae[j,i] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+      cv.wmae[j,i] = getWMAE(pred , traindata[folds==j , ] )
+      #print(cv.wmae[j,i])
+      } 
+    }
+  
+  ## MAE
+  mean.cv.mae=apply(cv.mae ,2,mean)
+  print(mean.cv.mae)
+  print("min MAE red (train) :")
+  print(min(mean.cv.mae))
+  m = which.min(mean.cv.mae)
+  print("min m red (train):")
+  print(as.numeric(m))
+  #par(mfrow=c(1,1))
+  #plot(mean.cv.wmae ,type="b")
+  
+  ##
+  tl = length(traindata[test,1])
+  best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[train,], nvmax = var.feat)
+  pred = predict(best.fit , "Weekly_Sales ~ .", traindata[test,] , id = m)
+  score = mean(abs(pred-traindata[ test , 1]))
+  print("min MAE red (test) :")
+  print(score)
+  
+  #######################
+  
+  ### Splines 
+  print("####Splines####")
+  mod.prd = predict(best.fit , "Weekly_Sales ~ .", traindata[train,] , id = m)
+  spl.fit = smooth.spline(x=mod.prd,y=traindata[train,1],cv=TRUE , tol = 1e-6)
+  print(summary(spl.fit))
+  mod.prd.test = predict(best.fit , "Weekly_Sales ~ .", traindata[test,] , id = m)
+  spl.prd = predict(spl.fit , mod.prd.test   )
+  score = mean(abs(spl.prd$y-traindata[ test , 1]))
+  print("min MAE spline (red/test) :")
+  print(score)
+  plot( x=c((1:tl),(1:tl),(1:tl)) ,  y=c(traindata[ test , 1] , mod.prd.test , spl.prd$y ) , col=1:3 , lty=1:3 )
+  legend("topleft", c("weekly sales", "Reg" , "Smooth.spline") , lty = 1:3, col = 1:3)
+  
   
   ##### Ridge Regression 
   train.data = train.data.full
