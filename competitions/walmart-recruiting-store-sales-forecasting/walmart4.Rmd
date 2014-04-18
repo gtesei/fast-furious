@@ -24,6 +24,8 @@ library(leaps)
 library(glmnet)
 library (pls)
 library (splines)
+library (randomForest)
+library (gbm)
 
 kfolds = function(k,data.length) {
   folds = rep(NA,data.length)
@@ -79,9 +81,9 @@ buildId = function(x) {
 }
 
 ### load files 
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 
 train.fn = paste(base.path,"train.zat",sep="")
@@ -212,10 +214,21 @@ for (id in ids) {
   #  15 - full dataset / lasso reegression   
   #  16 - full dataset / lasso reegression  + splines  
   #  17 - full dataset / splines  
+  spl.mae.full = NULL
+  spl.m.min.full = NULL
+  
   #  18 - full dataset / pca  
+  pca.mae.full = NULL
+  
   #  19 - full dataset / pca + splines   
   #  20 - full dataset / random forest    
+  rf.mae.full = NULL
+  rf.mae.spl.full = NULL
+  
   #  21 - full dataset / random forest + splines  
+  boost.mae.full = NULL
+  boost.spl.mae.full = NULL
+  
   #
   #####################################################
   #
@@ -236,10 +249,21 @@ for (id in ids) {
   #  45 - reduced dataset / lasso reegression   
   #  46 - reduced dataset / lasso reegression  + splines  
   #  47 - reduced dataset / splines  
+  spl.mae.red = NULL
+  spl.m.min.red = NULL
+  
   #  48 - reduced dataset / pca  
+  pca.mae.red = NULL
+  
   #  49 - reduced dataset / pca + splines   
   #  40 - reduced dataset / random forest    
+  rf.mae.red = NULL
+  rf.mae.spl.red = NULL
+  
   #  41 - reduced dataset / random forest + splines  
+  boost.mae.red = NULL
+  boost.spl.mae.red = NULL
+  
   #
   ######################################################
   
@@ -262,7 +286,6 @@ for (id in ids) {
     # k-fold
     k=10
     folds = kfolds(k,nrow(traindata)) 
-    
     
     var.feat = length(names(traindata)) - 1
     
@@ -434,10 +457,164 @@ for (id in ids) {
     }
     
     ####### 3) splines 
+    print("Splines ... ")
+    fform = "Weekly_Sales ~ .+ ns(Temperature) + ns(Fuel_Price) + ns(CPI)  + ns(Unemployment) "
     
+    # k-fold
+    tryCatch({
+    
+    var.feat = length(names(traindata)) - 1
+    
+    cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+    cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+    cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+    
+    for(j in 1:k) {
+      best.fit = regsubsets( as.formula(fform) , data = traindata[folds!=j,], nvmax = var.feat)
+      for (i in (1:var.feat) ) {
+        pred = predict(best.fit , as.formula(fform), traindata[folds==j,] , id = i)
+        cv.errors[j,i] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+        cv.mae[j,i] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+        cv.wmae[j,i] = getWMAE(pred , traindata[folds==j , ] )
+        } 
+    }
+    
+    ## MAE
+    mean.cv.mae=apply(cv.mae ,2,mean)
+    m = which.min(mean.cv.mae)
+    
+    if (data.type == 1) {  
+      spl.mae.full = min(mean.cv.mae)
+      spl.m.min.full = m 
+      
+      print("spl.mae.full")
+      print(spl.mae.full)
+      print("spl.m.min.full")
+      print(spl.m.min.full)
+    } else {
+        spl.mae.red = min(mean.cv.mae)
+        spw.m.min.red = m 
+        
+        print("spl.mae.red")
+        print(spl.mae.red)
+        print("spl.m.min.red")
+        print(spl.m.min.red)
+    }
+    }, error = function(e) {
+        #print(e)
+    })
+
     ####### 4) lasso reegression (+ splines)
     
     ####### 5) pca (+splines)
+    
+    ##### 6) Random forest 
+    cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    cv.wmae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    
+    for(j in 1:k) {
+      rf =randomForest(Weekly_Sales~. ,data=traindata[folds != j,] , importance =TRUE)
+     
+      pred = predict (rf ,newdata = traindata[folds == j,])
+    
+      cv.errors[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+      cv.mae[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+      cv.wmae[j,1] = getWMAE(pred , traindata[folds==j , ] )    
+      
+      ###### Splines   
+      pred = NULL
+      mod.prd = predict (rf ,newdata = traindata[folds != j,])
+      mod.prd.test = predict (rf ,newdata = traindata[folds == j,])
+      tryCatch({
+        spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales[folds != j],cv=TRUE)
+        pred = predict(spl.fit , mod.prd.test   )$y
+      }, error = function(e) {
+        #print(e)
+      })
+      
+      cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+      cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+      cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] )  
+    }
+    
+    ## MAE
+    mean.cv.mae=apply(cv.mae ,2,mean)
+    mean.cv.mae.spline=apply(cv.mae.spline ,2,mean)
+    
+    if (data.type == 1) {  
+      rf.mae.full = min(mean.cv.mae)
+      rf.mae.spl.full = min(mean.cv.mae.spline)
+      
+      print("rf.mae.full")
+      print(rf.mae.full)
+      print("rf.mae.spl.full")
+      print(rf.mae.spl.full)
+    } else {
+      rf.mae.red = min(mean.cv.mae)
+      rf.mae.spl.red = min(mean.cv.mae.spline)
+      
+      print("rf.mae.red")
+      print(rf.mae.red)
+      print("rf.mae.spl.red")
+      print(rf.mae.spl.red)
+    }
+  
+    ##### 7) Boosting 
+    cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    cv.wmae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    
+    for(j in 1:k) {
+      tryCatch({
+      boost = gbm(Weekly_Sales~., data=traindata[folds != j,] , distribution="gaussian", n.trees =5000 , interaction.depth =4)
+      
+      pred = predict (boost , newdata = traindata[folds == j,] , n.trees = 5000)
+    
+      cv.errors[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+      cv.mae[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+      cv.wmae[j,1] = getWMAE(pred , traindata[folds==j , ] )    
+      
+      ###### Splines   
+      pred = NULL
+      mod.prd = predict (boost ,newdata = traindata[folds != j,] , n.trees = 5000)
+      mod.prd.test = predict (boost ,newdata = traindata[folds == j,] , n.trees = 5000)
+      
+        spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales[folds != j],cv=TRUE)
+        pred = predict(spl.fit , mod.prd.test   )$y
+      }, error = function(e) {
+        #print(e)
+      })
+      
+      cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+      cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+      cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] )  
+    }
+    
+    ## MAE
+    mean.cv.mae=apply(cv.mae ,2,mean)
+    mean.cv.mae.spline=apply(cv.mae.spline ,2,mean)
+    
+    if (data.type == 1) {  
+     boost.mae.full = min(mean.cv.mae)
+     boost.spl.mae.full = min(mean.cv.mae.spline)
+     
+     print("boost.mae.full")
+     print(boost.mae.full)
+     print("boost.spl.mae.full")
+     print(boost.spl.mae.full)
+    
+    } else {
+     boost.mae.red = min(mean.cv.mae)
+     boost.spl.mae.red = min(mean.cv.mae.spline)
+     
+     print("boost.mae.red")
+     print(boost.mae.red)
+     print("boost.spl.mae.red")
+     print(boost.spl.mae.red) 
+    }
+   
+  
     
     
     }
