@@ -233,13 +233,12 @@ Processing each id
                   RSS=rep(NA,13*2*ids.num) , PAR1=rep(NA,13*2*ids.num)   )
 
 MP.min = data.frame(   ID_St_Dept = ids , ID_DS = rep(NA,ids.num) , 
-                  Active = rep(0,ids.num) , 
-                  WMAE = rep(NA,ids.num), P_WIN=rep(NA,ids.num) )
+                  Active = rep(0,ids.num) , WMAE = rep(NA,ids.num), 
+                  P_WIN=rep(NA,ids.num) , PAR1=rep(NA,ids.num) )
 
 MP.min.all = data.frame(   ID_St_Dept = rep(ids,2) , ID_DS = c(rep(1,ids.num) , rep(2,ids.num))  , 
-                  Active = rep(0,2*ids.num) , 
-                  WMAE = rep(NA,2*ids.num), 
-                  P_WIN=rep(NA,2*ids.num) )
+                  Active = rep(0,2*ids.num) , WMAE = rep(NA,2*ids.num), 
+                  P_WIN=rep(NA,2*ids.num) , PAR1=rep(NA,2*ids.num) )
 
 miss.id.train = NULL
 
@@ -280,16 +279,16 @@ for (id in ids) {
                               CPI = train.csv$CPI , Unemployment = train.csv$Unemployment , 
                               IsHoliday = train.csv$IsHoliday.y )
   
-  train.data.red.test = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , 
-                              Fuel_Price = train.csv$Fuel_Price , 
-                              CPI = train.csv$CPI , Unemployment = train.csv$Unemployment , 
-                              IsHoliday = train.csv$IsHoliday.y )
+#   train.data.red.test = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , 
+#                               Fuel_Price = train.csv$Fuel_Price , 
+#                               CPI = train.csv$CPI , Unemployment = train.csv$Unemployment , 
+#                               IsHoliday = train.csv$IsHoliday.y )
   
   
   
   train.data.full = na.omit(train.data.full)   ### 1 
   train.data.red = na.omit(train.data.red)     ### 2 
-  train.data.red.test = na.omit(train.data.red.test) #3
+#   train.data.red.test = na.omit(train.data.red.test) #3
   
   for (data.type in 1:2) { 
     traindata = NULL
@@ -771,6 +770,7 @@ for (id in ids) {
         MP.min.all$Active[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == data.type ] = 1
         MP.min.all$WMAE[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == data.type] = min(l$WMAE)
         MP.min.all$P_WIN[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == data.type] = l$ID_Pred[which.min(l$WMAE)]
+        MP.min.all$PAR1[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == data.type] = l$PAR1[which.min(l$WMAE)]
     }
   }
   ######### end of datasets 
@@ -781,6 +781,7 @@ for (id in ids) {
       MP.min$WMAE[MP.min$ID_St_Dept == id] = min(l$WMAE)
       MP.min$P_WIN[MP.min$ID_St_Dept == id] = l$ID_Pred[which.min(l$WMAE)]
       MP.min$ID_DS[MP.min$ID_St_Dept == id] = l$ID_DS[which.min(l$WMAE)]
+      MP.min$PAR1[MP.min$ID_St_Dept == id] = l$PAR1[which.min(l$WMAE)]
   }
   
 #   c = c + 1

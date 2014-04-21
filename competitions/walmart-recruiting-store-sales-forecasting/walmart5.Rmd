@@ -25,27 +25,6 @@ see walmart4.Rmd
 
 
 ```{r,warning=F} 
-#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
-
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
-
-train.fn = paste(base.path,"train.zat",sep="")
-test.fn = paste(base.path,"test.zat",sep="")
-sampleSubmission.fn = paste(base.path,"sampleSubmission.zat",sep="")
-features.fn = paste(base.path,"features.zat",sep="")
-stores.fn = paste(base.path,"stores.zat",sep="")
-
-train.csv = read.csv(train.fn)
-test.csv = read.csv(test.fn)
-sampleSubmission.csv = read.csv(sampleSubmission.fn)
-features.csv = read.csv(features.fn)
-stores.csv = read.csv(stores.fn)
-
-##
-train.csv$Date = as.character(train.csv$Date)
-test.csv$Date = as.character(test.csv$Date)
-features.csv$Date = as.character(features.csv$Date)
-
 ##### utils  
 
 # returns string w/o leading or trailing whitespace
@@ -64,25 +43,29 @@ buildId = function(x) {
   prefix = paste(trim(as.character(x[1])),'_',sep='') 
   id = paste(prefix,trim(as.character(x[2])),sep='')
 }
+```
 
-#####
-depts <- new.env(hash=T, parent=emptyenv())
 
-test.csv$id = apply(test.csv,1, buildId)
-train.csv$id = apply(train.csv,1, buildId)
+```{r,warning=F} 
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-test.csv$deepid = apply(test.csv,1, buildDeepId)
-train.csv$deepid = apply(train.csv,1, buildDeepId)
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
+base.path = "C:/____PERSONAL____/data_analytics/fast-furious/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+test.all.fn = paste(base.path,"test.zat",sep="")
+sampleSubmission.fn = paste(base.path,"sampleSubmission.zat",sep="")
+
+test.all.csv = read.csv(test.all.fn)
+sampleSubmission.csv = read.csv(sampleSubmission.fn)
+
+##
+test.all.csv$Date = as.character(test.all.csv$Date)
+test.all.csv$id = apply(test.all.csv,1, buildId)
+test.all.csv$deepid = apply(test.all.csv,1, buildDeepId)
 test.csv$pred = NA
 
-head(test.csv)
-tail(test.csv)
-
-head(train.csv)
-tail(train.csv)
-
-ids = unique(test.csv$id)
+ids = unique(test.all.csv$id)
 ids.num = length(ids)
 ```
 
@@ -112,8 +95,7 @@ tofit.id.train = NULL
 proc.id.train = NULL
 
 for (id in ids) {
-  df.train = train.csv[train.csv$id == id ,  ]
-  df.test = test.csv[test.csv$id == id ,  ]
+  df.train = train.all.csv[train.all.csv$id == id ,  ]
   
   if (dim(df.train)[1] == 0) { 
     if (is.null(miss.id.train)) 
@@ -124,7 +106,49 @@ for (id in ids) {
     next
   }
   
+  ############# load train and test files 
+  train.csv.fn = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_train.zat',sep='')
+  test.csv.fn = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_test.zat',sep='')
+  
+  train.csv = read.csv(train.csv.fn)
+  test.csv = read.csv(test.csv.fn)
+  
+  test.csv$deepid = apply(test.csv,1, buildDeepId)
+  
+  ## train
+  train.data.full = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , 
+                               Temperature = train.csv$Temperature, Fuel_Price = train.csv$Fuel_Price ,
+                               CPI = train.csv$CPI , Unemployment = train.csv$Unemployment , 
+                               IsHoliday = train.csv$IsHoliday.y , MarkDown1 = train.csv$MarkDown1 , 
+                               MarkDown2 = train.csv$MarkDown2 , 
+                               MarkDown3 = train.csv$MarkDown3 , MarkDown4 = train.csv$MarkDown4 ,
+                               MarkDown5 = train.csv$MarkDown5 )
+
+  train.data.red = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , 
+                              Temperature = train.csv$Temperature, Fuel_Price = train.csv$Fuel_Price , 
+                              CPI = train.csv$CPI , Unemployment = train.csv$Unemployment , 
+                              IsHoliday = train.csv$IsHoliday.y )
+  
+  train.data.full = na.omit(train.data.full)   ### 1 
+  train.data.red = na.omit(train.data.red)     ### 2 
+  
+  ## test
+  test.data.full = data.frame(
+                               Temperature = test.csv$Temperature, Fuel_Price = test.csv$Fuel_Price ,
+                               CPI = test.csv$CPI , Unemployment = test.csv$Unemployment , 
+                               IsHoliday = test.csv$IsHoliday.y , MarkDown1 = test.csv$MarkDown1 , 
+                               MarkDown2 = test.csv$MarkDown2 , 
+                               MarkDown3 = test.csv$MarkDown3 , MarkDown4 = test.csv$MarkDown4 ,
+                               MarkDown5 = test.csv$MarkDown5 , deepid = test.csv$deepid)
+
+  test.data.red = data.frame( 
+                              Temperature = test.csv$Temperature, Fuel_Price = test.csv$Fuel_Price , 
+                              CPI = test.csv$CPI , Unemployment = test.csv$Unemployment , 
+                              IsHoliday = test.csv$IsHoliday.y , deepid = test.csv$deepid)
+  
+  ## let's see how to fit best data
   mp = MP.min[MP.min$Active == 1 & MP.min$ID_St_Dept == id , ]
+  mp.all = MP.min.all[MP.min.all$Active == 1 & MP.min.all$ID_St_Dept == id , ]
   if (dim(mp)[1] == 0) { 
     if (is.null(tofit.id.train)) 
       tofit.id.train = c(id)
@@ -138,6 +162,12 @@ for (id in ids) {
     else 
       proc.id.train = c(proc.id.train,id)
   }
+  
+  best.ds = mp$ID_DS
+  best.pred = mp$P_WIN
+  
+  best.ds.1 = mp.all$
+  
   
 #   ##### store.type , store.size 
 #   store = unique(df.test$Store)

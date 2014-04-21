@@ -273,7 +273,9 @@ compareModels = function(contestName, ts_train, ts_val, doPlot = T, harm = F) {
 ```{r,warning=F} 
 #base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+base.path = "C:/____PERSONAL____/data_analytics/fast-furious/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 features.fn = paste(base.path,"features.zat",sep="")
 features.csv = read.csv(features.fn)
@@ -326,8 +328,8 @@ for (s in stores) {
   features.csv$CPI[features.csv$Store == s & features.csv$Date >= as.Date("2013-05-03")  ] = pred 
   
   ### testing stuff 
-#   if (c > MAX) break 
-#   c = c + 1
+  if (c > MAX) break 
+  c = c + 1
 }
 ```
 
