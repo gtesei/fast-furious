@@ -107,13 +107,9 @@ test.csv$Date = as.character(test.csv$Date)
 test.csv$id = apply(test.csv,1, buildId)
 #train.csv$id = apply(train.csv,1, buildId)
 
-head(test.csv)
-tail(test.csv)
 ids = unique(test.csv$id)
 ids.num = length(ids)
-
 ids.num
-
 ```
 
 Processing each id 
@@ -244,7 +240,7 @@ miss.id.train = NULL
 
 ptm <- proc.time()
 
-MAX = 50
+MAX = 5000
 c = 1
 for (id in ids) {
   #print("############################################################################## processing id:")
@@ -784,8 +780,8 @@ for (id in ids) {
       MP.min$PAR1[MP.min$ID_St_Dept == id] = l$PAR1[which.min(l$WMAE)]
   }
   
-#   c = c + 1
-#   if (c > MAX) break 
+  c = c + 1
+  if (c > MAX) break 
 }
 
 miss.id.train 
@@ -802,7 +798,8 @@ mp = MP.min[MP.min$Active == 1 , ]
 print("number cases not handled")
 print((MAX-dim(mp)[1]))
 
-mp[with(mp, order(-WMAE)), ]
+head(mp[with(mp, order(-WMAE)), ])
+tail(mp[with(mp, order(-WMAE)), ])
 
 pwins = unique(MP.min$P_WIN[MP.min$Active == 1 ])
 pwins 
@@ -822,7 +819,8 @@ unique(MP.min$ID_DS[MP.min$Active == 1 ])
 
 ######### MP.min.all
 mp.all = MP.min.all[MP.min.all$Active == 1 , ]
-mp.all[with(mp.all, order(-WMAE)), ]
+head(mp.all[with(mp.all, order(-WMAE)), ])
+tail(mp.all[with(mp.all, order(-WMAE)), ])
 
 unique(MP.min.all$P_WIN[MP.min.all$Active == 1 ])
 
