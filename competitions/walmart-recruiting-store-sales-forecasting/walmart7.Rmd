@@ -1,0 +1,425 @@
+Forecasting Weekly Sales with Time Series Forecasting Models 
+========================================================
+
+```{r,warning=F} 
+getPerformance = function(pred, val) {
+    res = pred - val
+    MAE = sum(abs(res))/length(val)
+    RSS = sum(res^2)
+    MSE = RSS/length(val)
+    RMSE = sqrt(MSE)
+    perf = data.frame(MAE, RSS, MSE, RMSE)
+}
+
+
+splitTrainXvat = function(tser, perc_train) {
+    ntrain = floor(length(as.vector(tser)) * perc_train)
+    nval = length(as.vector(tser)) - ntrain
+
+    ttrain = ts(as.vector(tser[1:ntrain]), start = start(tser), frequency = frequency(tser))
+    tval = ts(as.vector(tser[ntrain + 1:nval]), start = end(ttrain) + deltat(tser), 
+        frequency = frequency(tser))
+
+    stopifnot(length(ttrain) == ntrain)
+    stopifnot(length(tval) == nval)
+
+    list(ttrain, tval)
+}
+buildLinearRegSeas = function(myts) {
+    Time = time(myts)
+    Seas = cycle(myts)
+    lm = lm(myts ~ Time)
+    lmSeas = lm(myts ~ 0 + Time + factor(Seas))
+    list(lmSeas, lm)
+}
+predictLinearRegSeas = function(valts, regBoundle, freq = 12) {
+    lm = regBoundle[[2]]
+    lmSeas = regBoundle[[1]]
+
+    new.t = as.vector(time(valts))
+
+    pred.lm = lm$coeff[1] + lm$coeff[2] * new.t
+    beta = c(rep(coef(lmSeas)[2:13], floor(length(valts)/freq)), coef(lmSeas)[2:((length(valts)%%freq) + 
+        1)])
+    pred.lmSeas = lmSeas$coeff[1] * new.t + beta
+
+    list(pred.lmSeas, pred.lm)
+}
+buildHarmonicModel = function(myts) {
+    Time = time(myts)
+    terms = c("Time", "I(Time^2)", "COS[,1]", "SIN[,1]", "COS[,2]", "SIN[,2]", 
+        "COS[,3]", "SIN[,3]", "COS[,4]", "SIN[,4]", "COS[,5]", "SIN[,5]", "COS[,6]", 
+        "SIN[,6]")
+    SIN = COS = matrix(nr = length(myts), nc = 6)
+    for (i in 1:6) {
+        COS[, i] = cos(2 * pi * i * Time)
+        SIN[, i] = sin(2 * pi * i * Time)
+    }
+    Tscal = Time
+    mod.all = lm(myts ~ Time + I(Time^2) + COS[, 1] + SIN[, 1] + COS[, 2] + 
+        SIN[, 2] + COS[, 3] + SIN[, 3] + COS[, 4] + SIN[, 4] + COS[, 5] + SIN[, 
+        5] + COS[, 6] + SIN[, 6])
+    tscore = coef(mod.all)/sqrt(diag(vcov(mod.all)))
+    fmla <- as.formula(paste("myts ~ ", paste(terms[abs(tscore) > 2], collapse = "+")))
+    mod = lm(fmla)
+    mod.res.ar = ar(resid(mod), method = "mle")
+    list(mod.res.ar, mod)
+}
+
+predictHarmonicModel = function(valts, boundle) {
+    mod = boundle[[2]]
+    mod.res.ar = boundle[[1]]
+
+    Time.val = time(valts)
+    SIN = COS = matrix(nr = length(valts), nc = 6)
+    for (i in 1:6) {
+        COS[, i] = cos(2 * pi * i * Time.val)
+        SIN[, i] = sin(2 * pi * i * Time.val)
+    }
+    new.t.scal = Time.val
+    res.ar = predict(mod.res.ar, n.ahead = length(valts))
+    pred = mod$coeff[1] + mod$coeff[2] * new.t.scal + mod$coeff[3] * I(new.t.scal^2) + 
+        mod$coeff[4] * SIN[, 1] + mod$coeff[5] * SIN[, 2] + mod$coeff[6] * SIN[, 
+        3]
+    pred.res.ar = as.vector(pred) + as.vector(res.ar$pred)
+    list(pred, pred.res.ar)
+}
+get.best.arima <- function(x.ts, maxord = c(1, 1, 1, 1, 1, 1)) {
+    best.aic <- 1e+08
+    n <- length(x.ts)
+    for (p in 0:maxord[1]) 
+    for (d in 0:maxord[2]) 
+    for (q in 0:maxord[3]) 
+    for (P in 0:maxord[4]) 
+    for (D in 0:maxord[5]) 
+    for (Q in 0:maxord[6]) {
+
+        tryCatch({
+            fit <- arima(x.ts, order = c(p, d, q), seas = list(order = c(P, 
+                D, Q), frequency(x.ts)), method = "CSS")
+            fit.aic <- -2 * fit$loglik + (log(n) + 1) * length(fit$coef)
+            if (fit.aic < best.aic) {
+                best.aic <- fit.aic
+                best.fit <- fit
+                best.model <- c(p, d, q, P, D, Q)
+            }
+
+        }, error = function(e) {
+
+        })
+    }
+    list(best.aic, best.fit, best.model)
+}
+
+predictOnTestSet = function (pwin,ts_train,ahead,doPlot = T) {
+  pred = NULL
+  
+  if (pwin == 1) { ## AR
+    mod.ar = ar(ts_train)
+    pred.ar = predict(mod.ar, n.ahead = ahead)
+    pred = as.vector(pred.ar$pred)
+    
+  } else if (pwin == 2) { ##HW.mul
+    mod.hw.mul = HoltWinters(ts_train, seasonal = "mul")
+    pred.hw.mul = predict(mod.hw.mul, n.ahead = ahead)
+    pred = as.vector(pred.hw.mul)
+    
+  } else if (pwin == 3) { ##HW.add
+    mod.hw.add = HoltWinters(ts_train, seasonal = "add")
+    pred.hw.add = predict(mod.hw.add, n.ahead = ahead)
+    pred = as.vector(pred.hw.add)
+    
+  } else if (pwin == 4) { ## Reg
+    regBoundle = buildLinearRegSeas(ts_train)
+    mod.reg = regBoundle[[1]]
+    freq = frequency(ts_train)
+    ts_val = ts(rep(1,ahead), start = end(ts_train) , frequency = freq)
+    predRegBoundle = predictLinearRegSeas(ts_val, regBoundle)
+    pred.reg = predRegBoundle[[2]]
+    pred = as.vector(pred.reg)
+    
+  } else if (pwin == 5) { ## Reg.seas
+    regBoundle = buildLinearRegSeas(ts_train)
+    mod.reg.2 = regBoundle[[2]]
+    freq = frequency(ts_train)
+    ts_val = ts(rep(1,ahead), start = end(ts_train) , frequency = freq)
+    predRegBoundle = predictLinearRegSeas(ts_val, regBoundle)
+    pred.reg.2 = predRegBoundle[[1]]
+    pred = as.vector(pred.reg.2)[1:ahead]
+    
+  } else if (pwin == 6) { ## SARIMA
+    mod.arima <- get.best.arima(ts_train, maxord = c(2, 2, 2, 2, 2, 2))[[2]]
+    pred.arima <- predict(mod.arima, n.ahead = ahead)$pred
+    pred = as.vector(pred.arima)
+    
+  } else if (pwin == 7) { ## SARIMA.log
+    mod.arima.log <- get.best.arima(log(ts_train), maxord = c(2, 2, 2, 2, 2, 2))[[2]]
+    pred.arima.log <- exp(predict(mod.arima.log, n.ahead = ahead)$pred)
+    pred = as.vector(pred.arima.log)
+    
+  } else {
+    stop ("bad predictor selector")
+  } 
+  
+  if (doPlot) {
+        ts_test = ts(pred, start = end(ts_train) , frequency = frequency(ts_train))
+        ts.plot(ts_train, ts_test, col = 1:2, lty = 1:2)
+        legend("topleft", c("ts_train", "pred_on_testset"), lty = 1:2, col = 1:2)
+  }
+    
+  pred
+}
+
+
+
+compareModels = function(contestName, ts_train, ts_val, doPlot = T, harm = F) {
+    mod.ar = NULL
+    mod.hw.mul = NULL
+    mod.hw.add = NULL
+    regBoundle = NULL
+    mod.reg = NULL
+    mod.reg.2 = NULL
+    mod.arima = NULL
+    mod.arima.log = NULL
+    
+    ###### models
+    tryCatch({ mod.ar = ar(ts_train) }, error = function(e) {  })
+    tryCatch({ mod.hw.mul = HoltWinters(ts_train, seasonal = "mul") }, error = function(e) {  })
+    tryCatch({ mod.hw.add = HoltWinters(ts_train, seasonal = "add") }, error = function(e) {  })
+    tryCatch({ regBoundle = buildLinearRegSeas(ts_train) }, error = function(e) {  })
+    tryCatch({ mod.reg = regBoundle[[1]] }, error = function(e) {  })
+    tryCatch({ mod.reg.2 = regBoundle[[2]] }, error = function(e) {  })
+    tryCatch({ mod.arima <- get.best.arima(ts_train, maxord = c(2, 2, 2, 2, 2, 2))[[2]] }, error = function(e) {  })
+    tryCatch({ mod.arima.log <- get.best.arima(log(ts_train), maxord = c(2, 2, 2, 2, 2, 2))[[2]] }, error = function(e) {  })
+
+    models = c(mod.ar, mod.hw.mul, mod.hw.add, mod.reg, mod.reg.2, mod.arima, mod.arima.log)
+
+    if (harm) {
+        harmonicBoundle = buildHarmonicModel(ts_train)
+        mod.reg.3 = harmonicBoundle[[2]]
+        mod.reg.3.res.ar = harmonicBoundle[[1]]
+        models = c(mod.ar, mod.hw.mul, mod.hw.add, mod.reg, mod.reg.2, mod.reg.3, 
+            mod.reg.3.res.ar, mod.arima, mod.arima.log)
+    }
+    
+    pred.ar = NULL
+    pred.hw.mul = NULL
+    pred.hw.add = NULL
+    predRegBoundle = NULL
+    pred.reg = NULL
+    pred.reg.2 = NULL
+    pred.arima <- NULL
+    pred.arima.log <- NULL
+    ###### predictions
+    if (! is.null(mod.ar)) pred.ar = predict(mod.ar, n.ahead = length(ts_val))
+    if (! is.null(mod.hw.mul)) pred.hw.mul = predict(mod.hw.mul, n.ahead = length(ts_val))
+    if (! is.null(mod.hw.add)) pred.hw.add = predict(mod.hw.add, n.ahead = length(ts_val))
+    if (! is.null(regBoundle)) predRegBoundle = predictLinearRegSeas(ts_val, regBoundle)
+    if (! is.null(regBoundle)) pred.reg = predRegBoundle[[2]]
+    if (! is.null(regBoundle)) pred.reg.2 = predRegBoundle[[1]]
+    if (! is.null(mod.arima)) pred.arima <- predict(mod.arima, n.ahead = length(ts_val))$pred
+    if (! is.null(mod.arima.log)) pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts_val))$pred)
+    
+    perf.ar = NULL
+    perf.hw.mul = NULL
+    perf.hw.add = NULL
+    perf.reg = NULL
+    perf.reg.2 = NULL
+    perf.arima = NULL
+    perf.arima.log = NULL
+    ####### performance
+    if (! is.null(pred.ar)) perf.ar = cbind(type = c("AR"), getPerformance(as.vector(pred.ar$pred), as.vector(ts_val)))
+    if (! is.null(pred.hw.mul)) perf.hw.mul = cbind(type = c("HW.mul"), getPerformance(as.vector(pred.hw.mul), as.vector(ts_val)))
+    if (! is.null(pred.hw.add)) perf.hw.add = cbind(type = c("HW.add"), getPerformance(as.vector(pred.hw.add), as.vector(ts_val)))
+    if (! is.null(pred.reg)) perf.reg = cbind(type = c("Reg"), getPerformance(as.vector(pred.reg), as.vector(ts_val)))
+    if (! is.null(pred.reg.2)) perf.reg.2 = cbind(type = c("Reg.seas"), getPerformance(as.vector(pred.reg.2), as.vector(ts_val)))
+    if (! is.null(pred.arima)) perf.arima = cbind(type = c("SARIMA"), getPerformance(as.vector(pred.arima), as.vector(ts_val)))
+    if (! is.null(pred.arima.log)) perf.arima.log = cbind(type = c("SARIMA.log"), getPerformance(as.vector(pred.arima.log), as.vector(ts_val)))
+
+    #perf = rbind(perf.ar, perf.hw.mul, perf.hw.add, perf.reg, perf.reg.2, perf.arima, perf.arima.log)
+    perf = NULL
+    if ( !is.null(perf.ar) ) perf = rbind(perf,perf.ar)
+    if ( !is.null(perf.hw.mul) ) perf = rbind(perf,perf.hw.mul)
+    if ( !is.null(perf.hw.add) ) perf = rbind(perf,perf.hw.add)
+    if ( !is.null(perf.reg) ) perf = rbind(perf,perf.reg)
+    if ( !is.null(perf.reg.2) ) perf = rbind(perf,perf.reg.2)
+    if ( !is.null(perf.arima) ) perf = rbind(perf,perf.arima)
+    if ( !is.null(perf.arima.log) ) perf = rbind(perf,perf.arima.log)
+    
+    if (harm) {
+        predHarmonicBoundle = predictHarmonicModel(ts_val, harmonicBoundle)
+        pred.reg.3 = predHarmonicBoundle[[1]]
+        pred.reg.3.res.ar = predHarmonicBoundle[[2]]
+
+        perf.reg.3 = cbind(type = c("Reg.harm"), getPerformance(as.vector(pred.reg.3), 
+            as.vector(ts_val)))
+        perf.reg.3.res.ar = cbind(type = c("Reg.harm.res.ar"), getPerformance(as.vector(pred.reg.3.res.ar), 
+            as.vector(ts_val)))
+
+        perf = rbind(perf.ar, perf.hw.mul, perf.hw.add, perf.reg, perf.reg.2, 
+            perf.reg.3, perf.reg.3.res.ar, perf.arima, perf.arima.log)
+    }
+
+    if (doPlot) {
+        ts_all = ts(c(as.vector(ts_train), as.vector(ts_val)), start = start(ts_train), 
+            frequency = frequency(ts_train))
+        ts.plot(ts_all, pred.ar$pred, pred.hw.mul, pred.hw.add, ts(pred.reg, 
+            start = start(ts_val), frequency = frequency(ts_all)), col = 1:5, 
+            lty = 1:5)
+        legend("topleft", c(contestName, "AR", "HW.mul", "HW.add", "Reg"), lty = 1:5, 
+            col = 1:5)
+
+        if (!harm) {
+            ts.plot(ts_all, ts(pred.reg.2, start = start(ts_val), frequency = frequency(ts_all)), 
+                ts(pred.arima, start = start(ts_val), frequency = frequency(ts_all)), 
+                ts(pred.arima.log, start = start(ts_val), frequency = frequency(ts_all)), 
+                col = 1:4, lty = 1:4)
+            legend("topleft", c(contestName, "Reg.seas", "SARIMA", "SARIMA.log"), 
+                lty = 1:4, col = 1:4)
+        } else {
+            ts.plot(ts_all, ts(pred.reg.2, start = start(ts_val), frequency = frequency(ts_all)), 
+                ts(pred.reg.3, start = start(ts_val), frequency = frequency(ts_all)), 
+                ts(pred.reg.3.res.ar, start = start(ts_val), frequency = frequency(ts_all)), 
+                ts(pred.arima, start = start(ts_val), frequency = frequency(ts_all)), 
+                ts(pred.arima.log, start = start(ts_val), frequency = frequency(ts_all)), 
+                col = 1:6, lty = 1:6)
+            legend("topleft", c(contestName, "Reg.seas", "Reg.harm", "Reg.harm.seas.ar", 
+                "SARIMA", "SARIMA.log"), lty = 1:6, col = 1:6)
+        }
+    }
+
+    list(perf[order(perf$MAE), ], models[order(perf$MAE)])
+}
+```
+
+
+```{r,warning=F} 
+##### utils  
+
+# returns string w/o leading or trailing whitespace
+trim = function (x) gsub("^\\s+|\\s+$", "", x)
+
+# build id as concatenation of Store, Dept and Date 
+buildDeepId = function(x) {  
+  prefix1 = paste(trim(as.character(x[1])),'_',sep='')
+  prefix2 = paste(prefix1,trim(as.character(x[2])),sep='')
+  prefix3 = paste(prefix2,'_',sep='')
+  id = paste(prefix3,trim(as.character(x[3])),sep='')
+}
+
+# build id as concatenation of Store and Dept 
+buildId = function(x) {  
+  prefix = paste(trim(as.character(x[1])),'_',sep='') 
+  id = paste(prefix,trim(as.character(x[2])),sep='')
+}
+```
+
+
+```{r,warning=F}
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+train.fn = paste(base.path,"train.zat",sep="")
+test.fn = paste(base.path,"test.zat",sep="")
+sampleSubmission.fn = paste(base.path,"sampleSubmission.zat",sep="")
+
+train.csv = read.csv(train.fn)
+test.csv = read.csv(test.fn)
+sampleSubmission.csv = read.csv(sampleSubmission.fn)
+sampleSubmission.csv$Weekly_Sales = NA
+
+##
+train.csv$Date = as.character(train.csv$Date)
+test.csv$Date = as.character(test.csv$Date)
+
+test.csv$id = apply(test.csv,1, buildId)
+train.csv$id = apply(train.csv,1, buildId)
+
+test.csv$deepid = apply(test.csv,1, buildDeepId)
+train.csv$deepid = apply(train.csv,1, buildDeepId)
+
+test.csv$pred = NA
+
+ids = unique(test.csv$id)
+ids.num = length(ids)
+
+
+ptm <- proc.time()
+
+c = 1
+MAX = 4
+
+miss.id.train = NULL
+tofit.id.train = NULL
+proc.id.train = NULL
+
+perf.pred = data.frame( id = ids , MAE = rep(NA,ids.num) )
+
+for (id in ids) {
+  df.train = train.csv[train.csv$id == id ,  ]
+  df.test = test.csv[test.csv$id == id ,  ]
+  
+  if (dim(df.train)[1] == 0) { 
+    if (is.null(miss.id.train)) 
+      miss.id.train = c(id)
+    else 
+      miss.id.train = c(miss.id.train,id)
+    
+    next
+  }
+  
+  
+  ###### Weekly Sales  
+  name = paste("Weekly Sales of id. ",id,sep='')
+  
+  d = train.csv[train.csv$id == id , ]
+  
+  tts = ts(as.vector(d$Weekly_Sales), start = c(2010, 2) , frequency=52 )
+  data = splitTrainXvat(tts, 0.7)
+  ts_train = data[[1]]
+  ts_val = data[[2]]
+  comparisons = compareModels(name, ts_train, ts_val, doPlot = F)
+  
+  #print(comparisons[1])
+  #print("The Winner is:")
+  #print(as.character(comparisons[[1]][1,1]))
+  pred_winner = as.numeric(comparisons[[1]][1,1])
+  mae_winner = as.numeric(comparisons[[1]][1,2])
+  perf.pred$MAE[perf.pred$id == id] = mae_winner
+  
+  test = test.csv[test.csv$id == id  , ]
+  ahead = dim(test)[1]
+  pred = predictOnTestSet (pred_winner,tts,ahead,doPlot=F)
+  test.csv$pred[test.csv$id == id] = pred 
+  
+  ### testing stuff 
+#   if (c > MAX) break    
+#   c = c + 1
+}
+
+tofit.id.train
+miss.id.train 
+proc.id.train
+
+## expected performances 
+perf.pred.proc = perf.pred[! is.na(perf.pred$MAE) ,]
+perf.pred.proc
+mean(perf.pred.proc$MAE)
+```
+
+Elapsed time in loop:
+```{r,warning=F} 
+tm = proc.time() - ptm
+tm
+```
+
+Merging and storing predictions ... 
+```{r,warning=F} 
+test.csv$deepid = as.factor(test.csv$deepid)
+sub.merge = merge(sampleSubmission.csv,test.csv,by.x=c("Id"),by.y=c("deepid"),all.x=T,all.y=F)
+sub = data.frame(Id = sub.merge$Id, Weekly_Sales = sub.merge$pred)
+
+sub.fn = paste(base.path,"sub_ts.zat",sep="")
+write.csv(sub,quote=F,row.names=F,file=sub.fn)
+```
