@@ -28,6 +28,7 @@ library (randomForest)
 library (gbm)
 
 kfolds = function(k,data.length) {
+  k = min(k,data.length)
   folds = rep(NA,data.length)
   labels = 1:data.length
   st = floor(data.length/k)
@@ -81,9 +82,9 @@ buildId = function(x) {
 }
 
 ### load files 
-#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 
 train.fn = paste(base.path,"train.zat",sep="")
@@ -119,12 +120,136 @@ Processing each id
 
 ```{r,warning=F} 
 
+  ###################################################
+  #  MODEL CODES 
+  ###################################################
+  # 
+  #  1 - (forward) stepwise selection 
+  #  2 - (forward) stepwise selection + splines           
+  #  3 - ridge regression 
+  #  4 - ridge regression   + splines            
+  #  5 - lasso reegression   
+  #  6 - lasso reegression  + splines  
+  #  7 - splines  
+  #  8 - pca  
+  #  9 - pca + splines   
+  #  10 - random forest 
+  #  11 - random forest + splines 
+  #  12 - Boosting 
+  #  13 - Boosting + splines 
+  #  14 - Mean ( for 0 < |trainset| < 4 )
+  #  15 - Mean others (for |trainset| == 0 )
+  #
+  ###################################################
+
+  ###################################################
+  #  MODEL PATRAMETRS 
+  ###################################################
+  #  FULL DATASET
+  ###################################################
+  #  1 - full dataset / (forward) stepwise selection 
+  spw.sel.mae.full = NULL
+  spw.sel.m.min.full = NULL
+  
+  #  2 - full dataset / (forward) stepwise selection + splines   
+  spw.sel.spl.mae.full = NULL
+  
+  #  3 - full dataset / ridge regression 
+  ridge.mae.full = NULL
+  ridge.l.min.full = NULL
+  
+  #  4 - full dataset / ridge regression   + splines       
+  ridge.spl.mae.full = NULL
+  
+  #  5 - full dataset / lasso reegression   
+  #  6 - full dataset / lasso reegression  + splines  
+  #  7 - full dataset / splines  
+  spl.mae.full = NULL
+  spl.m.min.full = NULL
+  
+  #  8 - full dataset / pca  
+  pca.mae.full = NULL
+  
+  #  9 - full dataset / pca + splines   
+  #  10 - full dataset / random forest    
+  rf.mae.full = NULL
+  
+  #  11 - full dataset / random forest + splines  
+  rf.mae.spl.full = NULL
+  
+  #  12 - full dataset / boosting   
+  boost.mae.full = NULL
+  
+  #  13 - full dataset / boosting + splines 
+  boost.spl.mae.full = NULL
+  #####################################################
+  # REDUCED DATASET 
+  #####################################################
+  #  1 - reduced dataset / (forward) stepwise selection 
+  spw.sel.mae.red = NULL
+  spw.sel.m.min.red = NULL
+  
+  #  2 - reduced dataset / (forward) stepwise selection + splines  
+  spw.sel.spl.mae.red = NULL
+  
+  #  3 - reduced dataset / ridge regression 
+  ridge.mae.red = NULL
+  ridge.l.min.red = NULL
+  
+  #  4 - reduced dataset / ridge regression   + splines        
+  ridge.spl.mae.red = NULL
+  
+  #  5 - reduced dataset / lasso reegression   
+  #  6 - reduced dataset / lasso reegression  + splines  
+  #  7 - reduced dataset / splines  
+  spl.mae.red = NULL
+  spl.m.min.red = NULL
+  
+  #  8 - reduced dataset / pca  
+  pca.mae.red = NULL
+  
+  #  9 - reduced dataset / pca + splines   
+  #  10 - reduced dataset / random forest    
+  rf.mae.red = NULL
+  
+  #  11 - reduced dataset / random forest + splines    
+  rf.mae.spl.red = NULL
+  
+  #  12 - reduced dataset / boosting   
+  boost.mae.red = NULL
+  
+  #  12 - reduced dataset / boosting + splines 
+  boost.spl.mae.red = NULL
+  ######################################################
+  
+  MP = data.frame(   ID_St_Dept = rep(ids,13*2) , ID_DS = rep(c(rep(1,ids.num) , rep(2,ids.num)),13)   , 
+                  ID_Pred = c(rep(1,ids.num*2) , rep(2,ids.num*2) , rep(3,ids.num*2) ,
+                              rep(4,ids.num*2) , rep(5,ids.num*2) , rep(6,ids.num*2) , 
+                              rep(7,ids.num*2) , rep(8,ids.num*2) , rep(9,ids.num*2) , 
+                              rep(10,ids.num*2) , rep(11,ids.num*2) , rep(12,ids.num*2) , 
+                              rep(13,ids.num*2) ) , 
+                  Active = rep(0,13*2*ids.num) , 
+                  WMAE = rep(NA,13*2*ids.num), MAE=rep(NA,13*2*ids.num) , 
+                  RSS=rep(NA,13*2*ids.num) , PAR1=rep(NA,13*2*ids.num)   )
+
+MP.min = data.frame(   ID_St_Dept = ids , ID_DS = rep(NA,ids.num) , 
+                  Active = rep(0,ids.num) , 
+                  WMAE = rep(NA,ids.num), P_WIN=rep(NA,ids.num) )
+
+MP.min.all = data.frame(   ID_St_Dept = rep(ids,2) , ID_DS = c(rep(1,ids.num) , rep(2,ids.num))  , 
+                  Active = rep(0,2*ids.num) , 
+                  WMAE = rep(NA,2*ids.num), 
+                  P_WIN=rep(NA,2*ids.num) )
+
 miss.id.train = NULL
 
-c = 0
+ptm <- proc.time()
+
+MAX = 50
+c = 1
 for (id in ids) {
-  print("############################################################################## processing id:")
-  print(id)
+  #print("############################################################################## processing id:")
+  #print(id)
   fn.tr = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_train.zat',sep='')
   fn.ts = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_test.zat',sep='')
   
@@ -137,7 +262,7 @@ for (id in ids) {
   } 
   
   train.csv = read.csv(fn.tr)
-  test.csv = read.csv(fn.tr)
+  test.csv = read.csv(fn.ts)
   
   #print(head(train.csv))
   
@@ -155,144 +280,78 @@ for (id in ids) {
                               CPI = train.csv$CPI , Unemployment = train.csv$Unemployment , 
                               IsHoliday = train.csv$IsHoliday.y )
   
+  train.data.red.test = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , 
+                              Fuel_Price = train.csv$Fuel_Price , 
+                              CPI = train.csv$CPI , Unemployment = train.csv$Unemployment , 
+                              IsHoliday = train.csv$IsHoliday.y )
+  
+  
   
   train.data.full = na.omit(train.data.full)   ### 1 
   train.data.red = na.omit(train.data.red)     ### 2 
-  
-  ###################################################
-  #  MODEL CODES 
-  ###################################################
-  # 
-  #  11 - full dataset / (forward) stepwise selection 
-  #  12 - full dataset / (forward) stepwise selection + splines           
-  #  13 - full dataset / ridge regression 
-  #  14 - full dataset / ridge regression   + splines            
-  #  15 - full dataset / lasso reegression   
-  #  16 - full dataset / lasso reegression  + splines  
-  #  17 - full dataset / splines  
-  #  18 - full dataset / pca  
-  #  19 - full dataset / pca + splines   
-  #  20 - full dataset / random forest    
-  #  21 - full dataset / random forest + splines  
-  #
-  #####################################################
-  #
-  #  41 - reduced dataset / (forward) stepwise selection 
-  #  42 - reduced dataset / (forward) stepwise selection + splines           
-  #  43 - reduced dataset / ridge regression 
-  #  44 - reduced dataset / ridge regression   + splines            
-  #  45 - reduced dataset / lasso reegression   
-  #  46 - reduced dataset / lasso reegression  + splines  
-  #  47 - reduced dataset / splines  
-  #  48 - reduced dataset / pca  
-  #  49 - reduced dataset / pca + splines   
-  #  40 - reduced dataset / random forest    
-  #  41 - reduced dataset / random forest + splines  
-  #
-  ######################################################
-  
-
-
-  ###################################################
-  #  MODEL PATRAMETRS 
-  ###################################################
-  # 
-  #  11 - full dataset / (forward) stepwise selection 
-  spw.sel.mae.full = NULL
-  spw.sel.m.min.full = NULL
-  
-  #  12 - full dataset / (forward) stepwise selection + splines   
-  spw.sel.spl.mae.full = NULL
-  
-  #  13 - full dataset / ridge regression 
-  ridge.mae.full = NULL
-  ridge.l.min.full = NULL
-  
-  #  14 - full dataset / ridge regression   + splines       
-  ridge.spl.mae.full = NULL
-  
-  #  15 - full dataset / lasso reegression   
-  #  16 - full dataset / lasso reegression  + splines  
-  #  17 - full dataset / splines  
-  spl.mae.full = NULL
-  spl.m.min.full = NULL
-  
-  #  18 - full dataset / pca  
-  pca.mae.full = NULL
-  
-  #  19 - full dataset / pca + splines   
-  #  20 - full dataset / random forest    
-  rf.mae.full = NULL
-  rf.mae.spl.full = NULL
-  
-  #  21 - full dataset / random forest + splines  
-  boost.mae.full = NULL
-  boost.spl.mae.full = NULL
-  
-  #
-  #####################################################
-  #
-  #  41 - reduced dataset / (forward) stepwise selection 
-  spw.sel.mae.red = NULL
-  spw.sel.m.min.red = NULL
-  
-  #  42 - reduced dataset / (forward) stepwise selection + splines  
-  spw.sel.spl.mae.red = NULL
-  
-  #  43 - reduced dataset / ridge regression 
-  ridge.mae.red = NULL
-  ridge.l.min.red = NULL
-  
-  #  44 - reduced dataset / ridge regression   + splines        
-  ridge.spl.mae.red = NULL
-  
-  #  45 - reduced dataset / lasso reegression   
-  #  46 - reduced dataset / lasso reegression  + splines  
-  #  47 - reduced dataset / splines  
-  spl.mae.red = NULL
-  spl.m.min.red = NULL
-  
-  #  48 - reduced dataset / pca  
-  pca.mae.red = NULL
-  
-  #  49 - reduced dataset / pca + splines   
-  #  40 - reduced dataset / random forest    
-  rf.mae.red = NULL
-  rf.mae.spl.red = NULL
-  
-  #  41 - reduced dataset / random forest + splines  
-  boost.mae.red = NULL
-  boost.spl.mae.red = NULL
-  
-  #
-  ######################################################
+  train.data.red.test = na.omit(train.data.red.test) #3
   
   for (data.type in 1:2) { 
     traindata = NULL
     
     if (data.type == 1) {  
-      print("----------------------------------> DATA FULL")
+      #print("----------------------------------> DATA FULL")
       traindata = train.data.full
-      print(dim(traindata))
+      #print(dim(traindata))
     } else {
-        print("--------------------------------> DATA RED")
+        #print("--------------------------------> DATA RED")
         traindata = train.data.red
-        print(dim(traindata))
+        #print(dim(traindata))
+    }
+    
+#     traindata =  train.data.red.test
+#     data.type = 3
+    
+    if (dim(traindata)[1] < 4 & dim(traindata)[1] > 0 ) {
+      print("0 < |traindata| < 4 for id")
+      print(id)
+      
+      pred = mean(traindata$Weekly_Sales)
+      wmae = getWMAE(pred , traindata)
+      
+      MP.min.all$Active[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == data.type ] = 1
+      MP.min.all$WMAE[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == data.type] = wmae
+      MP.min.all$P_WIN[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == data.type] = 14
+      
+      l = MP.min.all[MP.min.all$Active == 1 & MP.min.all$ID_St_Dept == id & !is.na(MP.min.all$WMAE)  ,]
+      if (dim(l)[1] > 1) {
+        MP.min$Active[MP.min$ID_St_Dept == id] = 1
+        MP.min$WMAE[MP.min$ID_St_Dept == id] = min(l$WMAE)
+        MP.min$P_WIN[MP.min$ID_St_Dept == id] = l$P_WIN[which.min(l$WMAE)]
+        MP.min$ID_DS[MP.min$ID_St_Dept == id] = l$ID_DS[which.min(l$WMAE)]
+      }
+      
+      next 
+    } else if (dim(traindata)[1] == 0) {
+      print("|traindata| == 0 for id")
+      print(id)
+      
+      if (is.null(miss.id.train)) 
+        miss.id.train = c(id)
+      else 
+        miss.id.train = c(miss.id.train,id)
+      
+      next
     }
     
     ####### 1) select features (+ splines)
-    form="Weekly_Sales ~ ."
     
+    form="Weekly_Sales ~ ."
     # k-fold
     k=10
     folds = kfolds(k,nrow(traindata)) 
-    
     var.feat = length(names(traindata)) - 1
     
     cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
     cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
     cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
     
+    tryCatch({
     for(j in 1:k) {
       best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[folds!=j,], nvmax = var.feat)
       for (i in (1:var.feat) ) {
@@ -305,32 +364,43 @@ for (id in ids) {
     
     ## MAE
     mean.cv.mae=apply(cv.mae ,2,mean)
-    m = which.min(mean.cv.mae)
+    mean.cv.wmae=apply(cv.wmae ,2,mean)
+    mean.cv.errors=apply(cv.errors ,2,mean)
+    m = which.min(mean.cv.wmae)
     
     if (data.type == 1) {  
       spw.sel.mae.full = min(mean.cv.mae)
       spw.sel.m.min.full = m 
       
-      print("spw.sel.mae.full")
-      print(spw.sel.mae.full)
-      print("spw.sel.m.min.full")
-      print(spw.sel.m.min.full)
+#       print("spw.sel.mae.full")
+#       print(spw.sel.mae.full)
+#       print("spw.sel.m.min.full")
+#       print(spw.sel.m.min.full)
     } else {
         spw.sel.mae.red = min(mean.cv.mae)
         spw.sel.m.min.red = m 
         
-        print("spw.sel.mae.red")
-        print(spw.sel.mae.red)
-        print("spw.sel.m.min.red")
-        print(spw.sel.m.min.red)
+#         print("spw.sel.mae.red")
+#         print(spw.sel.mae.red)
+#         print("spw.sel.m.min.red")
+#         print(spw.sel.m.min.red)
     }
-    #######################
     
-    ### Splines 
+    MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 1] = 1
+    MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 1] = min(mean.cv.mae)
+    MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 1] = min(mean.cv.wmae)
+    MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 1] = min(mean.cv.errors)
+    MP$PAR1[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 1] = m
+    }, error = function(e) {
+          #print(e)
+    })
+    
+    ### stepwise selection + Splines  
     cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     cv.wmae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
-    
+
+    tryCatch({
     for(j in 1:k) {
       best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[folds!=j,], nvmax = var.feat)
       mod.prd = predict(best.fit , "Weekly_Sales ~ .", traindata[folds!=j,] , id = m)
@@ -343,6 +413,7 @@ for (id in ids) {
         pred = predict(spl.fit , mod.prd.test   )$y 
       }, error = function(e) {
           #print(e)
+        MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = 0
       })
   
       cv.errors[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
@@ -352,23 +423,32 @@ for (id in ids) {
     
     ## MAE
     mean.cv.mae=apply(cv.mae ,2,mean)
+    mean.cv.wmae=apply(cv.wmae ,2,mean)
+    mean.cv.errors=apply(cv.errors ,2,mean)
     
     if (data.type == 1) {  
         spw.sel.spl.mae.full = min(mean.cv.mae)
         if (is.nan(spw.sel.spl.mae.full))
           spw.sel.spl.mae.full = 100000
         
-        print("spw.sel.spl.mae.full")
-        print(spw.sel.spl.mae.full)
+#         print("spw.sel.spl.mae.full")
+#         print(spw.sel.spl.mae.full)
     } else {
         spw.sel.spl.mae.red = min(mean.cv.mae)
         if (is.nan(spw.sel.spl.mae.red))
           spw.sel.spl.mae.red = 100000
         
-        print("spw.sel.spl.mae.red")
-        print(spw.sel.spl.mae.red)
+#         print("spw.sel.spl.mae.red")
+#         print(spw.sel.spl.mae.red)
     }
-    
+
+    MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = 1
+    MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = min(mean.cv.mae)
+    MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = min(mean.cv.wmae)
+    MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = min(mean.cv.errors)
+    }, error = function(e) {
+          #print(e)
+    })
     ####### 2) ride regression (+ splines)
     cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
@@ -378,6 +458,7 @@ for (id in ids) {
     cv.mae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     cv.wmae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     
+    tryCatch({
     for(j in 1:k) {
       x=model.matrix(Weekly_Sales~.,traindata[folds != j,])[,-1]
       y=traindata$Weekly_Sales[folds != j]
@@ -398,77 +479,97 @@ for (id in ids) {
       pred = NULL
       mod.prd = predict(cv.out,s=bestlam ,newx=x)
       mod.prd.test = predict(cv.out,s=bestlam ,newx=x.test)
-      tryCatch({
+     
         spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales[folds != j],cv=TRUE)
         pred = predict(spl.fit , mod.prd.test   )$y
-      }, error = function(e) {
-        #print(e)
-      })
+        
+        cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+        cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+        cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] ) 
       
-      cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
-      cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
-      cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] )  
       
       ###### end of Splines 
     }
     
     ## MAE
     mean.cv.mae=apply(cv.mae ,2,mean)
+    mean.cv.wmae=apply(cv.wmae ,2,mean)
+    mean.cv.errors=apply(cv.errors ,2,mean)
+    
     mean.cv.mae.spline=apply(cv.mae.spline ,2,mean)
+    mean.cv.wmae.spline=apply(cv.wmae.spline ,2,mean)
+    mean.cv.errors.spline=apply(cv.errors.spline ,2,mean)
     
     if (data.type == 1) {  
       ridge.mae.full = min(mean.cv.mae)
       if (is.nan(ridge.mae.full))
         ridge.mae.full = 100000
       
-      print("ridge.mae.full")
-      print(ridge.mae.full)
+#       print("ridge.mae.full")
+#       print(ridge.mae.full)
       
       ridge.l.min.full = bestlam
-      print("ridge.l.min.full")
-      print(ridge.l.min.full)
+#       print("ridge.l.min.full")
+#       print(ridge.l.min.full)
       
       ridge.spl.mae.full = min(mean.cv.mae.spline)
       if (is.nan(ridge.spl.mae.full))
         ridge.spl.mae.full = 100000
       
-      print("ridge.spl.mae.full")
-      print(ridge.spl.mae.full)
+#       print("ridge.spl.mae.full")
+#       print(ridge.spl.mae.full)
       
     } else {
       ridge.mae.red = min(mean.cv.mae)
       if (is.nan(ridge.mae.red))
         ridge.mae.red = 100000
       
-      print("ridge.mae.red")
-      print(ridge.mae.red)
+#       print("ridge.mae.red")
+#       print(ridge.mae.red)
       
       ridge.l.min.red = bestlam
-      print("ridge.l.min.red")
-      print(ridge.l.min.red)
+#       print("ridge.l.min.red")
+#       print(ridge.l.min.red)
       
       ridge.spl.mae.red = min(mean.cv.mae.spline)
       if (is.nan(ridge.spl.mae.red))
         ridge.spl.mae.red = 100000
       
-      print("ridge.spl.mae.red")
-      print(ridge.spl.mae.red)
+#       print("ridge.spl.mae.red")
+#       print(ridge.spl.mae.red)
       
     }
+
+    MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 3] = 1
+    MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 4] = 1
+    
+    MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 3] = min(mean.cv.mae)
+    MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 3] = min(mean.cv.wmae)
+    MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 3] = min(mean.cv.errors)
+    MP$PAR1[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 3] = bestlam
+    
+    MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 4] = min(mean.cv.mae.spline)
+    MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 4] = min(mean.cv.wmae.spline)
+    MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 4] = min(mean.cv.errors.spline)
+
+    }, error = function(e) {
+        #print(e)
+        MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 4] = 0
+    })
+    
+    ####### 4) lasso reegression (+ splines)
+    ## NOT DONE
     
     ####### 3) splines 
-    print("Splines ... ")
     fform = "Weekly_Sales ~ .+ ns(Temperature) + ns(Fuel_Price) + ns(CPI)  + ns(Unemployment) "
     
     # k-fold
-    tryCatch({
-    
     var.feat = length(names(traindata)) - 1
-    
     cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
     cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
     cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
-    
+
+    tryCatch({
     for(j in 1:k) {
       best.fit = regsubsets( as.formula(fform) , data = traindata[folds!=j,], nvmax = var.feat)
       for (i in (1:var.feat) ) {
@@ -481,38 +582,50 @@ for (id in ids) {
     
     ## MAE
     mean.cv.mae=apply(cv.mae ,2,mean)
-    m = which.min(mean.cv.mae)
+    mean.cv.wmae=apply(cv.wmae ,2,mean)
+    m = which.min(mean.cv.wmae)
     
     if (data.type == 1) {  
       spl.mae.full = min(mean.cv.mae)
       spl.m.min.full = m 
       
-      print("spl.mae.full")
-      print(spl.mae.full)
-      print("spl.m.min.full")
-      print(spl.m.min.full)
+#       print("spl.mae.full")
+#       print(spl.mae.full)
+#       print("spl.m.min.full")
+#       print(spl.m.min.full)
     } else {
         spl.mae.red = min(mean.cv.mae)
         spw.m.min.red = m 
         
-        print("spl.mae.red")
-        print(spl.mae.red)
-        print("spl.m.min.red")
-        print(spl.m.min.red)
+#         print("spl.mae.red")
+#         print(spl.mae.red)
+#         print("spl.m.min.red")
+#         print(spl.m.min.red)
     }
+
+    MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = 1
+    MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = min(mean.cv.mae)
+    MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = min(mean.cv.wmae)
+    MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = min(mean.cv.errors)
+    MP$PAR1[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = m
     }, error = function(e) {
         #print(e)
+      MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = 0
     })
-
-    ####### 4) lasso reegression (+ splines)
     
     ####### 5) pca (+splines)
+    # NOT DONE
     
     ##### 6) Random forest 
     cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     cv.wmae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     
+    cv.errors.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    cv.mae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    cv.wmae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    
+    tryCatch({
     for(j in 1:k) {
       rf =randomForest(Weekly_Sales~. ,data=traindata[folds != j,] , importance =TRUE)
      
@@ -526,105 +639,203 @@ for (id in ids) {
       pred = NULL
       mod.prd = predict (rf ,newdata = traindata[folds != j,])
       mod.prd.test = predict (rf ,newdata = traindata[folds == j,])
-      tryCatch({
+      
         spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales[folds != j],cv=TRUE)
         pred = predict(spl.fit , mod.prd.test   )$y
-      }, error = function(e) {
-        #print(e)
-      })
-      
-      cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
-      cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
-      cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] )  
+        
+        cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+        cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+        cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] ) 
     }
     
     ## MAE
     mean.cv.mae=apply(cv.mae ,2,mean)
+    mean.cv.wmae=apply(cv.wmae ,2,mean)
+    mean.cv.errors=apply(cv.errors ,2,mean)
+    
     mean.cv.mae.spline=apply(cv.mae.spline ,2,mean)
+    mean.cv.wmae.spline=apply(cv.wmae.spline ,2,mean)
+    mean.cv.errors.spline=apply(cv.errors.spline ,2,mean)
     
     if (data.type == 1) {  
       rf.mae.full = min(mean.cv.mae)
       rf.mae.spl.full = min(mean.cv.mae.spline)
       
-      print("rf.mae.full")
-      print(rf.mae.full)
-      print("rf.mae.spl.full")
-      print(rf.mae.spl.full)
+#       print("rf.mae.full")
+#       print(rf.mae.full)
+#       print("rf.mae.spl.full")
+#       print(rf.mae.spl.full)
     } else {
       rf.mae.red = min(mean.cv.mae)
       rf.mae.spl.red = min(mean.cv.mae.spline)
       
-      print("rf.mae.red")
-      print(rf.mae.red)
-      print("rf.mae.spl.red")
-      print(rf.mae.spl.red)
+#       print("rf.mae.red")
+#       print(rf.mae.red)
+#       print("rf.mae.spl.red")
+#       print(rf.mae.spl.red)
     }
-  
+
+    MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 10] = 1
+    MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = 1
+
+    MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 10] = min(mean.cv.mae)
+    MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 10] = min(mean.cv.wmae)
+    MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 10] = min(mean.cv.errors)
+    
+    MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = min(mean.cv.mae.spline)
+    MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = min(mean.cv.wmae.spline)
+    MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = min(mean.cv.errors.spline)
+    }, error = function(e) {
+        #print(e)
+        MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = 0
+    })
     ##### 7) Boosting 
     cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     cv.wmae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
     
+    cv.errors.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    cv.mae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    cv.wmae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+
+    tryCatch({
     for(j in 1:k) {
-      tryCatch({
-      boost = gbm(Weekly_Sales~., data=traindata[folds != j,] , distribution="gaussian", n.trees =5000 , interaction.depth =4)
-      
-      pred = predict (boost , newdata = traindata[folds == j,] , n.trees = 5000)
-    
-      cv.errors[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
-      cv.mae[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
-      cv.wmae[j,1] = getWMAE(pred , traindata[folds==j , ] )    
-      
-      ###### Splines   
-      pred = NULL
-      mod.prd = predict (boost ,newdata = traindata[folds != j,] , n.trees = 5000)
-      mod.prd.test = predict (boost ,newdata = traindata[folds == j,] , n.trees = 5000)
-      
+        boost = gbm(Weekly_Sales~., data=traindata[folds != j,] , distribution="gaussian", 
+                    n.trees =5000 , interaction.depth =4)
+        
+        pred = predict (boost , newdata = traindata[folds == j,] , n.trees = 5000)
+        
+        cv.errors[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+        cv.mae[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+        cv.wmae[j,1] = getWMAE(pred , traindata[folds==j , ] )    
+        
+        ###### Splines   
+        pred = NULL
+        mod.prd = predict (boost ,newdata = traindata[folds != j,] , n.trees = 5000)
+        mod.prd.test = predict (boost ,newdata = traindata[folds == j,] , n.trees = 5000)
+        
         spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales[folds != j],cv=TRUE)
         pred = predict(spl.fit , mod.prd.test   )$y
+        
+        cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+        cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+        cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] )  
+      }
+        ## MAE
+        mean.cv.mae=apply(cv.mae ,2,mean)
+        mean.cv.wmae=apply(cv.wmae ,2,mean)
+        mean.cv.errors=apply(cv.errors ,2,mean)
+        
+        mean.cv.mae.spline=apply(cv.mae.spline ,2,mean)
+        mean.cv.wmae.spline=apply(cv.wmae.spline ,2,mean)
+        mean.cv.errors.spline=apply(cv.errors.spline ,2,mean)
+        
+        if (data.type == 1) {  
+          boost.mae.full = min(mean.cv.mae)
+          boost.spl.mae.full = min(mean.cv.mae.spline)
+          
+#           print("boost.mae.full")
+#           print(boost.mae.full)
+#           print("boost.spl.mae.full")
+#           print(boost.spl.mae.full)
+          
+          } else {
+            boost.mae.red = min(mean.cv.mae)
+            boost.spl.mae.red = min(mean.cv.mae.spline)
+            
+#             print("boost.mae.red")
+#             print(boost.mae.red)
+#             print("boost.spl.mae.red")
+#             print(boost.spl.mae.red) 
+            }
+        
+        MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 12] = 1
+        MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 13] = 1
+    
+        MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 12] = min(mean.cv.mae)
+        MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 12] = min(mean.cv.wmae)
+        MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 12] = min(mean.cv.errors)
+        
+        MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 13] = min(mean.cv.mae.spline)
+        MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 13] = min(mean.cv.wmae.spline)
+        MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 13] = min(mean.cv.errors.spline)
+    
       }, error = function(e) {
-        #print(e)
+          #print(e)
+          MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 12] = 0
+          MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 13] = 0
       })
-      
-      cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
-      cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
-      cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] )  
+  ########## end of predictors   
+    l = MP[MP$Active == 1 & MP$ID_St_Dept == id & !is.na(MP$WMAE) & MP$ID_DS == data.type ,]
+      if (dim(l)[1] > 0){
+        MP.min.all$Active[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == data.type ] = 1
+        MP.min.all$WMAE[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == data.type] = min(l$WMAE)
+        MP.min.all$P_WIN[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == data.type] = l$ID_Pred[which.min(l$WMAE)]
     }
-    
-    ## MAE
-    mean.cv.mae=apply(cv.mae ,2,mean)
-    mean.cv.mae.spline=apply(cv.mae.spline ,2,mean)
-    
-    if (data.type == 1) {  
-     boost.mae.full = min(mean.cv.mae)
-     boost.spl.mae.full = min(mean.cv.mae.spline)
-     
-     print("boost.mae.full")
-     print(boost.mae.full)
-     print("boost.spl.mae.full")
-     print(boost.spl.mae.full)
-    
-    } else {
-     boost.mae.red = min(mean.cv.mae)
-     boost.spl.mae.red = min(mean.cv.mae.spline)
-     
-     print("boost.mae.red")
-     print(boost.mae.red)
-     print("boost.spl.mae.red")
-     print(boost.spl.mae.red) 
-    }
-   
+  }
+  ######### end of datasets 
   
-    
-    
-    }
+  l = MP[MP$Active == 1 & MP$ID_St_Dept == id & !is.na(MP$WMAE)  ,]
+    if (dim(l)[1] > 0){
+      MP.min$Active[MP.min$ID_St_Dept == id] = 1
+      MP.min$WMAE[MP.min$ID_St_Dept == id] = min(l$WMAE)
+      MP.min$P_WIN[MP.min$ID_St_Dept == id] = l$ID_Pred[which.min(l$WMAE)]
+      MP.min$ID_DS[MP.min$ID_St_Dept == id] = l$ID_DS[which.min(l$WMAE)]
+  }
   
-  
-  
-  c = c + 1
-  if (c > 10) break 
+#   c = c + 1
+#   if (c > MAX) break 
 }
 
 miss.id.train 
 
+tm = proc.time() - ptm
+print("Time elapsed in loop:")
+print(tm)
+
+print("mean WMAE")
+print(mean(MP.min$WMAE[MP.min$Active == 1]))
+
+######### MP.min
+mp = MP.min[MP.min$Active == 1 , ]
+print("number cases not handled")
+print((MAX-dim(mp)[1]))
+
+mp[with(mp, order(-WMAE)), ]
+
+pwins = unique(MP.min$P_WIN[MP.min$Active == 1 ])
+pwins 
+
+P_WIN_PERF = data.frame()
+for (pp in pwins ) {  
+  P_WIN_PERF = rbind(P_WIN_PERF , 
+                     cbind(Pred = c(pp) , 
+                           nwins = nrow(mp[ mp$P_WIN == pp , ]) , 
+                           perc = (nrow(mp[ mp$P_WIN == pp , ]) / nrow(mp) ) 
+                           ) 
+                     )
+}
+P_WIN_PERF[with(P_WIN_PERF,order(-perc)),]
+
+unique(MP.min$ID_DS[MP.min$Active == 1 ])
+
+######### MP.min.all
+mp.all = MP.min.all[MP.min.all$Active == 1 , ]
+mp.all[with(mp.all, order(-WMAE)), ]
+
+unique(MP.min.all$P_WIN[MP.min.all$Active == 1 ])
+
+unique(MP.min.all$ID_DS[MP.min.all$Active == 1 ])
+#MP[MP$Active == 1 , ]
+```
+
+Serializing **MP.min** and **MP.min.all** ... 
+
+```{r,warning=F} 
+## store 
+MP.min.fn = paste(paste(base.path,"gen/",sep=''),"MP_min.zat",sep='')
+write.csv(MP.min,quote=F,row.names=F,file=MP.min.fn)
+ 
+MP.min.all.fn = paste(paste(base.path,"gen/",sep=''),"MP_min_all.zat",sep='')
+write.csv(MP.min.all,quote=F,row.names=F,file=MP.min.all.fn)
 ```
