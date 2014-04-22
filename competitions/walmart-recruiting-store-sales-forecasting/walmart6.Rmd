@@ -273,9 +273,9 @@ compareModels = function(contestName, ts_train, ts_val, doPlot = T, harm = F) {
 ```{r,warning=F} 
 #base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-base.path = "C:/____PERSONAL____/data_analytics/fast-furious/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "C:/____PERSONAL____/data_analytics/fast-furious/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 features.fn = paste(base.path,"features.zat",sep="")
 features.csv = read.csv(features.fn)
@@ -286,7 +286,7 @@ features.init = features.csv
 ptm <- proc.time()
 
 c = 1
-MAX = 1
+MAX = 1000
 stores = unique(features.csv$Store)
 for (s in stores) {
   
