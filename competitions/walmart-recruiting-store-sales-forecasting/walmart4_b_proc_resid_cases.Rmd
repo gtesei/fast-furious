@@ -1,0 +1,243 @@
+Walmart Recruiting Store Sales Forecasting
+========================================================
+
+Content 
+-------------------------
+1. **Generating a feature set (file) for each dept and store**
+2. **Fitting with a liner regressor and see submitted results**
+3. **Fitting sales time series and see submitted results**
+
+.
+
+1. Generating a feature set (file) for each dept and store
+-------------------------
+
+see walmart1.Rmd 
+
+2. Fitting with a liner regressor and see submitted results 
+-------------------------
+
+see walmart4.Rmd 
+
+2.1 Fitting residuals cases not fitted in 2
+-------------------------
+
+
+
+```{r,warning=F} 
+
+##### utils  
+library(leaps)
+library(glmnet)
+library (pls)
+library (splines)
+library (randomForest)
+library (gbm)
+
+kfolds = function(k,data.length) {
+  k = min(k,data.length)
+  folds = rep(NA,data.length)
+  labels = 1:data.length
+  st = floor(data.length/k)
+  al_labels = NULL
+  for (s in 1:k) {
+    x = NULL
+    if (is.null(al_labels))
+      x = sample(labels,st)
+    else
+      x = sample(labels[-al_labels],st)
+    
+    folds[x] = s
+    if (is.null(al_labels))
+      al_labels = x
+    else
+      al_labels = c(al_labels,x)
+    }
+  ss = 1
+  for (s in 1:length(folds)){
+    if (is.na(folds[s])) {
+      folds[s] = ss
+      ss = ss + 1
+      } 
+    }
+  folds
+}
+
+predict.regsubsets =function (reg , formula , newdata ,id ,...){
+  #form=as.formula(reg$call [[2]])
+  form = as.formula(formula)
+  mat=model.matrix(form,newdata)
+  coefi=coef(reg ,id=id)
+  xvars=names(coefi)
+  mat[,xvars]%*%coefi 
+}
+
+getWMAE = function(pred, data  ) {
+    ares = abs(pred - data$Weekly_Sales)
+    l = dim(data)[1] 
+    w = 1 * (!data$IsHoliday) + 5 * data$IsHoliday
+    wmae = sum(ares * w) / (sum(w))
+}
+
+# returns string w/o leading or trailing whitespace
+trim = function (x) gsub("^\\s+|\\s+$", "", x)
+
+# build id as concatenation of Store and Dept 
+buildId = function(x) {  
+  prefix = paste(trim(as.character(x[1])),'_',sep='') 
+  id = paste(prefix,trim(as.character(x[2])),sep='')
+}
+
+### load files 
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+
+
+MP.min.fn = paste(paste(base.path,"gen/",sep=''),"MP_min.csv",sep='')
+MP.min = read.csv(MP.min.fn)
+ 
+MP.min.all.fn = paste(paste(base.path,"gen/",sep=''),"MP_min_all.csv",sep='')
+MP.min.all = read.csv(MP.min.all.fn)
+
+print("N. cases to handle:")
+print(dim(MP.min[MP.min$Active == 0,])[1])
+print(MP.min[MP.min$Active == 0,])
+
+ids = MP.min$ID_St_Dept[MP.min$Active == 0]
+ids.num = length(ids)
+ids.num
+```
+
+Processing each missing id ...
+
+```{r,warning=F} 
+
+  ###################################################
+  #  MODEL CODES 
+  ###################################################
+  # 
+  #  1 - (forward) stepwise selection 
+  #  2 - (forward) stepwise selection + splines           
+  #  3 - ridge regression 
+  #  4 - ridge regression   + splines            
+  #  5 - lasso reegression   
+  #  6 - lasso reegression  + splines  
+  #  7 - splines  
+  #  8 - pca  
+  #  9 - pca + splines   
+  #  10 - random forest 
+  #  11 - random forest + splines 
+  #  12 - Boosting 
+  #  13 - Boosting + splines 
+  #  14 - Mean ( for 0 < |trainset| < 4 )
+  #  15 - Mean others (for |trainset| == 0 )
+  #
+  ###################################################
+
+ptm <- proc.time()
+
+MAX = 5000
+c = 1
+for (id in ids) {
+  print("############################################################################## processing id:")
+  print(id)
+  fn.tr = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_train.zat',sep='')
+  fn.ts = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_test.zat',sep='')
+  
+  train.csv = read.csv(fn.tr)
+  test.csv = read.csv(fn.ts)
+  
+  traindata = train.csv
+  traindata$IsHoliday = traindata$IsHoliday.y
+  if (dim(traindata)[1] > 0 ) {
+    print("|traindata| > 0 ... using mean as predictor ... wmae on training set:")
+    
+    pred = mean(traindata$Weekly_Sales)
+    wmae = getWMAE(pred , traindata)
+  
+    print(wmae)
+    
+    MP.min.all$Active[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == 2 ] = 1
+    MP.min.all$WMAE[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == 2] = wmae
+    MP.min.all$P_WIN[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == 2] = 14
+    
+    l = MP.min.all[MP.min.all$Active == 1 & MP.min.all$ID_St_Dept == id & !is.na(MP.min.all$WMAE)  ,]
+    
+    MP.min$Active[MP.min$ID_St_Dept == id] = 1
+    MP.min$WMAE[MP.min$ID_St_Dept == id] = min(l$WMAE)
+    MP.min$P_WIN[MP.min$ID_St_Dept == id] = l$P_WIN[which.min(l$WMAE)]
+    MP.min$ID_DS[MP.min$ID_St_Dept == id] = l$ID_DS[which.min(l$WMAE)]
+      
+    next 
+    
+    } else if (dim(traindata)[1] == 0) {
+      print("|traindata| == 0 for id")
+      print(id)
+      
+      ## TODO 
+      
+      next
+    }
+  
+  c = c + 1
+  if (c > MAX) break 
+}
+
+tm = proc.time() - ptm
+print("Time elapsed in loop:")
+print(tm)
+
+print("mean WMAE")
+print(mean(MP.min$WMAE[MP.min$Active == 1]))
+
+######### MP.min
+mp = MP.min[MP.min$Active == 1 , ]
+print("number cases not handled")
+print((MAX-dim(mp)[1]))
+
+head(mp[with(mp, order(-WMAE)), ])
+tail(mp[with(mp, order(-WMAE)), ])
+
+pwins = unique(MP.min$P_WIN[MP.min$Active == 1 ])
+pwins 
+
+P_WIN_PERF = data.frame()
+for (pp in pwins ) {  
+  P_WIN_PERF = rbind(P_WIN_PERF , 
+                     cbind(Pred = c(pp) , 
+                           nwins = nrow(mp[ mp$P_WIN == pp , ]) , 
+                           perc = (nrow(mp[ mp$P_WIN == pp , ]) / nrow(mp) ) 
+                           ) 
+                     )
+}
+P_WIN_PERF[with(P_WIN_PERF,order(-perc)),]
+
+unique(MP.min$ID_DS[MP.min$Active == 1 ])
+
+######### MP.min.all
+mp.all = MP.min.all[MP.min.all$Active == 1 , ]
+head(mp.all[with(mp.all, order(-WMAE)), ])
+tail(mp.all[with(mp.all, order(-WMAE)), ])
+
+unique(MP.min.all$P_WIN[MP.min.all$Active == 1 ])
+
+unique(MP.min.all$ID_DS[MP.min.all$Active == 1 ])
+#MP[MP$Active == 1 , ]
+
+print("N. cases to handle yet:")
+print(dim(MP.min[MP.min$Active == 0,])[1])
+print(MP.min[MP.min$Active == 0,])
+```
+
+Serializing **MP.min** and **MP.min.all** ... 
+
+```{r,warning=F} 
+## store 
+# MP.min.fn = paste(paste(base.path,"gen/",sep=''),"MP_min.zat",sep='')
+# write.csv(MP.min,quote=F,row.names=F,file=MP.min.fn)
+#  
+# MP.min.all.fn = paste(paste(base.path,"gen/",sep=''),"MP_min_all.zat",sep='')
+# write.csv(MP.min.all,quote=F,row.names=F,file=MP.min.all.fn)
+```

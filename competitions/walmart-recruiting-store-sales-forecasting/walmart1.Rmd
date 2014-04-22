@@ -20,7 +20,8 @@ base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sal
 train.fn = paste(base.path,"train.zat",sep="")
 test.fn = paste(base.path,"test.zat",sep="")
 sampleSubmission.fn = paste(base.path,"sampleSubmission.zat",sep="")
-features.fn = paste(base.path,"features.zat",sep="")
+#features.fn = paste(base.path,"features.zat",sep="")
+features.fn = paste(base.path,"features_comp.csv",sep="")
 stores.fn = paste(base.path,"stores.zat",sep="")
 
 train.csv = read.csv(train.fn)
