@@ -89,9 +89,9 @@ buildId = function(x) {
 }
 
 ### load files 
-#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 
 
@@ -132,7 +132,7 @@ Processing each missing id ...
   #  12 - Boosting 
   #  13 - Boosting + splines 
   #  14 - Mean ( for 0 < |trainset| < 4 )
-  #  15 - Mean others (for |trainset| == 0 )
+  #  15 - Mean others (for |trainset| == 0 )  
   #
   ###################################################
 
@@ -176,7 +176,35 @@ for (id in ids) {
       print("|traindata| == 0 for id")
       print(id)
       
-      ## TODO 
+      pred = 0 
+      if (id == "37_29")  { 
+        ## 37_29 --> stima 13.20813 
+        pred = 13.20813
+      } else if (id == "5_99" | id == "9_99" | id == "10_99" | id == "25_99") {
+        ## 5_99 , 9_99 , 10_99 , 25_99  --> stima 25.71667
+        pred = 25.71667
+      } else if (id == "18_43" | id == "24_43") {
+        ## 18_43 , 24_43 --> stima 1.19
+        pred = 1.19
+      } else if (id == "34_39" | id == "45_39") {
+        ## 34_39 , 45_39  --> stima = 11
+        pred = 11
+      } else if (id == "36_30" | id == "42_30" ) {
+        ## 36_30 , 42_30 --> stima == 1850
+        pred = 1850
+      } else {
+        stop ("id not handled")
+      }
+      
+      MP.min.all$Active[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == 2 ] = 1
+      MP.min.all$WMAE[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == 2] = NA
+      MP.min.all$P_WIN[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == 2] = 15
+      MP.min.all$PAR1[MP.min.all$ID_St_Dept == id & MP.min.all$ID_DS == 2] = pred
+    
+      MP.min$Active[MP.min$ID_St_Dept == id] = 1
+      MP.min$WMAE[MP.min$ID_St_Dept == id] = NA
+      MP.min$P_WIN[MP.min$ID_St_Dept == id] = 15
+      MP.min$PAR1[MP.min$ID_St_Dept == id] = pred
       
       next
     }
@@ -229,15 +257,75 @@ unique(MP.min.all$ID_DS[MP.min.all$Active == 1 ])
 print("N. cases to handle yet:")
 print(dim(MP.min[MP.min$Active == 0,])[1])
 print(MP.min[MP.min$Active == 0,])
+
+or_ids = data.frame(id = ids)
+updates = merge(x=or_ids , y=MP.min , by.x=c("id"),by.y=c("ID_St_Dept"),all.x=F,all.y=F)
+updates
+```
+
+In order to fit weekly sales of these depts with o obs on train set, let's considers similar stores (type, size, total weekly sales) ... 
+
+```{r,warning=F} 
+train.all.fn = paste(base.path,"train.zat",sep="")
+stores.fn = paste(base.path,"stores.zat",sep="")
+
+train.all.csv = read.csv(train.all.fn)
+stores.csv = read.csv(stores.fn)
+
+tab = merge(x=train.all.csv,y=stores.csv,by.x=c("Store"),by.y=c("Store"),all.x=T,all.y=F)
+
+## 37_29 --> stima 13.20813
+mean(tab$Weekly_Sales[tab$Dept == 29 & tab$Type == 'C'])
+sd(tab$Weekly_Sales[tab$Dept == 29 & tab$Type == 'C'])
+tab[tab$Dept == 29 & tab$Type == 'C',]
+
+## 5_99 , 9_99 , 10_99 , 25_99 
+## 5 9 10 25 are all B type 
+## --> stima 25.71667
+mean(tab$Weekly_Sales[tab$Dept == 99 & tab$Type == 'B'])
+sd(tab$Weekly_Sales[tab$Dept == 99 & tab$Type == 'B'])
+tab[tab$Dept == 99 & tab$Type == 'B',]
+
+# 18_43 , 24_43 
+# 18 is B type while 24 is A type 
+## --> stima 1.19
+mean(tab$Weekly_Sales[tab$Dept == 43 & tab$Type == 'A'])
+sd(tab$Weekly_Sales[tab$Dept == 43 & tab$Type == 'A'])
+mean(tab$Weekly_Sales[tab$Dept == 43 & tab$Type == 'B'])
+sd(tab$Weekly_Sales[tab$Dept == 43 & tab$Type == 'B'])
+mean(tab$Weekly_Sales[tab$Dept == 43])
+
+# 34_39 , 45_39
+# 34 is A type while 45 is B type 
+## --> stima = 11
+mean(tab$Weekly_Sales[tab$Dept == 39 & tab$Type == 'A'])
+sd(tab$Weekly_Sales[tab$Dept == 39 & tab$Type == 'A'])
+mean(tab$Weekly_Sales[tab$Dept == 39 & tab$Type == 'B'])
+sd(tab$Weekly_Sales[tab$Dept == 39 & tab$Type == 'B'])
+mean(tab$Weekly_Sales[tab$Dept == 39 ])
+
+# 36_30 , 42_30 
+# 36 is A type while 42 is C type 
+## stima == 1850
+mean(tab$Weekly_Sales[tab$Dept == 36 & tab$Type == 'A'])
+sd(tab$Weekly_Sales[tab$Dept == 36 & tab$Type == 'A'])
+mean(tab$Weekly_Sales[tab$Dept == 36 & tab$Type == 'C'])
+sd(tab$Weekly_Sales[tab$Dept == 36 & tab$Type == 'C'])
+mean(tab$Weekly_Sales[tab$Dept == 36 ])
+sd(tab$Weekly_Sales[tab$Dept == 36 ])
+tab[tab$Dept == 36 & tab$Type == 'C' , ]
+dim(tab[tab$Dept == 36 & tab$Type == 'A' , ])[1]
+mean(tab$Weekly_Sales[tab$Type == 'C'])
+
 ```
 
 Serializing **MP.min** and **MP.min.all** ... 
 
 ```{r,warning=F} 
 ## store 
-# MP.min.fn = paste(paste(base.path,"gen/",sep=''),"MP_min.zat",sep='')
-# write.csv(MP.min,quote=F,row.names=F,file=MP.min.fn)
-#  
-# MP.min.all.fn = paste(paste(base.path,"gen/",sep=''),"MP_min_all.zat",sep='')
-# write.csv(MP.min.all,quote=F,row.names=F,file=MP.min.all.fn)
+MP.min.fn = paste(paste(base.path,"gen/",sep=''),"MP_min_comp.zat",sep='')
+write.csv(MP.min,quote=F,row.names=F,file=MP.min.fn)
+  
+MP.min.all.fn = paste(paste(base.path,"gen/",sep=''),"MP_min_all_comp.zat",sep='')
+write.csv(MP.min.all,quote=F,row.names=F,file=MP.min.all.fn)
 ```
