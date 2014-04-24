@@ -833,9 +833,9 @@ Serializing **MP.min** and **MP.min.all** ...
 
 ```{r,warning=F} 
 ## store 
-MP.min.fn = paste(paste(base.path,"gen/",sep=''),"MP_min.zat",sep='')
+MP.min.fn = paste(paste(base.path,"gen/",sep=''),"MP_min.csv",sep='')
 write.csv(MP.min,quote=F,row.names=F,file=MP.min.fn)
  
-MP.min.all.fn = paste(paste(base.path,"gen/",sep=''),"MP_min_all.zat",sep='')
+MP.min.all.fn = paste(paste(base.path,"gen/",sep=''),"MP_min_all.csv",sep='')
 write.csv(MP.min.all,quote=F,row.names=F,file=MP.min.all.fn)
 ```
