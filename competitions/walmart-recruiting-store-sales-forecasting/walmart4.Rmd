@@ -441,6 +441,7 @@ for (id in ids) {
     MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = min(mean.cv.mae)
     MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = min(mean.cv.wmae)
     MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = min(mean.cv.errors)
+    MP$PAR1[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = m
     }, error = function(e) {
           #print(e)
     })
