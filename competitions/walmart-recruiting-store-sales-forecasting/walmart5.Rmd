@@ -45,6 +45,13 @@ predict.regsubsets =function (reg , formula , newdata ,id ,...){
   mat[,xvars]%*%coefi 
 }
 
+## compute difference between 2 data.frame 
+fun.12 <- function(x.1,x.2,...){
+  x.1p <- do.call("paste", x.1)
+  x.2p <- do.call("paste", x.2)
+  x.1[! x.1p %in% x.2p, ]
+}
+
 # build id as concatenation of Store, Dept and Date 
 buildDeepId = function(x) {  
   prefix1 = paste(trim(as.character(x[1])),'_',sep='')
@@ -60,10 +67,12 @@ buildId = function(x) {
 }
 
 
+perror = NULL
 
 predictOnTestSet = function (cname,pwin,par1,traindata,testdata,doPlot = T) {
   pred = NULL
   
+  tryCatch({
   if (pwin == 1) { ## (forward) stepwise selection
     form="Weekly_Sales ~ ."
     var.feat = length(names(traindata)) - 1
@@ -147,15 +156,23 @@ predictOnTestSet = function (cname,pwin,par1,traindata,testdata,doPlot = T) {
   } else {
     stop ("bad predictor selector")
   }
+  }, error = function(e) {  })
   
+  tryCatch({
+    if (doPlot) {
+          ts_train = ts(as.vector(traindata$Weekly_Sales), start = c(2010, 2) , frequency=52 )
+          ts_test = ts(pred, start = end(ts_train) , frequency = frequency(ts_train))
+          ts.plot(ts_train, ts_test, col = 1:2, lty = 1:2)
+          legend("topleft", c(cname, "pred_on_testset"), lty = 1:2, col = 1:2)
+    }
+  }, error = function(e) {})
   
-  if (doPlot) {
-        ts_train = ts(as.vector(traindata$Weekly_Sales), start = c(2010, 2) , frequency=52 )
-        ts_test = ts(pred, start = end(ts_train) , frequency = frequency(ts_train))
-        ts.plot(ts_train, ts_test, col = 1:2, lty = 1:2)
-        legend("topleft", c(cname, "pred_on_testset"), lty = 1:2, col = 1:2)
-  }
-    
+  ######### 
+  if (is.null(pred))  {
+    pred = rep(mean(traindata$Weekly_Sales),dim(testdata)[1])
+    perror <<- c(perror,pwin)
+  }   
+          
   pred
 }
 
@@ -163,8 +180,8 @@ predictOnTestSet = function (cname,pwin,par1,traindata,testdata,doPlot = T) {
 
 
 ```{r,warning=F} 
-#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 #base.path = "C:/____PERSONAL____/data_analytics/fast-furious/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 test.all.fn = paste(base.path,"test.zat",sep="")
@@ -201,12 +218,19 @@ tail(MP.min.all)
 
 
 ```{r,warning=F} 
+sum(is.na(test.all.csv$pred))
+sum(is.na(test.all.csv$pred)) / dim(test.all.csv)[1]
+
 c = 1
-MAX = 50000
+MAX = 100
+do_plot = T
 
 ptm <- proc.time()
 
 for (id in ids) {
+  pred = NULL 
+  
+  
   test.csv.fn = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_test.zat',sep='')
   test.csv = read.csv(test.csv.fn)
   test.csv$pred = NA
@@ -248,35 +272,74 @@ for (id in ids) {
   train.data.full = na.omit(train.data.full)   ### 1 
   train.data.red = na.omit(train.data.red)     ### 2 
   
-  ## test
-  test.data.full = data.frame( Weekly_Sales = test.csv$Weekly_Sales  , 
+  ## let's see best dataset
+  if (mp$ID_DS == 2) { ## best data set is the reduced one 
+    cname = paste(id,"train",sep='_')
+    cname = paste(cname,mp$P_WIN,sep='_p=')
+    cname = paste(cname,mp$ID_DS,sep='_ds=')
+    test.data.red = data.frame( Weekly_Sales = test.csv$Weekly_Sales  , 
+                              Temperature = test.csv$Temperature, Fuel_Price = test.csv$Fuel_Price , 
+                              CPI = test.csv$CPI , Unemployment = test.csv$Unemployment , 
+                              IsHoliday = test.csv$IsHoliday.y)
+    
+    pred = predictOnTestSet (cname,mp$P_WIN,mp$PAR1,train.data.red,test.data.red,doPlot=do_plot)
+    
+  } else { ## best data set is the full one 
+    test.data.full = data.frame( Weekly_Sales = test.csv$Weekly_Sales  , 
                                Temperature = test.csv$Temperature, Fuel_Price = test.csv$Fuel_Price ,
                                CPI = test.csv$CPI , Unemployment = test.csv$Unemployment , 
                                IsHoliday = test.csv$IsHoliday.y , MarkDown1 = test.csv$MarkDown1 , 
                                MarkDown2 = test.csv$MarkDown2 , 
                                MarkDown3 = test.csv$MarkDown3 , MarkDown4 = test.csv$MarkDown4 ,
                                MarkDown5 = test.csv$MarkDown5)
-
-  test.data.red = data.frame( Weekly_Sales = test.csv$Weekly_Sales  , 
-                              Temperature = test.csv$Temperature, Fuel_Price = test.csv$Fuel_Price , 
-                              CPI = test.csv$CPI , Unemployment = test.csv$Unemployment , 
-                              IsHoliday = test.csv$IsHoliday.y)
   
-  ## let's see best dataset
-  cname = paste(id,"_train",sep='')
-  cname = paste(cname,mp$P_WIN,sep='')
-  if (mp$ID_DS == 2 | 1 == 1) { ## best data set is the reduced one 
-    pred = predictOnTestSet (cname,mp$P_WIN,mp$PAR1,train.data.red,test.data.red,doPlot=F)
+    test.data.full$idx = rownames(test.data.full)
+    test.full = na.omit(test.data.full)
+    test.na = fun.12(test.data.full,test.full)
     
-  } else { ## best data set is the full one 
+    idx.full = test.full$idx
+    idx.red = test.na$idx
     
+    test.full.action = data.frame( Weekly_Sales = test.full$Weekly_Sales  , 
+                               Temperature = test.full$Temperature, Fuel_Price = test.full$Fuel_Price ,
+                               CPI = test.full$CPI , Unemployment = test.full$Unemployment , 
+                               IsHoliday = test.full$IsHoliday , MarkDown1 = test.full$MarkDown1 , 
+                               MarkDown2 = test.full$MarkDown2 , 
+                               MarkDown3 = test.full$MarkDown3 , MarkDown4 = test.full$MarkDown4 ,
+                               MarkDown5 = test.full$MarkDown5 )
+    
+    test.red.action = data.frame( Weekly_Sales = test.na$Weekly_Sales  , 
+                              Temperature = test.na$Temperature, Fuel_Price = test.na$Fuel_Price , 
+                              CPI = test.na$CPI , Unemployment = test.na$Unemployment , 
+                              IsHoliday = test.na$IsHoliday)
+    
+    cname = paste(id,"train",sep='_')
+    cname = paste(cname,mp.all$P_WIN[mp.all$ID_DS == 1],sep='_p=')
+    cname = paste(cname,mp.all$ID_DS[mp.all$ID_DS == 1],sep='_ds=')
+    pred.full = predictOnTestSet (cname, mp.all$P_WIN[mp.all$ID_DS == 1] , mp.all$PAR1[mp.all$ID_DS == 1], train.data.full, test.full.action , doPlot = do_plot)
+    
+    cname = paste(id,"train",sep='_')
+    cname = paste(cname,mp.all$P_WIN[mp.all$ID_DS == 2],sep='_p=')
+    cname = paste(cname,mp.all$ID_DS[mp.all$ID_DS == 2],sep='_ds=')
+    pred.red = predictOnTestSet (cname,  mp.all$P_WIN[mp.all$ID_DS == 2] , mp.all$PAR1[mp.all$ID_DS == 2], train.data.red, test.red.action ,    doPlot = do_plot)
+    
+    pred.full.mrg = data.frame(idx=idx.full, preds = pred.full) 
+    colnames(pred.full.mrg) = c("idx","preds")
+    pred.red.mrg = data.frame(idx=idx.red, preds = pred.red) 
+    colnames(pred.red.mrg) = c("idx","preds")
+    
+    pred.mrg = rbind(pred.full.mrg,pred.red.mrg)
+    
+    pred.mrg$idx = as.numeric(pred.mrg$idx)
+    pred = pred.mrg$preds[with(pred.mrg, order(idx))]
   }
   
-  
-
-
- c = c + 1
- if (c > MAX) break 
+  test.csv$pred[test.csv$id == id] = pred 
+  test.all.csv$pred[test.all.csv$id == id] = pred
+   
+  ## testing stuff 
+  c = c + 1
+  if (c > MAX) break 
 }
 
 ```
@@ -285,10 +348,19 @@ Elapsed time in loop:
 ```{r,warning=F} 
 tm = proc.time() - ptm
 tm
+
+err = data.frame(pred_id = 1:15,errors=rep(NA,15))
+for (i in 1:15) {
+  err$errors[err$pred_id == i] = sum(perror == i)
+}
+err
 ```
 
 Merging and storing predictions ... 
 ```{r,warning=F} 
+sum(is.na(test.all.csv$pred))
+sum(is.na(test.all.csv$pred)) / dim(test.all.csv)[1]
+
 test.all.csv$deepid = as.factor(test.all.csv$deepid)
 sub.merge = merge(sampleSubmission.csv,test.all.csv,by.x=c("Id"),by.y=c("deepid"),all.x=T,all.y=F)
 sub = data.frame(Id = sub.merge$Id, Weekly_Sales = sub.merge$pred)
