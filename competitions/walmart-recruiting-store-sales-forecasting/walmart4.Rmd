@@ -283,7 +283,7 @@ for (id in ids) {
   
   
   train.data.full = na.omit(train.data.full)   ### 1 
-  train.data.red = na.omit(train.data.red)     ### 2 
+  #train.data.red = na.omit(train.data.red)     ### 2 
 #   train.data.red.test = na.omit(train.data.red.test) #3
   
   for (data.type in 1:2) { 

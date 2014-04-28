@@ -1,4 +1,4 @@
-Predicting on test set and build submission file  
+Troubleshooting
 ========================================================
 
 Content 
@@ -52,6 +52,42 @@ fun.12 <- function(x.1,x.2,...){
   x.1[! x.1p %in% x.2p, ]
 }
 
+kfolds = function(k,data.length) {
+  k = min(k,data.length)
+  folds = rep(NA,data.length)
+  labels = 1:data.length
+  st = floor(data.length/k)
+  al_labels = NULL
+  for (s in 1:k) {
+    x = NULL
+    if (is.null(al_labels))
+      x = sample(labels,st)
+    else
+      x = sample(labels[-al_labels],st)
+    
+    folds[x] = s
+    if (is.null(al_labels))
+      al_labels = x
+    else
+      al_labels = c(al_labels,x)
+    }
+  ss = 1
+  for (s in 1:length(folds)){
+    if (is.na(folds[s])) {
+      folds[s] = ss
+      ss = ss + 1
+      } 
+    }
+  folds
+}
+
+getWMAE = function(pred, data  ) {
+    ares = abs(pred - data$Weekly_Sales)
+    l = dim(data)[1] 
+    w = 1 * (!data$IsHoliday) + 5 * data$IsHoliday
+    wmae = sum(ares * w) / (sum(w))
+}
+
 # build id as concatenation of Store, Dept and Date 
 buildDeepId = function(x) {  
   prefix1 = paste(trim(as.character(x[1])),'_',sep='')
@@ -66,122 +102,7 @@ buildId = function(x) {
   id = paste(prefix,trim(as.character(x[2])),sep='')
 }
 
-
-perror = NULL
-
-predictOnTestSet = function (cname,pwin,par1,traindata,testdata,doPlot = T) {
-  pred = NULL
-  
-  tryCatch({
-  if (pwin == 1) { ## (forward) stepwise selection
-    form="Weekly_Sales ~ ."
-    var.feat = length(names(traindata)) - 1
-    best.fit = regsubsets( Weekly_Sales ~ . , data = traindata, nvmax = var.feat)
-    pred = predict(best.fit , as.formula(form), testdata, id = par1)
-    
-  } else if (pwin == 2) { ## (forward) stepwise selection + splines  
-    form="Weekly_Sales ~ ."
-    var.feat = length(names(traindata)) - 1
-    best.fit = regsubsets( Weekly_Sales ~ . , data = traindata, nvmax = var.feat)
-    #pred = predict(best.fit , form, traindata, id = par1)
-    
-    mod.prd = predict(best.fit , as.formula(form),newdata=traindata, id = par1) 
-    mod.prd.test = predict(best.fit , as.formula(form),newdata=testdata , id = par1) 
-    spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE )
-    pred = predict(spl.fit , mod.prd.test   )$y 
-    
-  } else if (pwin == 3) { ##ridge regression  
-    x=model.matrix(Weekly_Sales~.,traindata)[,-1]
-    y=traindata$Weekly_Sales
-    grid=10^seq(10,-2,length=100)
-    cv.out=cv.glmnet(x,y,alpha=0 , nfolds=10)
-    bestlam=cv.out$lambda.min
-    x.test=model.matrix(Weekly_Sales~.,testdata)[,-1]
-    pred=predict(cv.out,s=bestlam ,newx=x.test)
-    
-#     mod.prd = predict(cv.out,s=bestlam ,newx=x)
-#     mod.prd.test = predict(cv.out,s=bestlam ,newx=x.test) 
-#     spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE)
-#     pred = predict(spl.fit , mod.prd.test   )$y
-    
-  } else if (pwin == 4) { ##ridge regression   + splines   
-    x=model.matrix(Weekly_Sales~.,traindata)[,-1]
-    y=traindata$Weekly_Sales
-    grid=10^seq(10,-2,length=100)
-    cv.out=cv.glmnet(x,y,alpha=0 , nfolds=10)
-    bestlam=cv.out$lambda.min
-    x.test=model.matrix(Weekly_Sales~.,testdata)[,-1]
-    bestlam=cv.out$lambda.min 
-    #pred=predict(cv.out,s=bestlam ,newx=x.test)
-    
-    mod.prd = predict(cv.out,s=bestlam ,newx=x)
-    mod.prd.test = predict(cv.out,s=bestlam ,newx=x.test) 
-    spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE)
-    pred = predict(spl.fit , mod.prd.test   )$y
-    
-  } else if (pwin == 5) { ## lasso reegression
-    stop("predictor (lasso,5) not supported")
-    
-  } else if (pwin == 6) { ## lasso reegression  + splines   
-    stop("predictor (lasso+splines,6) not supported")
-    
-  } else if (pwin == 7) { ## splines 
-    fform = "Weekly_Sales ~ .+ ns(Temperature) + ns(Fuel_Price) + ns(CPI)  + ns(Unemployment) "
-    var.feat = length(names(traindata)) - 1
-    best.fit = regsubsets( as.formula(fform) , data = traindata, nvmax = var.feat)
-    pred = predict(best.fit , as.formula(fform), testdata , id = par1)
-    
-  } else if (pwin == 8) { ## pca  
-    stop("predictor (pca,8) not supported")
-    
-  } else if (pwin == 9) { ## pca + splines  
-    stop("predictor (pca+splines,9) not supported")
-    
-  } else if (pwin == 10) { ## random forest  
-    rf =randomForest(Weekly_Sales~. ,data=traindata, importance =TRUE)
-    pred = predict (rf ,newdata = testdata)
-    
-  } else if (pwin == 11) { ## random forest + splines 
-    rf =randomForest(Weekly_Sales~. ,data=traindata, importance =TRUE)
-    mod.prd = predict (rf ,newdata = traindata)
-    mod.prd.test = predict (rf ,newdata = testdata)
-    spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE)
-    pred = predict(spl.fit , mod.prd.test   )$y
-    
-  } else if (pwin == 12) { ## Boosting  
-    stop("predictor (boosting,12) never won")
-    
-  } else if (pwin == 13) { ## Boosting + splines 
-    stop("predictor (boosting+splines,13) never won")
-    
-  } else if (pwin == 14) { ## Mean 
-    pred = rep(mean(traindata$Weekly_Sales),dim(testdata)[1])
-    
-  } else {
-    stop ("bad predictor selector")
-  }
-  }, error = function(e) {  })
-  
-  tryCatch({
-    if (doPlot) {
-          ts_train = ts(as.vector(traindata$Weekly_Sales), start = c(2010, 2) , frequency=52 )
-          ts_test = ts(pred, start = end(ts_train) , frequency = frequency(ts_train))
-          ts.plot(ts_train, ts_test, col = 1:2, lty = 1:2)
-          legend("topleft", c(cname, "pred_on_testset"), lty = 1:2, col = 1:2)
-    }
-  }, error = function(e) {})
-  
-  ######### 
-  if (is.null(pred))  {
-    pred = rep(mean(traindata$Weekly_Sales),dim(testdata)[1])
-    perror <<- c(perror,pwin)
-  }   
-          
-  pred
-}
-
 ```
-
 
 ```{r,warning=F} 
 #base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
@@ -205,6 +126,180 @@ ids.num = length(ids)
 ```
 
 
+```{r,warning=F} 
+
+perror = NULL
+perf = data.frame(id = ids , wmae = rep(NA,ids.num) , mae = rep(NA,ids.num), 
+                  errors = rep(NA,ids.num) , test_size = rep(NA,ids.num))
+
+predictOnTestSet = function (cname,pwin,par1,id,train.data,test.data,doPlot = T) {
+  
+  pred.mean = NULL
+  
+  k=10
+  folds = kfolds(k,nrow(train.data)) 
+  
+  cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+  cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+  cv.wmae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+  preds =matrix(NA,k,dim(test.data)[1], dimnames=list(NULL, paste(1:dim(test.data)[1])))
+  
+  for(j in 1:k) {  
+    
+    pred = NULL
+    pred.xval = NULL
+    
+    traindata = train.data[folds != j,]
+    xvaldata = train.data[folds == j,]
+    testdata = test.data 
+    
+    tryCatch({
+      if (pwin == 1) { ## (forward) stepwise selection
+        form="Weekly_Sales ~ ."
+        var.feat = length(names(traindata)) - 1
+        best.fit = regsubsets( Weekly_Sales ~ . , data = traindata, nvmax = var.feat)
+        pred = predict(best.fit , as.formula(form), testdata, id = par1)
+        pred.xval = predict(best.fit , as.formula(form), xvaldata, id = par1)
+        
+        } else if (pwin == 2) { ## (forward) stepwise selection + splines  
+          form="Weekly_Sales ~ ."
+          var.feat = length(names(traindata)) - 1
+          best.fit = regsubsets( Weekly_Sales ~ . , data = traindata, nvmax = var.feat)
+          #pred = predict(best.fit , form, traindata, id = par1)
+          
+          mod.prd = predict(best.fit , as.formula(form),newdata=traindata, id = par1) 
+          mod.prd.test = predict(best.fit , as.formula(form),newdata=testdata , id = par1) 
+          mod.prd.xval = predict(best.fit , as.formula(form),newdata=xvaldata , id = par1) 
+          
+          spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE )
+          pred = predict(spl.fit , mod.prd.test   )$y 
+          pred.xval = predict(spl.fit , mod.prd.xval   )$y 
+          
+        } else if (pwin == 3) { ##ridge regression  
+          x=model.matrix(Weekly_Sales~.,traindata)[,-1]
+          y=traindata$Weekly_Sales
+          grid=10^seq(10,-2,length=100)
+          cv.out=cv.glmnet(x,y,alpha=0 , nfolds=10)
+          bestlam=cv.out$lambda.min
+          
+          x.test=model.matrix(Weekly_Sales~.,testdata)[,-1]
+          x.xval=model.matrix(Weekly_Sales~.,xvaldata)[,-1]
+          pred=predict(cv.out,s=bestlam ,newx=x.test)
+          pred.xval=predict(cv.out,s=bestlam ,newx=x.xval)
+            
+        } else if (pwin == 4) { ##ridge regression   + splines   
+          x=model.matrix(Weekly_Sales~.,traindata)[,-1]
+          y=traindata$Weekly_Sales
+          grid=10^seq(10,-2,length=100)
+          cv.out=cv.glmnet(x,y,alpha=0 , nfolds=10)
+          bestlam=cv.out$lambda.min
+          x.test=model.matrix(Weekly_Sales~.,testdata)[,-1]
+          x.xval = model.matrix(Weekly_Sales~.,xvaldata)[,-1]
+          #pred=predict(cv.out,s=bestlam ,newx=x.test)
+              
+          mod.prd = predict(cv.out,s=bestlam ,newx=x)
+          mod.prd.test = predict(cv.out,s=bestlam ,newx=x.test)
+          mod.prd.xval = predict(cv.out,s=bestlam ,newx=x.xval)
+          spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE)
+          pred = predict(spl.fit , mod.prd.test   )$y
+          pred.xval = predict(spl.fit , mod.prd.xval   )$y
+              
+        } else if (pwin == 5) { ## lasso reegression
+          stop("predictor (lasso,5) not supported")
+                
+        } else if (pwin == 6) { ## lasso reegression  + splines   
+          stop("predictor (lasso+splines,6) not supported")
+                  
+        } else if (pwin == 7) { ## splines 
+          fform = "Weekly_Sales ~ .+ ns(Temperature) + ns(Fuel_Price) + ns(CPI)  + ns(Unemployment) "
+          var.feat = length(names(traindata)) - 1
+          best.fit = regsubsets( as.formula(fform) , data = traindata, nvmax = var.feat)
+          pred = predict(best.fit , as.formula(fform), testdata , id = par1)
+          pred.xval = predict(best.fit , as.formula(fform), xvaldata , id = par1)
+                    
+        } else if (pwin == 8) { ## pca  
+          stop("predictor (pca,8) not supported")
+                      
+        } else if (pwin == 9) { ## pca + splines  
+          stop("predictor (pca+splines,9) not supported")
+                        
+        } else if (pwin == 10) { ## random forest  
+          rf =randomForest(Weekly_Sales~. ,data=traindata, importance =TRUE)
+          pred = predict (rf ,newdata = testdata)
+          pred.xval = predict (rf ,newdata = xvaldata)
+                          
+        } else if (pwin == 11) { ## random forest + splines 
+          rf =randomForest(Weekly_Sales~. ,data=traindata, importance =TRUE)
+          mod.prd = predict (rf ,newdata = traindata)
+          mod.prd.test = predict (rf ,newdata = testdata)
+          mod.prd.xval = predict (rf ,newdata = xvaldata)
+          spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE)
+          pred = predict(spl.fit , mod.prd.test   )$y
+          pred.xval = predict(spl.fit , mod.prd.xval   )$y
+                            
+        } else if (pwin == 12) { ## Boosting  
+          stop("predictor (boosting,12) never won")
+                              
+        } else if (pwin == 13) { ## Boosting + splines 
+          stop("predictor (boosting+splines,13) never won")
+                                
+        } else if (pwin == 14) { ## Mean 
+          pred = rep(mean(traindata$Weekly_Sales),dim(testdata)[1])
+          pred.xval = rep(mean(traindata$Weekly_Sales),dim(xvaldata)[1])
+                                  
+        } else {
+          stop ("bad predictor selector")
+        }
+      }, error = function(e) {  })
+    
+      ######### 
+      if (is.null(pred))  {
+        pred = rep(mean(traindata$Weekly_Sales),dim(testdata)[1])
+        pred.xval = rep(mean(traindata$Weekly_Sales),dim(xvaldata)[1])
+        perror <<- c(perror,pwin)
+      }
+    
+      cv.errors[j,1] = mean((xvaldata$Weekly_Sales-pred.xval)^2)
+      cv.mae[j,1] = mean(abs((xvaldata$Weekly_Sales-pred.xval)))
+      cv.wmae[j,1] = getWMAE(pred.xval , xvaldata )  
+    
+#       for (i in (1:dim(test.data)[1]) ) 
+#         preds[j,i] = pred[i] 
+      preds[j,1:(dim(test.data)[1])] = pred
+  }
+  
+  ### pred.mean 
+  mean.cv.mae=apply(cv.mae ,2,mean)
+
+  mean.cv.wmae=apply(cv.wmae ,2,mean)  
+#   print(id)
+#   print(mean.cv.wmae)
+#   print(cv.wmae) 
+
+  mean.cv.errors=apply(cv.errors ,2,mean)
+  pred.mean = apply(preds ,2,mean)
+  
+  perf$mae[perf$id == id] <<- mean.cv.mae
+  perf$wmae[perf$id == id] <<- mean.cv.wmae
+  perf$errors[perf$id == id] <<- mean.cv.errors
+  perf$test_size[perf$id == id] <<- dim(test.data)[1]
+  
+  tryCatch({
+    if (doPlot) {
+          ts_train = ts(as.vector(train.data$Weekly_Sales), start = c(2010, 2) , frequency=52 )
+          ts_test = ts(pred.mean, start = end(ts_train) , frequency = frequency(ts_train))
+          ts.plot(ts_train, ts_test, col = 1:2, lty = 1:2)
+          legend("topleft", c(cname, "pred_on_testset"), lty = 1:2, col = 1:2)
+    }
+  }, error = function(e) {})
+  
+  pred.mean
+}
+
+```
+
+
+
 Deserializing **MP.min** and **MP.min.all** ... 
 
 ```{r,warning=F} 
@@ -226,8 +321,8 @@ sum(is.na(test.all.csv$pred))
 sum(is.na(test.all.csv$pred)) / dim(test.all.csv)[1]
 
 c = 1
-MAX = 70
-do_plot = T
+MAX = 700000
+do_plot = F
 
 ptm <- proc.time()
 
@@ -277,7 +372,7 @@ for (id in ids) {
   train.data.red = na.omit(train.data.red)     ### 2 
   
   ## let's see best dataset
-  if (mp$ID_DS == 2) { ## best data set is the reduced one 
+  if (mp$ID_DS == 2 | 1== 1) { ## best data set is the reduced one 
     cname = paste(id,"train",sep='_')
     cname = paste(cname,mp$P_WIN,sep='_p=')
     cname = paste(cname,mp$ID_DS,sep='_ds=')
@@ -286,7 +381,7 @@ for (id in ids) {
                               CPI = test.csv$CPI , Unemployment = test.csv$Unemployment , 
                               IsHoliday = test.csv$IsHoliday.y)
     
-    pred = predictOnTestSet (cname,mp.all$P_WIN[mp.all$ID_DS == 2],mp.all$PAR1[mp.all$ID_DS == 2],train.data.red,test.data.red,doPlot=do_plot)
+    pred = predictOnTestSet (cname,mp.all$P_WIN[mp.all$ID_DS == 2],mp.all$PAR1[mp.all$ID_DS == 2],id,train.data.red,test.data.red,doPlot=do_plot)
     
   } else { ## best data set is the full one 
     test.data.full = data.frame( Weekly_Sales = test.csv$Weekly_Sales  , 
@@ -305,8 +400,11 @@ for (id in ids) {
     ############
   
     test.data.full$idx = rownames(test.data.full)
+    dim0 = dim(test.data.full)[1]
     test.full = na.omit(test.data.full)
     test.na = fun.12(test.data.full,test.full)
+
+    stopifnot(dim0 == dim(test.full)[1] + dim(test.na)[1])
 
     idx.full = test.full$idx
     idx.red = test.na$idx
@@ -327,12 +425,12 @@ for (id in ids) {
     cname = paste(id,"test",sep='_')
     cname = paste(cname,mp.all$P_WIN[mp.all$ID_DS == 1],sep='_p=')
     cname = paste(cname,mp.all$ID_DS[mp.all$ID_DS == 1],sep='_ds=')
-    pred.full = predictOnTestSet (cname, mp.all$P_WIN[mp.all$ID_DS == 1] , mp.all$PAR1[mp.all$ID_DS == 1], train.data.full, test.full.action , doPlot = do_plot)
+    pred.full = predictOnTestSet (cname, mp.all$P_WIN[mp.all$ID_DS == 1] , mp.all$PAR1[mp.all$ID_DS == 1], id, train.data.full, test.full.action , doPlot = do_plot)
     
     cname = paste(id,"test",sep='_')
     cname = paste(cname,mp.all$P_WIN[mp.all$ID_DS == 2],sep='_p=')
     cname = paste(cname,mp.all$ID_DS[mp.all$ID_DS == 2],sep='_ds=')
-    pred.red = predictOnTestSet (cname,  mp.all$P_WIN[mp.all$ID_DS == 2] , mp.all$PAR1[mp.all$ID_DS == 2], train.data.red, test.red.action ,    doPlot = do_plot)
+    pred.red = predictOnTestSet (cname,  mp.all$P_WIN[mp.all$ID_DS == 2] , mp.all$PAR1[mp.all$ID_DS == 2], id, train.data.red, test.red.action ,    doPlot = do_plot)
     
     pred.full.mrg = data.frame(idx=as.numeric(idx.full), preds = pred.full) 
     colnames(pred.full.mrg) = c("idx","preds")
@@ -345,6 +443,8 @@ for (id in ids) {
     
     pred.mrg$idx = as.numeric(pred.mrg$idx)
     pred = pred.mrg$preds[with(pred.mrg, order(idx))]
+
+    stopifnot(dim(pred) == dim(test.csv)[1])
   }
   
   test.csv$pred[test.csv$id == id] = pred 
@@ -367,6 +467,9 @@ for (i in 1:15) {
   err$errors[err$pred_id == i] = sum(perror == i)
 }
 err
+
+#perf[!is.na(perf$wmae),]
+print(mean(perf$wmae[!is.na(perf$wmae)]))
 ```
 
 Merging and storing predictions ... 
@@ -374,7 +477,8 @@ Merging and storing predictions ...
 sum(is.na(test.all.csv$pred))
 sum(is.na(test.all.csv$pred)) / dim(test.all.csv)[1]
 
-test.all.csv$deepid = as.factor(test.all.csv$deepid)
+test.all.csv$deepid = as.character(test.all.csv$deepid)
+sampleSubmission.csv$Id = as.character(sampleSubmission.csv$Id)
 sub.merge = merge(sampleSubmission.csv,test.all.csv,by.x=c("Id"),by.y=c("deepid"),all.x=T,all.y=F)
 sub = data.frame(Id = sub.merge$Id, Weekly_Sales = sub.merge$pred)
 
