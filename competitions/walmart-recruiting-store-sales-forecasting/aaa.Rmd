@@ -1,0 +1,24 @@
+aaaaaaa
+========================================================
+
+This ...
+
+```{r}
+library(DMwR)
+
+### load files 
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+features.fn = paste(base.path,"features_comp.zat",sep="")
+features.csv = read.csv(features.fn)
+
+sum(is.na(features.csv))
+
+features.csv.2 = knnImputation(features.csv , k = 10, meth="median")
+sum(is.na(features.csv.2))
+
+features.knn.fn = paste(base.path,"features_comp_knn.zat",sep="")
+write.csv(features.csv.2,quote=F,row.names=F,file=features.knn.fn)
+```
+
+

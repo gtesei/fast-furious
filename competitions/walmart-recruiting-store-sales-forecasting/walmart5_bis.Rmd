@@ -372,7 +372,7 @@ for (id in ids) {
   train.data.red = na.omit(train.data.red)     ### 2 
   
   ## let's see best dataset
-  if (mp$ID_DS == 2 | 1== 1) { ## best data set is the reduced one 
+  if (mp$ID_DS == 2 ) { ## best data set is the reduced one 
     cname = paste(id,"train",sep='_')
     cname = paste(cname,mp$P_WIN,sep='_p=')
     cname = paste(cname,mp$ID_DS,sep='_ds=')
@@ -422,29 +422,46 @@ for (id in ids) {
                               CPI = test.na$CPI , Unemployment = test.na$Unemployment , 
                               IsHoliday = test.na$IsHoliday)
     
-    cname = paste(id,"test",sep='_')
-    cname = paste(cname,mp.all$P_WIN[mp.all$ID_DS == 1],sep='_p=')
-    cname = paste(cname,mp.all$ID_DS[mp.all$ID_DS == 1],sep='_ds=')
-    pred.full = predictOnTestSet (cname, mp.all$P_WIN[mp.all$ID_DS == 1] , mp.all$PAR1[mp.all$ID_DS == 1], id, train.data.full, test.full.action , doPlot = do_plot)
-    
-    cname = paste(id,"test",sep='_')
-    cname = paste(cname,mp.all$P_WIN[mp.all$ID_DS == 2],sep='_p=')
-    cname = paste(cname,mp.all$ID_DS[mp.all$ID_DS == 2],sep='_ds=')
-    pred.red = predictOnTestSet (cname,  mp.all$P_WIN[mp.all$ID_DS == 2] , mp.all$PAR1[mp.all$ID_DS == 2], id, train.data.red, test.red.action ,    doPlot = do_plot)
-    
-    pred.full.mrg = data.frame(idx=as.numeric(idx.full), preds = pred.full) 
-    colnames(pred.full.mrg) = c("idx","preds")
-    #pred.full.mrg$idx = as.numeric(pred.full.mrg$idx)
-    pred.red.mrg = data.frame(idx=as.numeric(idx.red), preds = pred.red) 
-    colnames(pred.red.mrg) = c("idx","preds")
-    #pred.red.mrg$idx = as.numeric(pred.red.mrg$idx)
-    
-    pred.mrg = rbind(pred.full.mrg,pred.red.mrg)
-    
-    pred.mrg$idx = as.numeric(pred.mrg$idx)
-    pred = pred.mrg$preds[with(pred.mrg, order(idx))]
-
-    stopifnot(dim(pred) == dim(test.csv)[1])
+    if (dim(test.na[1]) == 0 & dim(test.full)[1] > 0 ) {
+      cname = paste(id,"test",sep='_')
+      cname = paste(cname,mp.all$P_WIN[mp.all$ID_DS == 1],sep='_p=')
+      cname = paste(cname,mp.all$ID_DS[mp.all$ID_DS == 1],sep='_ds=')
+      pred.full = predictOnTestSet (cname, mp.all$P_WIN[mp.all$ID_DS == 1] , mp.all$PAR1[mp.all$ID_DS == 1], id, train.data.full, test.full.action , doPlot = do_plot)
+      pred = pred.full
+      
+    } else if (dim(test.na[1]) > 0 & dim(test.full)[1] == 0 ) {
+      cname = paste(id,"test",sep='_')
+      cname = paste(cname,mp.all$P_WIN[mp.all$ID_DS == 2],sep='_p=')
+      cname = paste(cname,mp.all$ID_DS[mp.all$ID_DS == 2],sep='_ds=')
+      pred.red = predictOnTestSet (cname,  mp.all$P_WIN[mp.all$ID_DS == 2] , mp.all$PAR1[mp.all$ID_DS == 2], id, train.data.red, test.red.action ,    doPlot = do_plot)
+      pred = pred.red
+      
+    } else  {
+      cname = paste(id,"test",sep='_')
+      cname = paste(cname,mp.all$P_WIN[mp.all$ID_DS == 1],sep='_p=')
+      cname = paste(cname,mp.all$ID_DS[mp.all$ID_DS == 1],sep='_ds=')
+      pred.full = predictOnTestSet (cname, mp.all$P_WIN[mp.all$ID_DS == 1] , mp.all$PAR1[mp.all$ID_DS == 1], id, train.data.full, test.full.action , doPlot = do_plot)
+      pred = pred.full
+      
+      cname = paste(id,"test",sep='_')
+      cname = paste(cname,mp.all$P_WIN[mp.all$ID_DS == 2],sep='_p=')
+      cname = paste(cname,mp.all$ID_DS[mp.all$ID_DS == 2],sep='_ds=')
+      pred.red = predictOnTestSet (cname,  mp.all$P_WIN[mp.all$ID_DS == 2] , mp.all$PAR1[mp.all$ID_DS == 2], id, train.data.red, test.red.action ,    doPlot = do_plot)
+      
+      pred.full.mrg = data.frame(idx=as.numeric(idx.full), preds = pred.full) 
+      colnames(pred.full.mrg) = c("idx","preds")
+      #pred.full.mrg$idx = as.numeric(pred.full.mrg$idx)
+      pred.red.mrg = data.frame(idx=as.numeric(idx.red), preds = pred.red) 
+      colnames(pred.red.mrg) = c("idx","preds")
+      #pred.red.mrg$idx = as.numeric(pred.red.mrg$idx)
+      
+      pred.mrg = rbind(pred.full.mrg,pred.red.mrg)
+      
+      pred.mrg$idx = as.numeric(pred.mrg$idx)
+      pred = pred.mrg$preds[with(pred.mrg, order(idx))]
+  
+      stopifnot(dim(pred) == dim(test.csv)[1])
+    }
   }
   
   test.csv$pred[test.csv$id == id] = pred 

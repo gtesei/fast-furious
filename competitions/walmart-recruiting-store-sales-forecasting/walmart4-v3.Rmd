@@ -1,0 +1,868 @@
+Walmart Recruiting Store Sales Forecasting
+========================================================
+
+Content 
+-------------------------
+1. **Generating a feature set (file) for each dept and store**
+2. **Fitting with a liner regressor and see submitted results**
+3. **Fitting sales time series and see submitted results**
+
+.
+
+1. Generating a feature set (file) for each dept and store
+-------------------------
+
+see walmart1.Rmd 
+
+2. Fitting with a liner regressor and see submitted results 
+-------------------------
+
+```{r,warning=F} 
+
+##### utils  
+library(leaps)
+library(glmnet)
+library (pls)
+library (splines)
+library (randomForest)
+library (gbm)
+library (neuralnet)
+
+kfolds = function(k,data.length) {
+  k = min(k,data.length)
+  folds = rep(NA,data.length)
+  labels = 1:data.length
+  st = floor(data.length/k)
+  al_labels = NULL
+  for (s in 1:k) {
+    x = NULL
+    if (is.null(al_labels))
+      x = sample(labels,st)
+    else
+      x = sample(labels[-al_labels],st)
+    
+    folds[x] = s
+    if (is.null(al_labels))
+      al_labels = x
+    else
+      al_labels = c(al_labels,x)
+    }
+  ss = 1
+  for (s in 1:length(folds)){
+    if (is.na(folds[s])) {
+      folds[s] = ss
+      ss = ss + 1
+      } 
+    }
+  folds
+}
+
+predict.regsubsets =function (reg , formula , newdata ,id ,...){
+  #form=as.formula(reg$call [[2]])
+  form = as.formula(formula)
+  mat=model.matrix(form,newdata)
+  coefi=coef(reg ,id=id)
+  xvars=names(coefi)
+  mat[,xvars]%*%coefi 
+}
+
+getWMAE = function(pred, data  ) {
+    ares = abs(pred - data$Weekly_Sales)
+    l = dim(data)[1] 
+    w = 1 * (!data$IsHoliday) + 5 * data$IsHoliday
+    wmae = sum(ares * w) / (sum(w))
+}
+
+# returns string w/o leading or trailing whitespace
+trim = function (x) gsub("^\\s+|\\s+$", "", x)
+
+normalize <- function( x) { return(( x - min( x)) / (max( x) - min( x))) }
+
+# build id as concatenation of Store and Dept 
+buildId = function(x) {  
+  prefix = paste(trim(as.character(x[1])),'_',sep='') 
+  id = paste(prefix,trim(as.character(x[2])),sep='')
+}
+buildDeepId = function(x) {  
+  prefix1 = paste(trim(as.character(x[1])),'_',sep='')
+  prefix2 = paste(prefix1,trim(as.character(x[2])),sep='')
+  prefix3 = paste(prefix2,'_',sep='')
+  id = paste(prefix3,trim(as.character(x[3])),sep='')
+}
+
+perror = NULL
+
+predictOnTestSet = function (cname,pwin,par1,traindata,testdata,doPlot = T) {
+  pred = NULL
+  
+  tryCatch({
+  if (pwin == 1) { ## (forward) stepwise selection
+    form="Weekly_Sales ~ ."
+    var.feat = length(names(traindata)) - 1
+    best.fit = regsubsets( Weekly_Sales ~ . , data = traindata, nvmax = var.feat)
+    pred = predict(best.fit , as.formula(form), testdata, id = par1)
+    
+  } else if (pwin == 2) { ## (forward) stepwise selection + splines  
+    form="Weekly_Sales ~ ."
+    var.feat = length(names(traindata)) - 1
+    best.fit = regsubsets( Weekly_Sales ~ . , data = traindata, nvmax = var.feat)
+    #pred = predict(best.fit , form, traindata, id = par1)
+    
+    mod.prd = predict(best.fit , as.formula(form),newdata=traindata, id = par1) 
+    mod.prd.test = predict(best.fit , as.formula(form),newdata=testdata , id = par1) 
+    spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE )
+    pred = predict(spl.fit , mod.prd.test   )$y 
+    
+  } else if (pwin == 3) { ##ridge regression  
+    x=model.matrix(Weekly_Sales~.,traindata)[,-1]
+    y=traindata$Weekly_Sales
+    grid=10^seq(10,-2,length=100)
+    cv.out=cv.glmnet(x,y,alpha=0 , nfolds=10)
+    bestlam=cv.out$lambda.min
+    x.test=model.matrix(Weekly_Sales~.,testdata)[,-1]
+    pred=predict(cv.out,s=bestlam ,newx=x.test)
+    
+#     mod.prd = predict(cv.out,s=bestlam ,newx=x)
+#     mod.prd.test = predict(cv.out,s=bestlam ,newx=x.test) 
+#     spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE)
+#     pred = predict(spl.fit , mod.prd.test   )$y
+    
+  } else if (pwin == 4) { ##ridge regression   + splines   
+    x=model.matrix(Weekly_Sales~.,traindata)[,-1]
+    y=traindata$Weekly_Sales
+    grid=10^seq(10,-2,length=100)
+    cv.out=cv.glmnet(x,y,alpha=0 , nfolds=10)
+    bestlam=cv.out$lambda.min
+    x.test=model.matrix(Weekly_Sales~.,testdata)[,-1]
+    bestlam=cv.out$lambda.min 
+    #pred=predict(cv.out,s=bestlam ,newx=x.test)
+    
+    mod.prd = predict(cv.out,s=bestlam ,newx=x)
+    mod.prd.test = predict(cv.out,s=bestlam ,newx=x.test) 
+    spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE)
+    pred = predict(spl.fit , mod.prd.test   )$y
+    
+  } else if (pwin == 5) { ## lasso reegression
+    stop("predictor (lasso,5) not supported")
+    
+  } else if (pwin == 6) { ## lasso reegression  + splines   
+    stop("predictor (lasso+splines,6) not supported")
+    
+  } else if (pwin == 7) { ## splines 
+    fform = "Weekly_Sales ~ .+ ns(Temperature) + ns(Fuel_Price) + ns(CPI)  + ns(Unemployment) "
+    var.feat = length(names(traindata)) - 1
+    best.fit = regsubsets( as.formula(fform) , data = traindata, nvmax = var.feat)
+    pred = predict(best.fit , as.formula(fform), testdata , id = par1)
+    
+  } else if (pwin == 8) { ## pca  
+    stop("predictor (pca,8) not supported")
+    
+  } else if (pwin == 9) { ## pca + splines  
+    stop("predictor (pca+splines,9) not supported")
+    
+  } else if (pwin == 10) { ## random forest  
+    rf =randomForest(Weekly_Sales~. ,data=traindata, importance =TRUE)
+    pred = predict (rf ,newdata = testdata)
+    
+  } else if (pwin == 11) { ## random forest + splines 
+    rf =randomForest(Weekly_Sales~. ,data=traindata, importance =TRUE)
+    mod.prd = predict (rf ,newdata = traindata)
+    mod.prd.test = predict (rf ,newdata = testdata)
+    spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE)
+    pred = predict(spl.fit , mod.prd.test   )$y
+    
+  } else if (pwin == 12) { ## Boosting  
+    stop("predictor (boosting,12) never won")
+    
+  } else if (pwin == 13) { ## Boosting + splines 
+    stop("predictor (boosting+splines,13) never won")
+    
+  } else if (pwin == 14) { ## Mean 
+    pred = rep(mean(traindata$Weekly_Sales),dim(testdata)[1])
+    
+  } else if (pwin == 15) { ## manual
+    pred = rep(par1,dim(testdata)[1])
+    
+  } else if (pwin == 16) { ## ANN
+#     traindata$IsHoliday = ifelse(traindata$IsHoliday,1,0)
+#     testdata$IsHoliday = ifelse(testdata$IsHoliday,1,0) 
+#     #rf =randomForest(Weekly_Sales~. ,data=traindata, importance =TRUE)
+#     ann = neuralnet(Weekly_Sales ~ Temperature + Fuel_Price + CPI + Unemployment + IsHoliday + MarkDown1 + MarkDown2 + MarkDown3 + MarkDown4 + MarkDown5 , traindata , hidden = 3)
+#     #pred = predict (rf ,newdata = testdata)
+#     pred = compute(ann , testdata )$net.result
+    traindata.2 = traindata[,-1]
+    rf =randomForest(Weekly_Sales~. ,data=traindata, importance =TRUE)
+    pred.0 = predict (rf ,newdata = testdata)
+    
+    res = traindata$Weekly_Sales - pred.0 
+    
+    traindata.2$res = res 
+    rf.2 = randomForest(res~. ,data=traindata.2, importance =TRUE)
+    
+    pred.res = predict (rf.2 ,newdata = testdata)
+    
+    pred = pred.0 + pred.res 
+    
+    
+  } else if (pwin == 17) { ## ANN + SPLINES  
+    traindata$IsHoliday = ifelse(traindata$IsHoliday,1,0)
+    testdata$IsHoliday = ifelse(testdata$IsHoliday,1,0) 
+    
+    traindata$IsHoliday = ifelse(traindata$IsHoliday,1,0)
+    traindata$IsHoliday = ifelse(traindata$IsHoliday,1,0)
+    #rf =randomForest(Weekly_Sales~. ,data=traindata, importance =TRUE)
+    ann = neuralnet(Weekly_Sales ~ Temperature + Fuel_Price + CPI + Unemployment + IsHoliday + MarkDown1 + MarkDown2 + MarkDown3 + MarkDown4 + MarkDown5 , traindata , hidden = 3)
+    #mod.prd = predict (rf ,newdata = traindata)
+    mod.prd = predict (ann , traindata)$net.result
+    #mod.prd.test = predict (rf ,newdata = testdata)
+    mod.prd.test = compute (ann ,testdata)$net.result
+    spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales,cv=TRUE)
+    pred = predict(spl.fit , mod.prd.test   )$y
+    
+  } else {
+    stop ("bad predictor selector")
+  }
+  }, error = function(e) {  })
+  
+  tryCatch({
+    if (doPlot) {
+          ts_train = ts(as.vector(traindata$Weekly_Sales), start = c(2010, 2) , frequency=52 )
+          ts_test = ts(pred, start = end(ts_train) , frequency = frequency(ts_train))
+          ts.plot(ts_train, ts_test, col = 1:2, lty = 1:2)
+          legend("topleft", c(cname, "pred_on_testset"), lty = 1:2, col = 1:2)
+    }
+  }, error = function(e) {})
+  
+  ######### 
+  if (is.null(pred))  {
+    pred = rep(mean(traindata$Weekly_Sales),dim(testdata)[1])
+    perror <<- c(perror,pwin)
+  }   
+          
+  pred
+}
+
+### load files 
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+
+test.all.fn = paste(base.path,"test.zat",sep="")
+sampleSubmission.fn = paste(base.path,"sampleSubmission.zat",sep="")
+
+test.all.csv = read.csv(test.all.fn)
+sampleSubmission.csv = read.csv(sampleSubmission.fn)
+
+##
+test.all.csv$Date = as.character(test.all.csv$Date)
+test.all.csv$id = apply(test.all.csv,1, buildId)
+test.all.csv$deepid = apply(test.all.csv,1, buildDeepId)
+test.all.csv$pred = NA
+
+ids = unique(test.all.csv$id)
+ids.num = length(ids)
+print(ids.num)
+```
+
+Processing each id 
+
+```{r,warning=F} 
+
+  ###################################################
+  #  MODEL CODES 
+  ###################################################
+  # 
+  #  1 - (forward) stepwise selection 
+  #  2 - (forward) stepwise selection + splines           
+  #  3 - ridge regression 
+  #  4 - ridge regression   + splines            
+  #  5 - lasso reegression   
+  #  6 - lasso reegression  + splines  
+  #  7 - splines  
+  #  8 - pca  
+  #  9 - pca + splines   
+  #  10 - random forest 
+  #  11 - random forest + splines 
+  #  12 - Boosting 
+  #  13 - Boosting + splines 
+  #  14 - Mean ( for 0 < |trainset| < 4 )
+  #  15 - Mean others (for |trainset| == 0 )
+  #  16 - ANN 
+  #
+  ###################################################
+
+MP = data.frame(   ID_St_Dept = rep(ids,17*2) , ID_DS = rep(c(rep(1,ids.num) , rep(2,ids.num)),17)   , 
+                  ID_Pred = c(rep(1,ids.num*2) , rep(2,ids.num*2) , rep(3,ids.num*2) ,
+                              rep(4,ids.num*2) , rep(5,ids.num*2) , rep(6,ids.num*2) , 
+                              rep(7,ids.num*2) , rep(8,ids.num*2) , rep(9,ids.num*2) , 
+                              rep(10,ids.num*2) , rep(11,ids.num*2) , rep(12,ids.num*2) , 
+                              rep(13,ids.num*2)  ,  rep(14,ids.num*2)  , rep(15,ids.num*2) , rep(16,ids.num*2) ,
+                              rep(17,ids.num*2) ) , 
+                  Active = rep(0,17*2*ids.num) , 
+                  WMAE = rep(NA,17*2*ids.num), MAE=rep(NA,17*2*ids.num) , 
+                  RSS=rep(NA,17*2*ids.num) , PAR1=rep(NA,17*2*ids.num)   )
+
+MP.min = data.frame(   ID_St_Dept = ids , ID_DS = rep(NA,ids.num) , 
+                  Active = rep(0,ids.num) , WMAE = rep(NA,ids.num), 
+                  P_WIN=rep(NA,ids.num) , PAR1=rep(NA,ids.num) )
+
+miss.id.train = NULL
+
+ptm <- proc.time()
+
+MAX = 20000000000
+do_plot = F
+c = 1
+for (id in ids) {
+  #print("############################################################################## processing id:")
+  #print(id)
+  fn.tr = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_train.zat',sep='')
+  fn.ts = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_test.zat',sep='')
+  
+  if (! file.exists(fn.tr) ){
+    print(paste("no train set present for id ",id,sep=''))
+    if (is.null(miss.id.train)) 
+      miss.id.train = c(id)
+    else 
+      miss.id.train = c(miss.id.train,id)
+  } 
+  
+  train.csv = read.csv(fn.tr)
+  test.csv = read.csv(fn.ts)
+  
+  #print(head(train.csv))
+  
+  ############################################## begin of training 
+  ## feature scaling 
+  train.data.full = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , 
+                               Temperature = train.csv$Temperature, Fuel_Price = train.csv$Fuel_Price ,
+                               CPI = train.csv$CPI , Unemployment = train.csv$Unemployment , 
+                               IsHoliday = train.csv$IsHoliday.y , MarkDown1 = train.csv$MarkDown1 , 
+                               MarkDown2 = train.csv$MarkDown2 , 
+                               MarkDown3 = train.csv$MarkDown3 , MarkDown4 = train.csv$MarkDown4 ,
+                               MarkDown5 = train.csv$MarkDown5 )
+  
+   #train.data.full = as.data.frame(lapply(train.data.full,normalize))
+  
+   #train.csv$IsHoliday.y = as.factor(train.csv$IsHoliday.y)
+   traindata = data.frame(Weekly_Sales = train.csv$Weekly_Sales  , 
+                               Temperature = train.data.full$Temperature, 
+                               Fuel_Price = train.data.full$Fuel_Price ,
+                               CPI = train.data.full$CPI , 
+                               Unemployment = train.data.full$Unemployment , 
+                               IsHoliday = train.csv$IsHoliday.y , 
+                               MarkDown1 = train.data.full$MarkDown1 , 
+                               MarkDown2 = train.data.full$MarkDown2 , 
+                               MarkDown3 = train.data.full$MarkDown3 , 
+                               MarkDown4 = train.data.full$MarkDown4 ,
+                               MarkDown5 = train.data.full$MarkDown5 ) 
+  
+  
+    #traindata = train.data.full
+    data.type = 1  
+  
+    #print(head(traindata))
+    
+    if (dim(traindata)[1] < 4 & dim(traindata)[1] > 0 ) {
+      print("0 < |traindata| < 4 for id")
+      print(id)
+    
+      pred = mean(traindata$Weekly_Sales)
+      wmae = getWMAE(pred , traindata)
+    
+      print(wmae)
+      
+      MP.min$Active[MP.min$ID_St_Dept == id] = 1
+      MP.min$WMAE[MP.min$ID_St_Dept == id] = wmae
+      MP.min$P_WIN[MP.min$ID_St_Dept == id] = 14
+      MP.min$ID_DS[MP.min$ID_St_Dept == id] = 1
+      
+      
+    } else if (dim(traindata)[1] == 0) {
+      print("|traindata| == 0 for id")
+      print(id)
+      
+      pred = 0 
+      if (id == "37_29")  { 
+        ## 37_29 --> stima 13.20813 
+        pred = 13.20813
+      } else if (id == "5_99" | id == "9_99" | id == "10_99" | id == "25_99") {
+        ## 5_99 , 9_99 , 10_99 , 25_99  --> stima 25.71667
+        pred = 25.71667
+      } else if (id == "18_43" | id == "24_43") {
+        ## 18_43 , 24_43 --> stima 1.19
+        pred = 1.19
+      } else if (id == "34_39" | id == "45_39") {
+        ## 34_39 , 45_39  --> stima = 11
+        pred = 11
+      } else if (id == "36_30" | id == "42_30" ) {
+        ## 36_30 , 42_30 --> stima == 1850
+        pred = 1850
+      } else {
+        stop ("id not handled")
+      }
+    
+      MP.min$Active[MP.min$ID_St_Dept == id] = 1
+      MP.min$WMAE[MP.min$ID_St_Dept == id] = 3000
+      MP.min$P_WIN[MP.min$ID_St_Dept == id] = 15
+      MP.min$ID_DS[MP.min$ID_St_Dept == id] = 1
+      MP.min$PAR1[MP.min$ID_St_Dept == id] = pred
+      
+      
+    } else {
+      ####### 1) select features (+ splines)
+      form="Weekly_Sales ~ ."
+      # k-fold
+      k=10
+      folds = kfolds(k,nrow(traindata)) 
+      var.feat = length(names(traindata)) - 1
+      
+      cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+      cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+      cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+      
+      tryCatch({
+      for(j in 1:k) {
+        best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[folds!=j,], nvmax = var.feat)
+        for (i in (1:var.feat) ) {
+          pred = predict(best.fit , form, traindata[folds==j,] , id = i)
+          cv.errors[j,i] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+          cv.mae[j,i] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+          cv.wmae[j,i] = getWMAE(pred , traindata[folds==j , ] )
+          } 
+        }
+      
+      ## MAE
+      mean.cv.mae=apply(cv.mae ,2,mean)
+      mean.cv.wmae=apply(cv.wmae ,2,mean)
+      mean.cv.errors=apply(cv.errors ,2,mean)
+      m = which.min(mean.cv.wmae)
+      
+      MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 1] = 1
+      MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 1] = min(mean.cv.mae)
+      MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 1] = min(mean.cv.wmae)
+      MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 1] = min(mean.cv.errors)
+      MP$PAR1[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 1] = m
+      }, error = function(e) {
+            #print(e)
+      })
+      
+      ### stepwise selection + Splines  
+      cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.wmae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+  
+      tryCatch({
+      for(j in 1:k) {
+        best.fit = regsubsets( Weekly_Sales ~ . , data = traindata[folds!=j,], nvmax = var.feat)
+        mod.prd = predict(best.fit , "Weekly_Sales ~ .", traindata[folds!=j,] , id = m)
+        mod.prd.test = predict(best.fit , "Weekly_Sales ~ .", traindata[folds==j,] , id = m)
+       
+        pred = NULL
+        
+        tryCatch({
+          spl.fit = smooth.spline(x=mod.prd,y=traindata[folds!=j,1],cv=TRUE )
+          pred = predict(spl.fit , mod.prd.test   )$y 
+        }, error = function(e) {
+            #print(e)
+          MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = 0
+        })
+    
+        cv.errors[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+        cv.mae[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+        cv.wmae[j,1] = getWMAE(pred , traindata[folds==j , ] )    
+      }
+      
+      ## MAE
+      mean.cv.mae=apply(cv.mae ,2,mean)
+      mean.cv.wmae=apply(cv.wmae ,2,mean)
+      mean.cv.errors=apply(cv.errors ,2,mean)
+  
+      MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = 1
+      MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = min(mean.cv.mae)
+      MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = min(mean.cv.wmae)
+      MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = min(mean.cv.errors)
+      MP$PAR1[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 2] = m
+      }, error = function(e) {
+            #print(e)
+      })
+      ####### 2) ride regression (+ splines)
+      cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.wmae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      
+      cv.errors.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.mae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.wmae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      
+      tryCatch({
+      for(j in 1:k) {
+        x=model.matrix(Weekly_Sales~.,traindata[folds != j,])[,-1]
+        y=traindata$Weekly_Sales[folds != j]
+        grid=10^seq(10,-2,length=100)
+        cv.out=cv.glmnet(x,y,alpha=0 , nfolds=10)
+        bestlam=cv.out$lambda.min 
+       
+        pred = NULL
+        
+        x.test=model.matrix(Weekly_Sales~.,traindata[folds == j,])[,-1]
+        pred=predict(cv.out,s=bestlam ,newx=x.test)
+        
+        cv.errors[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+        cv.mae[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+        cv.wmae[j,1] = getWMAE(pred , traindata[folds==j , ] )  
+        
+        ###### Splines   
+        pred = NULL
+        mod.prd = predict(cv.out,s=bestlam ,newx=x)
+        mod.prd.test = predict(cv.out,s=bestlam ,newx=x.test)
+       
+          spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales[folds != j],cv=TRUE)
+          pred = predict(spl.fit , mod.prd.test   )$y
+          
+          cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+          cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+          cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] ) 
+        
+        
+        ###### end of Splines 
+      }
+      
+      ## MAE
+      mean.cv.mae=apply(cv.mae ,2,mean)
+      mean.cv.wmae=apply(cv.wmae ,2,mean)
+      mean.cv.errors=apply(cv.errors ,2,mean)
+      
+      mean.cv.mae.spline=apply(cv.mae.spline ,2,mean)
+      mean.cv.wmae.spline=apply(cv.wmae.spline ,2,mean)
+      mean.cv.errors.spline=apply(cv.errors.spline ,2,mean)
+      
+  
+      MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 3] = 1
+      MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 4] = 1
+      
+      MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 3] = min(mean.cv.mae)
+      MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 3] = min(mean.cv.wmae)
+      MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 3] = min(mean.cv.errors)
+      MP$PAR1[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 3] = bestlam
+      
+      MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 4] = min(mean.cv.mae.spline)
+      MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 4] = min(mean.cv.wmae.spline)
+      MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 4] = min(mean.cv.errors.spline)
+  
+      }, error = function(e) {
+          #print(e)
+          MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 4] = 0
+      })
+      
+      ####### 4) lasso reegression (+ splines)
+      ## NOT DONE
+      
+      ####### 3) splines 
+      fform = "Weekly_Sales ~ .+ ns(Temperature) + ns(Fuel_Price) + ns(CPI)  + ns(Unemployment) "
+      
+      # k-fold
+      var.feat = length(names(traindata)) - 1
+      cv.errors=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+      cv.mae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+      cv.wmae=matrix(NA,k,var.feat, dimnames=list(NULL, paste(1:var.feat)))
+  
+      tryCatch({
+      for(j in 1:k) {
+        best.fit = regsubsets( as.formula(fform) , data = traindata[folds!=j,], nvmax = var.feat)
+        for (i in (1:var.feat) ) {
+          pred = predict(best.fit , as.formula(fform), traindata[folds==j,] , id = i)
+          cv.errors[j,i] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+          cv.mae[j,i] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+          cv.wmae[j,i] = getWMAE(pred , traindata[folds==j , ] )
+          } 
+      }
+      
+      ## MAE
+      mean.cv.mae=apply(cv.mae ,2,mean)
+      mean.cv.wmae=apply(cv.wmae ,2,mean)
+      m = which.min(mean.cv.wmae)
+  
+      MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = 1
+      MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = min(mean.cv.mae)
+      MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = min(mean.cv.wmae)
+      MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = min(mean.cv.errors)
+      MP$PAR1[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = m
+      }, error = function(e) {
+          #print(e)
+        MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 7] = 0
+      })
+      
+      ####### 5) pca (+splines)
+      # NOT DONE
+      
+      ##### 6) Random forest 
+      cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.wmae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      
+      cv.errors.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.mae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.wmae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      
+      tryCatch({
+      for(j in 1:k) {
+        rf =randomForest(Weekly_Sales~. ,data=traindata[folds != j,] , importance =TRUE)
+       
+        pred = predict (rf ,newdata = traindata[folds == j,])
+      
+        cv.errors[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+        cv.mae[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+        cv.wmae[j,1] = getWMAE(pred , traindata[folds==j , ] )    
+        
+        ###### Splines   
+        pred = NULL
+        mod.prd = predict (rf ,newdata = traindata[folds != j,])
+        mod.prd.test = predict (rf ,newdata = traindata[folds == j,])
+        
+          spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales[folds != j],cv=TRUE)
+          pred = predict(spl.fit , mod.prd.test   )$y
+          
+          cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+          cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+          cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] ) 
+      }
+      
+      ## MAE
+      mean.cv.mae=apply(cv.mae ,2,mean)
+      mean.cv.wmae=apply(cv.wmae ,2,mean)
+      mean.cv.errors=apply(cv.errors ,2,mean)
+      
+      mean.cv.mae.spline=apply(cv.mae.spline ,2,mean)
+      mean.cv.wmae.spline=apply(cv.wmae.spline ,2,mean)
+      mean.cv.errors.spline=apply(cv.errors.spline ,2,mean)
+  
+      MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 10] = 1
+      MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = 1
+  
+      MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 10] = min(mean.cv.mae)
+      MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 10] = min(mean.cv.wmae)
+      MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 10] = min(mean.cv.errors)
+      
+      MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = min(mean.cv.mae.spline)
+      MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = min(mean.cv.wmae.spline)
+      MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = min(mean.cv.errors.spline)
+      }, error = function(e) {
+          #print(e)
+          MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = 0
+      })
+      ##### 7) Boosting 
+      ## NOT DONE
+      
+      ##### 16,17) ANN , ANN + SPLINES   
+      cv.errors=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.wmae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      
+      cv.errors.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.mae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      cv.wmae.spline=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+      
+      tryCatch({
+        traindata.2 = traindata[,-1]
+        traindata.2$res = NA
+      for(j in 1:k) {
+        #traindata$IsHoliday = ifelse(traindata$IsHoliday,1,0)
+        rf =randomForest(Weekly_Sales~. ,data=traindata[folds != j,] , importance =TRUE)
+        pred.0 = predict (rf ,newdata = traindata[folds == j,])
+        
+        
+        res = traindata$Weekly_Sales[folds!=j] - predict (rf ,newdata = traindata[folds != j,])
+        traindata.2$res[folds!=j] = res 
+        rf.2 = randomForest(res~. ,data=traindata.2[folds != j,] , importance =TRUE) 
+        pred.res = predict (rf.2 ,newdata = traindata.2[folds == j,]) 
+        #ann = neuralnet(Weekly_Sales ~ Temperature + Fuel_Price + CPI + Unemployment + IsHoliday + MarkDown1 + MarkDown2 + MarkDown3 + MarkDown4 + MarkDown5  , data=traindata[folds != j,] , hidden = 3)
+        #pred = predict (rf ,newdata = traindata[folds == j,])
+        #pred = compute(ann , traindata[folds == j,] )$net.result
+        pred = pred.0 + pred.res
+      
+        cv.errors[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+        cv.mae[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+        cv.wmae[j,1] = getWMAE(pred , traindata[folds==j , ] )    
+        
+        ###### Splines   
+        #pred = NULL
+#         mod.prd = compute (ann , traindata[folds != j,] )$net.result
+#         mod.prd.test = compute (ann , traindata[folds == j,] )$net.result
+         
+        
+#           spl.fit = smooth.spline(x=mod.prd,y=traindata$Weekly_Sales[folds != j],cv=TRUE)
+#           pred = predict(spl.fit , mod.prd.test   )$y
+#           
+#           cv.errors.spline[j,1] = mean((traindata$Weekly_Sales[folds==j]-pred)^2)
+#           cv.mae.spline[j,1] = mean(abs((traindata$Weekly_Sales[folds==j]-pred)))
+#           cv.wmae.spline[j,1] = getWMAE(pred , traindata[folds==j , ] ) 
+      }
+      
+      ## MAE
+      mean.cv.mae=apply(cv.mae ,2,mean)
+      mean.cv.wmae=apply(cv.wmae ,2,mean)
+      mean.cv.errors=apply(cv.errors ,2,mean)
+      
+#       mean.cv.mae.spline=apply(cv.mae.spline ,2,mean)
+#       mean.cv.wmae.spline=apply(cv.wmae.spline ,2,mean)
+#       mean.cv.errors.spline=apply(cv.errors.spline ,2,mean)
+  
+      MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 16] = 1
+      #MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 17] = 1
+  
+      MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 16] = min(mean.cv.mae)
+      MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 16] = min(mean.cv.wmae)
+      MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 16] = min(mean.cv.errors)
+      
+#       MP$MAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 17] = min(mean.cv.mae.spline)
+#       MP$WMAE[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 17] = min(mean.cv.wmae.spline)
+#       MP$RSS[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 17] = min(mean.cv.errors.spline)
+      }, error = function(e) {
+          print(e)
+          MP$Active[MP$ID_St_Dept == id & MP$ID_DS == data.type & MP$ID_Pred == 11] = 0
+      })
+      
+      
+      ########## end of predictors   
+    
+      l = MP[MP$Active == 1 & MP$ID_St_Dept == id & !is.na(MP$WMAE)  ,]
+        if (dim(l)[1] > 0) {
+          MP.min$Active[MP.min$ID_St_Dept == id] = 1
+          MP.min$WMAE[MP.min$ID_St_Dept == id] = min(l$WMAE)
+          MP.min$P_WIN[MP.min$ID_St_Dept == id] = l$ID_Pred[which.min(l$WMAE)]
+          MP.min$ID_DS[MP.min$ID_St_Dept == id] = l$ID_DS[which.min(l$WMAE)]
+          MP.min$PAR1[MP.min$ID_St_Dept == id] = l$PAR1[which.min(l$WMAE)]
+      }
+      ############################################## end of training
+    }
+      ############################################## begin of prediction 
+      pred = NULL 
+      
+      test.csv$pred = NA
+      test.csv$Weekly_Sales = 0
+      test.csv$deepid = apply(test.csv,1, buildDeepId)
+      
+      ## handling cases with no train set 
+      mp = MP.min[MP.min$Active == 1 & MP.min$ID_St_Dept == id , ]
+      stopifnot(dim(mp)[1] <= 1)
+
+      if ( dim(mp)[1] == 0 ) {
+          pred = mean(traindata$Weekly_Sales)
+          wmae = getWMAE(pred , traindata)
+          
+          MP.min$Active[MP.min$ID_St_Dept == id] = 1
+          MP.min$WMAE[MP.min$ID_St_Dept == id] = wmae
+          MP.min$P_WIN[MP.min$ID_St_Dept == id] = 14
+          MP.min$ID_DS[MP.min$ID_St_Dept == id] = 1
+          
+          mp = MP.min[MP.min$Active == 1 & MP.min$ID_St_Dept == id , ]
+          
+          stopifnot(dim(mp)[1] == 1)
+      }
+      
+      if (mp$P_WIN == 15) {
+        pred = rep(mp$PAR1,dim(test.csv)[1])
+        test.csv$pred[test.csv$id == id] = pred 
+        test.all.csv$pred[test.all.csv$id == id] = pred
+      } else {
+        test.data.full = data.frame( Weekly_Sales = test.csv$Weekly_Sales  , 
+                               Temperature = test.csv$Temperature, Fuel_Price = test.csv$Fuel_Price ,
+                               CPI = test.csv$CPI , Unemployment = test.csv$Unemployment , 
+                               IsHoliday = test.csv$IsHoliday.y , MarkDown1 = test.csv$MarkDown1 , 
+                               MarkDown2 = test.csv$MarkDown2 , 
+                               MarkDown3 = test.csv$MarkDown3 , MarkDown4 = test.csv$MarkDown4 ,
+                               MarkDown5 = test.csv$MarkDown5 )
+        
+        #test.data.full = as.data.frame(lapply(test.data.full,normalize))
+  
+        #train.csv$IsHoliday.y = as.factor(train.csv$IsHoliday.y)
+        testdata = data.frame(Weekly_Sales = test.csv$Weekly_Sales  , 
+                               Temperature = test.data.full$Temperature, 
+                               Fuel_Price = test.data.full$Fuel_Price ,
+                               CPI = test.data.full$CPI , 
+                               Unemployment = test.data.full$Unemployment , 
+                               IsHoliday = test.csv$IsHoliday.y , 
+                               MarkDown1 = test.data.full$MarkDown1 , 
+                               MarkDown2 = test.data.full$MarkDown2 , 
+                               MarkDown3 = test.data.full$MarkDown3 , 
+                               MarkDown4 = test.data.full$MarkDown4 ,
+                               MarkDown5 = test.data.full$MarkDown5 )
+        
+        cname = paste(id,"test",sep='_')
+        cname = paste(cname,mp$P_WIN,sep='_p=')
+        cname = paste(cname,1,sep='_ds=')
+        pred = predictOnTestSet (cname, mp$P_WIN , mp$PAR1, traindata, testdata , doPlot = do_plot)
+        
+        test.csv$pred[test.csv$id == id] = pred 
+        test.all.csv$pred[test.all.csv$id == id] = pred
+      }    
+      ############################################## end of prediction
+    
+  c = c + 1
+  if (c > MAX) break 
+}
+
+miss.id.train 
+
+tm = proc.time() - ptm
+print("Time elapsed in loop:")
+print(tm)
+
+print("mean WMAE")
+print(mean(MP.min$WMAE[MP.min$Active == 1]))
+
+err = data.frame(pred_id = 1:17,errors=rep(NA,17))
+for (i in 1:17) {
+  err$errors[err$pred_id == i] = sum(perror == i)
+}
+err
+
+######### MP.min
+mp = MP.min[MP.min$Active == 1 , ]
+print("number cases not handled")
+print((MAX-dim(mp)[1]))
+
+head(mp[with(mp, order(-WMAE)), ])
+tail(mp[with(mp, order(-WMAE)), ])
+
+pwins = unique(MP.min$P_WIN[MP.min$Active == 1 ])
+pwins 
+
+P_WIN_PERF = data.frame()
+for (pp in pwins ) {  
+  P_WIN_PERF = rbind(P_WIN_PERF , 
+                     cbind(Pred = c(pp) , 
+                           nwins = nrow(mp[ mp$P_WIN == pp , ]) , 
+                           perc = (nrow(mp[ mp$P_WIN == pp , ]) / nrow(mp) ) 
+                           ) 
+                     )
+}
+P_WIN_PERF[with(P_WIN_PERF,order(-perc)),]
+
+unique(MP.min$ID_DS[MP.min$Active == 1 ])
+
+```
+
+Serializing **MP.min** and **MP.min.all** ... 
+
+```{r,warning=F} 
+## store 
+MP.min.fn = paste(paste(base.path,"gen/",sep=''),"MP_min.csv",sep='')
+write.csv(MP.min,quote=F,row.names=F,file=MP.min.fn)
+```
+
+
+Merging and storing predictions ... 
+```{r,warning=F} 
+sum(is.na(test.all.csv$pred))
+sum(is.na(test.all.csv$pred)) / dim(test.all.csv)[1]
+
+test.all.csv$deepid = as.factor(test.all.csv$deepid)
+sub.merge = merge(sampleSubmission.csv,test.all.csv,by.x=c("Id"),by.y=c("deepid"),all.x=T,all.y=F)
+sub = data.frame(Id = sub.merge$Id, Weekly_Sales = sub.merge$pred)
+
+sub.fn = paste(base.path,"sub_main.zat",sep="")
+write.csv(sub,quote=F,row.names=F,file=sub.fn)
+```
+
+
