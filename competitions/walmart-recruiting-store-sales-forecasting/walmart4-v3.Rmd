@@ -243,8 +243,8 @@ predictOnTestSet = function (cname,pwin,par1,traindata,testdata,doPlot = T) {
 }
 
 ### load files 
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
-#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 test.all.fn = paste(base.path,"test.zat",sep="")
 sampleSubmission.fn = paste(base.path,"sampleSubmission.zat",sep="")

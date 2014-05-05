@@ -1,4 +1,4 @@
-Walmart Recruiting Store Sales Forecasting
+Walmart Recruiting Store Sales Forecasting - Octave Files Generation 
 ========================================================
 
 Content 
@@ -46,6 +46,38 @@ buildId = function(x) {
   id = paste(prefix,trim(as.character(x[2])),sep='')
 }
 
+traslate.size.store = function(x) {
+  trasl = NULL
+  
+  if (x[7] == "A") {
+    trasl = 1
+  } else if (x[7] == "B") {
+    trasl = 2
+  } else if (x[7] == "C") {
+    trasl = 3
+  } else {
+    stop("unrecogniozed size.store")
+  }
+  
+  trasl
+}
+
+traslate.size.store.test = function(x) {
+  trasl = NULL
+  
+  if (x[6] == "A") {
+    trasl = 1
+  } else if (x[6] == "B") {
+    trasl = 2
+  } else if (x[6] == "C") {
+    trasl = 3
+  } else {
+    stop("unrecogniozed size.store")
+  }
+  
+  trasl
+}
+
 # hastables id <--> train / test data.frames
 hash.train <- new.env(hash=T, parent=emptyenv())
 hash.test <- new.env(hash=T, parent=emptyenv())
@@ -69,6 +101,9 @@ So, in the test set there're 3169 different combinations of (store,dept). We're 
 
 miss.id.train = NULL
 diff.id.train = NULL
+
+MAX = 20
+c = 1
 
 for (id in ids) {
   df.train = train.csv[train.csv$id == id ,  ]
@@ -122,12 +157,39 @@ for (id in ids) {
  hash.train[[id]] = df.train
  hash.test[[id]] = df.test
  
- ## store 
- fn.tr = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_train.zat',sep='')
- write.csv(df.train,quote=F,row.names=F,file=fn.tr)
+ ################################################# OCTAVE ADAPATION
+ df.train$IsHoliday.x = ifelse(df.train$IsHoliday.x,1,0)
+ df.train$IsHoliday.y = ifelse(df.train$IsHoliday.y,1,0)
+ df.train$store.type = apply(df.train , 1 , traslate.size.store)
+ df.train = df.train[,-6]
+ df.train = df.train[,-1]
+ df.train$IsHoliday = df.train$IsHoliday.y 
+ df.train = df.train[,-4]
+ df.train = df.train[,-15]
+ ##Store,Dept,Weekly_Sales,store.type,store.size,Temperature,Fuel_Price,MarkDown1,MarkDown2,MarkDown3,MarkDown4,MarkDown5,CPI,Unemployment
  
- fn.ts = paste(paste(paste(base.path,"gen/",sep=''),id,sep=''),'_test.zat',sep='')
- write.csv(df.test,quote=F,row.names=F,file=fn.ts)
+ 
+ df.test$IsHoliday.x = ifelse(df.test$IsHoliday.x,1,0)
+ df.test$IsHoliday.y = ifelse(df.test$IsHoliday.y,1,0)
+ df.test$store.type = apply(df.test , 1 , traslate.size.store.test)
+ df.test = df.test[,-5]
+ df.test = df.test[,-1]
+ df.test$IsHoliday = df.test$IsHoliday.y 
+ df.test = df.test[,-3]
+ df.test = df.test[,-14]
+ ## Store,Dept,store.type,store.size,Temperature,Fuel_Price,MarkDown1,MarkDown2,MarkDown3,MarkDown4,MarkDown5,CPI,Unemployment,IsHoliday
+ #################################################
+ 
+ ## store 
+ fn.tr = paste(paste(paste(base.path,"gen_oct/",sep=''),id,sep=''),'_train.zat',sep='')
+ write.table(df.train,quote=F,row.names=F,col.names=F,file=fn.tr,sep=",")
+ 
+ fn.ts = paste(paste(paste(base.path,"gen_oct/",sep=''),id,sep=''),'_test.zat',sep='')
+ write.table(df.test,quote=F,row.names=F,col.names=F,file=fn.ts,sep=",")
+ 
+ ###### testing 
+ c = c + 1
+ if (c > MAX) break 
 }
 
 gen.log[order(gen.log$train.size , decreasing=TRUE) , ]
