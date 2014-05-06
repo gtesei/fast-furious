@@ -13,8 +13,8 @@ Content
 -------------------------
 
 ```{r,warning=F} 
-base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
-#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
 train.fn = paste(base.path,"train.zat",sep="")
 test.fn = paste(base.path,"test.zat",sep="")
@@ -102,7 +102,7 @@ So, in the test set there're 3169 different combinations of (store,dept). We're 
 miss.id.train = NULL
 diff.id.train = NULL
 
-MAX = 20
+MAX = 20000000000
 c = 1
 
 for (id in ids) {
@@ -158,15 +158,17 @@ for (id in ids) {
  hash.test[[id]] = df.test
  
  ################################################# OCTAVE ADAPATION
- df.train$IsHoliday.x = ifelse(df.train$IsHoliday.x,1,0)
- df.train$IsHoliday.y = ifelse(df.train$IsHoliday.y,1,0)
- df.train$store.type = apply(df.train , 1 , traslate.size.store)
- df.train = df.train[,-6]
- df.train = df.train[,-1]
- df.train$IsHoliday = df.train$IsHoliday.y 
- df.train = df.train[,-4]
- df.train = df.train[,-15]
- ##Store,Dept,Weekly_Sales,store.type,store.size,Temperature,Fuel_Price,MarkDown1,MarkDown2,MarkDown3,MarkDown4,MarkDown5,CPI,Unemployment
+ if (dim(df.train)[1] > 0) {
+   df.train$IsHoliday.x = ifelse(df.train$IsHoliday.x,1,0)
+   df.train$IsHoliday.y = ifelse(df.train$IsHoliday.y,1,0)
+   df.train$store.type = apply(df.train , 1 , traslate.size.store)
+   df.train = df.train[,-6]
+   df.train = df.train[,-1]
+   df.train$IsHoliday = df.train$IsHoliday.y 
+   df.train = df.train[,-4]
+   df.train = df.train[,-15]
+   ##Store,Dept,Weekly_Sales,store.type,store.size,Temperature,Fuel_Price,MarkDown1,MarkDown2,MarkDown3,MarkDown4,MarkDown5,CPI,Unemployment
+ }
  
  
  df.test$IsHoliday.x = ifelse(df.test$IsHoliday.x,1,0)

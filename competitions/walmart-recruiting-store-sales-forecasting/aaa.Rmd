@@ -7,16 +7,16 @@ This ...
 library(DMwR)
 
 ### load files 
-base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
-#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 #base.path = "C:/____PERSONAL____/data_analytics/fast-furious/fast-furious/dataset/walmart-recruiting-store-sales-forecasting/"
 
-features.fn = paste(base.path,"features.zat",sep="")
+features.fn = paste(base.path,"features_comp.zat",sep="")
 features.csv = read.csv(features.fn)
 
 sum(is.na(features.csv))
 
-features.csv.2 = knnImputation(features.csv , k = 7, meth="median")
+features.csv.2 = knnImputation(features.csv , k = 10, meth="median")
 sum(is.na(features.csv.2))
 
 features.knn.fn = paste(base.path,"features_comp_knn.zat",sep="")
