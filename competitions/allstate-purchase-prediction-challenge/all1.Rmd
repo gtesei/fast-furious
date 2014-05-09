@@ -67,8 +67,8 @@ Loading train and test file
 
 ```{r}
 ### load files 
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
-#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
 
 train.fn = paste(base.path,"train.csv",sep="")
 test.fn = paste(base.path,"test_v2.csv",sep="")
@@ -84,6 +84,7 @@ Building training set and cross validation set
 
 ```{r}
 library(class)
+library(e1071)
 
 traindata = train.csv[train.csv$record_type == 1,]
 traindata = traindata[,-1]
@@ -118,25 +119,27 @@ train_labels = traindata[,1]
 traindata = traindata[,-1] ## index(opt_purch)  
 traindata = nomalize(traindata,1) ## index(cost) == 1
 
-### xval 
-p = 0.30
-n_tr = floor(dim(traindata)[1]*(1-p))
-n_val = dim(traindata)[1] - n_tr
+### KNN  
+# p = 0.30
+# n_tr = floor(dim(traindata)[1]*(1-p))
+# n_val = dim(traindata)[1] - n_tr
+# train_train = traindata[1:n_tr,]
+# train_val = traindata[(n_tr+1):(dim(traindata)[1]),]
+# train_labels_train = train_labels[1:n_tr]
+# train_labels_val = train_labels[(n_tr+1):(dim(traindata)[1])]
+# pred = knn(train = train_train , test = train_val , cl = train_labels_train , k = 10)
+# acc = sum(pred == train_labels_val) / dim(traindata)[1] 
 
-train_train = traindata[1:n_tr,]
-train_val = traindata[(n_tr+1):(dim(traindata)[1]),]
+### SVM
+traindata$y = train_labels
+# tune.svm = tune(svm ,y ~. ,data=traindata , kernel ="radial",
+#                 ranges =list(cost=c(0.1 ,1 ,10 ,100 ,1000),
+#                              gamma=c(0.5,1,2,3,4) )
+#                 )
+# 
+# summary (tune.svm)
 
-train_labels_train = train_labels[1:n_tr]
-train_labels_val = train_labels[(n_tr+1):(dim(traindata)[1])]
-
-pred = knn(train = train_train , test = train_val , cl = train_labels_train , k = 10)
-
-acc = sum(pred == train_labels_val) / dim(traindata)[1] 
-
-
-
-
-
+#mod = svm(y ~ . , data=traindata, kernel = "radial", cost = 1 , gamma = 1)
 
 ### approcccio 2: eliminare righe che hanno NA 
 
