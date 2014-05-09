@@ -131,7 +131,7 @@ train_labels_val = train_labels[(n_tr+1):(dim(traindata)[1])]
 
 pred = knn(train = train_train , test = train_val , cl = train_labels_train , k = 10)
 
-acc = sum(pred == train_labels_val) / dim(traindata)[1]
+acc = sum(pred == train_labels_val) / dim(traindata)[1] 
 
 
 
