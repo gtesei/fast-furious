@@ -1,0 +1,145 @@
+Allstate-purchase-prediction-challenge
+========================================================
+
+
+util 
+```{r}
+encodeCategoricalFeature = function(ddata,i,asNumeric=T) {
+  
+  fact_max = 0
+  facts = NULL
+  if (asNumeric) {
+    fact_max = max(unique(ddata[,i]))
+  } else {
+    fact_max = length(unique(ddata[,i]))
+    facts = unique(ddata[,i])
+  }
+  
+  fact_min = 1 
+  
+  mm = matrix(rep(0,dim(ddata)[1]),nrow=dim(ddata)[1],ncol=fact_max)
+  col_name = colnames(ddata)[i]
+  colnames(mm) = paste(paste(col_name,"_",sep=''),fact_min:fact_max,sep='')
+  for (j in fact_min:fact_max) {
+    if (asNumeric) {
+      mm[,j] = ddata[,i] == j
+    } else {
+      mm[,j] = ddata [,i] == facts[j]
+    }
+  }  
+  ddata = cbind(ddata,mm)
+  ddata = ddata[,-i]
+}
+
+nomalize = function(ddata,i) {
+  n_col = (ddata[,i] - min(ddata[,i])) / (  max(ddata[,i])  - min (ddata[,i]) )
+  col_name = colnames(ddata)[i]
+  n_col_df = data.frame(  n_col   )
+  colnames(n_col_df) = paste(col_name,"_norm",sep="")
+  ddata = cbind(ddata,n_col_df)
+  ddata = ddata[,-i]
+}
+
+buildOptionVector = function(ddata) {
+  ret = paste(ddata$A,ddata$B,sep='')
+  ret = paste(ret,ddata$C,sep='')
+  ret = paste(ret,ddata$D,sep='')
+  ret = paste(ret,ddata$E,sep='')
+  ret = paste(ret,ddata$F,sep='')
+  ret = paste(ret,ddata$G,sep='')
+  ret_df = data.frame(opt_purch = ret)
+  
+  ddata = ddata[,-1] ## A
+  ddata = ddata[,-1] ## B
+  ddata = ddata[,-1] ## C 
+  ddata = ddata[,-1] ## D
+  ddata = ddata[,-1] ## E
+  ddata = ddata[,-1] ## F
+  ddata = ddata[,-1] ## G
+  
+  ddata = cbind(ret_df,ddata)
+}
+
+```
+
+
+Loading train and test file 
+
+```{r}
+### load files 
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+
+train.fn = paste(base.path,"train.csv",sep="")
+test.fn = paste(base.path,"test_v2.csv",sep="")
+submission.fn = paste(base.path,"sampleSubmission.csv",sep="")
+
+
+train.csv = read.csv(train.fn)
+test.csv = read.csv(test.fn)
+submission.csv = read.csv(submission.fn)
+```
+
+Building training set and cross validation set 
+
+```{r}
+library(class)
+
+traindata = train.csv[train.csv$record_type == 1,]
+traindata = traindata[,-1]
+
+traindata = encodeCategoricalFeature(traindata,1) ## index(shopping_pt) == 1
+traindata = traindata[,-1] ## index(record_type) == 1
+traindata = encodeCategoricalFeature(traindata,1) ## index(day) == 1
+traindata = traindata[,-1] ## index(time) == 1
+traindata = encodeCategoricalFeature(traindata,1,asNumeric=F) ## index(state) == 1
+traindata = traindata[,-1] ## index(location) == 1
+traindata = nomalize(traindata,1) ## index(group_size) == 1
+traindata = nomalize(traindata,1) ## index(homeowner) == 1
+traindata = nomalize(traindata,1) ## index(car_age) == 1
+traindata = encodeCategoricalFeature(traindata,1,asNumeric=F) ## index(car_value) == 1
+
+### approccio 1: eliminare colonne che hanno NA 
+traindata = traindata[,-1] ## index(risk_factor) == 1 che ha circa il 35% di NA 
+traindata = nomalize(traindata,1) ## index(age_oldest) == 1
+traindata = nomalize(traindata,1) ## index(age_youngest) == 1
+traindata = nomalize(traindata,1) ## index(married_couple) == 1
+
+traindata = na.omit(traindata) ### in questo caso propendo per l'eliminazione delle righe che sono solo 1.7% 
+
+traindata = nomalize(traindata,1) ## index(C_previous) == 1
+traindata = nomalize(traindata,1) ## index(duration_previous) == 1
+
+traindata = buildOptionVector(traindata)
+traindata$opt_purch = factor(traindata$opt_purch)
+
+train_labels = traindata[,1]
+
+traindata = traindata[,-1] ## index(opt_purch)  
+traindata = nomalize(traindata,1) ## index(cost) == 1
+
+### xval 
+p = 0.30
+n_tr = floor(dim(traindata)[1]*(1-p))
+n_val = dim(traindata)[1] - n_tr
+
+train_train = traindata[1:n_tr,]
+train_val = traindata[(n_tr+1):(dim(traindata)[1]),]
+
+train_labels_train = train_labels[1:n_tr]
+train_labels_val = train_labels[(n_tr+1):(dim(traindata)[1])]
+
+pred = knn(train = train_train , test = train_val , cl = train_labels_train , k = 10)
+
+acc = sum(pred == train_labels_val) / dim(traindata)[1]
+
+
+
+
+
+
+### approcccio 2: eliminare righe che hanno NA 
+
+
+```
+
