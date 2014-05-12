@@ -1,0 +1,201 @@
+Allstate-purchase-prediction-challenge
+========================================================
+
+
+util 
+```{r}
+encodeCategoricalFeature = function(ddata,i,facts.in=NULL) {
+  
+  fact_max = 0
+  fact_min = 1 
+  facts = NULL
+  if (is.null(facts.in)) {
+    fact_max = length(unique(ddata[,i]))
+    facts = unique(ddata[,i])
+  } else {
+    fact_max = length(facts.in)
+    facts = facts.in
+  }
+  
+  mm = matrix(rep(0,dim(ddata)[1]),nrow=dim(ddata)[1],ncol=fact_max)
+  col_name = colnames(ddata)[i]
+  colnames(mm) = paste(paste(col_name,"_",sep=''),facts,sep='')
+  for (j in fact_min:fact_max) {
+    mm[,j] = ddata [,i] == facts[j]
+  }  
+  ddata = cbind(ddata,mm)
+  ddata = ddata[,-i]
+}
+
+nomalize = function(ddata,i,min.in=NULL,max.in=NULL) {
+  n_col = NULL
+  if( is.null(min.in) | is.null(max.in) )  { 
+    n_col = (ddata[,i] - min(ddata[,i])) / (  max(ddata[,i])  - min (ddata[,i]) )
+  } else {
+    n_col = (ddata[,i] - min.in) / (  max.in  - min.in )
+  }
+  
+  col_name = colnames(ddata)[i]
+  n_col_df = data.frame(  n_col   )
+  colnames(n_col_df) = paste(col_name,"_norm",sep="")
+  ddata = cbind(ddata,n_col_df)
+  ddata = ddata[,-i]
+}
+
+buildOptionVector = function(ddata) {
+  ret = paste(ddata$A,ddata$B,sep='')
+  ret = paste(ret,ddata$C,sep='')
+  ret = paste(ret,ddata$D,sep='')
+  ret = paste(ret,ddata$E,sep='')
+  ret = paste(ret,ddata$F,sep='')
+  ret = paste(ret,ddata$G,sep='')
+  ret_df = data.frame(opt_purch = ret)
+  
+  ddata = ddata[,-1] ## A
+  ddata = ddata[,-1] ## B
+  ddata = ddata[,-1] ## C 
+  ddata = ddata[,-1] ## D
+  ddata = ddata[,-1] ## E
+  ddata = ddata[,-1] ## F
+  ddata = ddata[,-1] ## G
+  
+  ddata = cbind(ret_df,ddata)
+}
+
+```
+
+
+Loading train and test file 
+
+```{r}
+### load files 
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+
+train.fn = paste(base.path,"train.csv",sep="")
+test.fn = paste(base.path,"test_v2.csv",sep="")
+submission.fn = paste(base.path,"sampleSubmission.csv",sep="")
+
+
+train.csv = read.csv(train.fn)
+test.csv = read.csv(test.fn)
+submission.csv = read.csv(submission.fn)
+
+factMap <- new.env(hash = T, parent = emptyenv())
+ptm <- proc.time()
+```
+
+Building training set and cross validation set 
+
+```{r}
+library(class)
+library(e1071)
+
+traindata = train.csv[train.csv$record_type == 1,]
+
+traindata = traindata[,-1] ## index(customer_ID) == 1
+traindata = traindata[,-1] ## index(shopping_pt) == 1
+traindata = traindata[,-1] ## index(record_type) == 1
+traindata = traindata[,-1] ## index(day) == 1
+traindata = traindata[,-1] ## index(time) == 1
+
+facts = unique(c(as.character(unique(train.csv$state)),as.character(unique(test.csv$state))))
+factMap[["state"]] = facts 
+traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(state) == 1
+
+traindata = traindata[,-1] ## index(location) == 1
+
+mi = min(train.csv$group_size,test.csv$group_size)
+ma = max(train.csv$group_size,test.csv$group_size)
+factMap[["group_size"]] = c(mi,ma)
+traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(group_size) == 1
+
+mi = min(train.csv$homeowner,test.csv$homeowner)
+ma = max(train.csv$homeowner,test.csv$homeowner)
+factMap[["homeowner"]] = c(mi,ma)
+traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(homeowner) == 1
+
+mi = min(train.csv$car_age,test.csv$car_age)
+ma = max(train.csv$car_age,test.csv$car_age)
+factMap[["car_age"]] = c(mi,ma)
+traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(car_age) == 1
+
+facts = unique(c(as.character(unique(train.csv$car_value)),as.character(unique(test.csv$car_value))))
+factMap[["car_value"]] = facts 
+traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(car_value) == 1
+
+### approccio 1: eliminare colonne che hanno NA 
+traindata = traindata[,-1] ## index(risk_factor) == 1 che ha circa il 35% di NA 
+############## end of approccio 1 
+
+### approcccio 2: eliminare righe che hanno NA ~ eliminato, hai appena 0.07319163 di accuracy sul xval set 
+# traindata = na.omit(traindata)
+# facts = unique(c(as.character(unique(train.csv$risk_factor[! is.na(train.csv$risk_factor) ])),as.character(unique(test.csv$risk_factor[! is.na(test.csv$risk_factor) ]))))
+# factMap[["risk_factor"]] = facts 
+# traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(risk_factor) == 1
+############## end of approccio 2 
+
+mi = min(train.csv$age_oldest,test.csv$age_oldest)
+ma = max(train.csv$age_oldest,test.csv$age_oldest)
+factMap[["age_oldest"]] = c(mi,ma)
+traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(age_oldest) == 1
+
+mi = min(train.csv$age_youngest,test.csv$age_youngest)
+ma = max(train.csv$age_youngest,test.csv$age_youngest)
+factMap[["age_youngest"]] = c(mi,ma)
+traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(age_youngest) == 1
+
+mi = min(train.csv$married_couple,test.csv$married_couple)
+ma = max(train.csv$married_couple,test.csv$married_couple)
+factMap[["married_couple"]] = c(mi,ma)
+traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(married_couple) == 1
+
+traindata = na.omit(traindata) ### in questo caso propendo per l'eliminazione delle righe che sono solo 1.7% 
+
+facts = unique(c(as.character(unique(train.csv$C_previous[! is.na(train.csv$C_previous) ])),as.character(unique(test.csv$C_previous[! is.na(test.csv$C_previous)]))))
+factMap[["C_previous"]] = facts 
+traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(C_previous) == 1
+
+mi = min(train.csv$duration_previous[! is.na(train.csv$duration_previous)],test.csv$duration_previous[! is.na(test.csv$duration_previous)])
+ma = max(train.csv$duration_previous[! is.na(train.csv$duration_previous)],test.csv$duration_previous[! is.na(test.csv$duration_previous)])
+factMap[["duration_previous"]] = c(mi,ma)
+traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(duration_previous) == 1
+
+## train , xval 
+p = 0.30
+traindata = buildOptionVector(traindata)
+traindata$opt_purch = as.factor(traindata$opt_purch)
+train_labels = traindata[,1] ## opt_purch
+traindata = traindata[,-1] ## index(opt_purch)  
+
+mi = min(train.csv$cost[! is.na(train.csv$cost)] ,test.csv$cost[! is.na(test.csv$cost)])
+ma = max(train.csv$cost[! is.na(train.csv$cost)] ,test.csv$cost[! is.na(test.csv$cost)])
+factMap[["cost"]] = c(mi,ma)
+traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(cost) == 1
+
+n_tr = floor(dim(traindata)[1]*(1-p))
+n_val = dim(traindata)[1] - n_tr
+train_train = traindata[1:n_tr,]
+train_val = traindata[(n_tr+1):(dim(traindata)[1]),]
+
+train_labels_train = train_labels[1:n_tr]
+train_labels_val = train_labels[(n_tr+1):(dim(traindata)[1])]
+
+## KNN , Kbest ~ 420 , acc ~ 0.07299321
+pred = knn(train = train_train , test = train_val , cl = train_labels_train , k = 420)
+
+##SVM ~ out of memory  #############################
+# train_train$y = train_labels_train
+# mod = svm(y ~ . , data=train_train, kernel = "radial", cost = 1 , gamma = 1)
+# pred = predict(mod,train_val)
+#########################################
+
+acc = sum(pred == train_labels_val) / length(train_labels_val)
+
+tm = proc.time() - ptm
+print("Time elapsed in loop:")
+tm
+
+
+```
+

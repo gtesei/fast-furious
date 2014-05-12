@@ -1,0 +1,223 @@
+Allstate-purchase-prediction-challenge
+========================================================
+
+
+util 
+```{r}
+encodeCategoricalFeature = function(ddata,i,facts.in=NULL) {
+  
+  fact_max = 0
+  fact_min = 1 
+  facts = NULL
+  if (is.null(facts.in)) {
+    fact_max = length(unique(ddata[,i]))
+    facts = unique(ddata[,i])
+  } else {
+    fact_max = length(facts.in)
+    facts = facts.in
+  }
+  
+  mm = matrix(rep(0,dim(ddata)[1]),nrow=dim(ddata)[1],ncol=fact_max)
+  col_name = colnames(ddata)[i]
+  colnames(mm) = paste(paste(col_name,"_",sep=''),facts,sep='')
+  for (j in fact_min:fact_max) {
+    mm[,j] = ddata [,i] == facts[j]
+  }  
+  ddata = cbind(ddata,mm)
+  ddata = ddata[,-i]
+}
+
+nomalize = function(ddata,i,min.in=NULL,max.in=NULL) {
+  n_col = NULL
+  if( is.null(min.in) | is.null(max.in) )  { 
+    n_col = (ddata[,i] - min(ddata[,i])) / (  max(ddata[,i])  - min (ddata[,i]) )
+  } else {
+    n_col = (ddata[,i] - min.in) / (  max.in  - min.in )
+  }
+  
+  col_name = colnames(ddata)[i]
+  n_col_df = data.frame(  n_col   )
+  colnames(n_col_df) = paste(col_name,"_norm",sep="")
+  ddata = cbind(ddata,n_col_df)
+  ddata = ddata[,-i]
+}
+
+buildOptionVector = function(ddata) {
+  ret = paste(ddata$A,ddata$B,sep='')
+  ret = paste(ret,ddata$C,sep='')
+  ret = paste(ret,ddata$D,sep='')
+  ret = paste(ret,ddata$E,sep='')
+  ret = paste(ret,ddata$F,sep='')
+  ret = paste(ret,ddata$G,sep='')
+  ret_df = data.frame(opt_purch = ret)
+  
+#   ddata = ddata[,-1] ## A
+#   ddata = ddata[,-1] ## B
+#   ddata = ddata[,-1] ## C 
+#   ddata = ddata[,-1] ## D
+#   ddata = ddata[,-1] ## E
+#   ddata = ddata[,-1] ## F
+#   ddata = ddata[,-1] ## G
+  
+  #ddata = cbind(ddata,ret_df)
+ret_df
+}
+
+```
+
+
+Loading train and test file 
+
+```{r}
+### load files 
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+
+train.fn = paste(base.path,"train.csv",sep="")
+test.fn = paste(base.path,"test_v2.csv",sep="")
+submission.fn = paste(base.path,"sampleSubmission.csv",sep="")
+
+
+train.csv = read.csv(train.fn)
+test.csv = read.csv(test.fn)
+submission.csv = read.csv(submission.fn)
+
+ptm <- proc.time()
+```
+
+Building training set and cross validation set 
+
+```{r}
+library(plyr)
+
+### traindata 
+traindata = train.csv
+traindata = traindata[,-c(2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,25)] 
+train_labels = buildOptionVector(traindata[,-c(1,2)])
+traindata = traindata[,-c(3,4,5,6,7,8,9)]
+traindata$opt = train_labels$opt_purch
+
+traindata.pur = traindata[traindata$record_type == 1,]
+colnames(traindata.pur) = c("customer_ID","record_type","pur")
+traindata.pur = traindata.pur[,-2]
+
+traindata = merge(traindata,traindata.pur,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=T)
+
+print(sum(is.na(traindata)))
+### testdata 
+testdata = test.csv
+testdata = testdata[,-c(2,3,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,25)]
+test_labels = buildOptionVector(testdata[,-1])
+testdata$opt = test_labels$opt_purch
+testdata = testdata[,-(2:8)]
+print(sum(is.na(testdata)))
+
+### building idxMap 
+labels = unique(c(as.character(unique(traindata$opt)),as.character(unique(testdata$opt))))
+idxMap <- new.env(hash = T, parent = emptyenv())
+for (i in 1:length(labels)) {
+  idxMap[[labels[i]]] = i
+}
+
+## indexing traindata 
+traindata$opt_idx = 0
+traindata$pur_idx = 0
+traindata$opt_idx = apply(traindata,1,function(x) {
+  idxMap[[as.character(x[3])]]
+})
+traindata$pur_idx = apply(traindata,1,function(x) {
+  idxMap[[as.character(x[4])]]
+})
+
+## indexing testdata
+testdata$opt_idx = 0
+testdata$opt_idx = apply(testdata,1,function(x){
+  idxMap[[as.character(x[2])]]
+})
+
+## building matrix 
+ll = length(idxMap)
+dqmat = matrix(rep(0,ll),nrow=ll,ncol=ll)
+# apply(traindata,1,function(x){
+#   dqmat[as.integer(x[5]),as.integer(x[6])] = dqmat[as.integer(x[5]),as.integer(x[6])] + 1 
+# })
+# cells = apply(traindata,1,function(x){
+#   c(as.integer(x[5]),as.integer(x[6]))
+# })
+
+for (i in 1:dim(traindata)[1]) {
+  dqmat[traindata[i,5],traindata[i,6]] = dqmat[traindata[i,5],traindata[i,6]] + 1
+}
+
+dvect = rep(0,ll)
+for (i in 1:ll) {
+  dvect[i] = which.max(dqmat[i,])
+}
+
+### performing error analysis on traindata 
+traindata$ppur_idx = apply(traindata,1,function(x) {
+  dvect[as.integer(x[5])]
+})
+traindata$ppur = apply(traindata,1,function(x){
+  labels[as.integer(x[7])]
+})
+
+### incertainity analysis 
+# testdata.avg = ddply(testdata,.(customer_ID),summarise,
+#                  rec.cid = length(opt)
+#                  )
+# test.avg.cid = mean(testdata.avg$rec.cid) ##3.5691
+# 
+# traindata.avg = ddply(traindata,.(customer_ID),summarise,
+#                  rec.cid = length(opt)
+#                  )
+# train.avg.cid = mean(traindata.avg$rec.cid) ##6.857601
+
+### error analysis - model inaccuracy (max level of information)                 
+# traindata.in.an = ddply(traindata,.(customer_ID),summarise,
+#                  pur_idx = pur_idx[1],
+#                  ppur_idx = ppur_idx[length(ppur_idx)]
+#                  )
+# 
+# traindata.err = traindata.in.an[traindata.in.an$pur_idx != traindata.in.an$ppur_idx,]
+# 
+# err.mod = dim(traindata.err)[1] / dim(traindata.in.an)[1] ### 0.002814172
+###----> questo conferma che il modello e' corretto e che l'errore dipende dall'incertezza 
+
+### error analysis - testset has more incertainity than train set  
+cids = unique(traindata$customer_ID)
+xval_row = length(cids)
+#cids.xval = rep(cids,3)
+xval = data.frame(customer_ID = 1:(3*xval_row), record_type = NA , opt = NA , pur = NA , opt_idx = NA , pur_idx = NA , ppur_idx = NA , ppur = NA)
+
+# ln = 1
+# for (cid in cids) {
+#   t = traindata[traindata$customer_ID == cid , ]
+#   for (j in 1:min(3,dim(t)[1]) ) {
+#     xval[ln,1] = t[j,1]  ## customer_ID
+#     xval[ln,2] = t[j,5]  ## opt_idx
+#     xval[ln,3] = t[j,6]   ## pur_idx
+#     ln = ln + 1 
+#   }
+# }
+
+cid = 10000000
+cc = 1 
+ln = 1
+for (i in 1:dim(traindata)[1]) {
+  if (traindata[i,1] == cid & cc <= 3) {
+    xval[ln,] = traindata[i,]
+    ln = ln + 1
+  } else if (traindata[i,1] != cid) {
+    cc = 1
+    cid = traindata[i,1]
+    xval[ln,] = traindata[i,]
+    ln = ln + 1
+  } else { }
+  
+  cc = cc + 1 
+}
+ 
+
+
+```
