@@ -181,93 +181,123 @@ for (i in 1:ll) {
   dvect[i] = which.max(dqmat[i,])
 }
 
+### error analysis 
+rec_alg.3 = 3 * (1:(dim(traindata.3)[1] / 3))
+traindata.3.alg = traindata.3[rec_alg.3,]
+
+acc_est.3 =  1 - sum(traindata.3.alg$pur_idx != traindata.3.alg$ppur_idx) / dim(traindata.3.alg)[1] ##  0.5574328
+
+err.3 = traindata.3.alg[traindata.3.alg$pur_idx != traindata.3.alg$ppur_idx,]
+
+### e sul trainset quanto verrebbe ?
+traindata$ppur_idx = apply(traindata,1,function(x) {
+  dvect[as.integer(x[5])]
+})
+
+traindata.alg = traindata[traindata$record_type == 1 , ]
+acc_est =  1 - sum(traindata.alg$pur_idx != traindata.alg$ppur_idx) / dim(traindata.alg)[1] ## 0.9971858 
+
+err = traindata.alg[traindata.alg$pur_idx != traindata.alg$ppur_idx,]
 
 
-## building matrix 3
+# testdata.avg = ddply(testdata,.(customer_ID),summarise,
+#                   rec.cid = length(opt)
+#                   )
+### mean = 3.5691 , sd = 1.623887                        {2,5}
+
+# traindata.avg = ddply(traindata,.(customer_ID),summarise,
+#                  rec.cid = length(opt)
+#                  )
+# train.avg.cid = mean(traindata.avg$rec.cid) ##6.857601
+# train.sd.cid = sd (traindata.avg$rec.cid) ## 1.998357    {5,9}
+
+dvect_fix = dvect
+cases_to_fix = unique(err$opt_idx)
+for (i in cases_to_fix) {
+  dvect_fix[i] = i
+}
+
+## checking 
+traindata$ppur_fix_idx = apply(traindata,1,function(x) {
+  dvect_fix[as.integer(x[5])]
+})
+traindata.alg = traindata[traindata$record_type == 1 , ]
+acc_est.fix =  1 - sum(traindata.alg$pur_idx != traindata.alg$ppur_fix_idx) / dim(traindata.alg)[1] ## 1
+
+#### famose una prediction co sto cazzo di dvect_fix .....
+# testdata$pur_idx = apply(testdata,1,function(x) {
+#   dvect_fix[as.integer(x[3])]
+# })
+# testdata$pur = apply(testdata,1,function(x){
+#   labels[as.integer(x[4])]
+# })
+# 
+# testdata.sub = ddply(testdata,.(customer_ID),summarise,
+#                  pur = pur[length(pur)])
+# 
+# testdata.sub.check = merge(submission.csv,testdata.sub,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=F)
+# testdata.sub.check = testdata.sub.check[,-2]
+# colnames(testdata.sub.check) = c("customer_ID","plan")
+# #### storing on fs --> ACC = 0.53751 (KAGGLE)
+# sub.fn = paste(base.path,"sub_opt_related_after_err3.zat",sep="")
+# write.csv(testdata.sub.check,quote=F,row.names=F,file=sub.fn)
+
+### torniamo a err.3 .... 
+####  potrei pensare di costruire una dmat sulla base di traindata.3.alg 
 dqmat.3 = matrix(rep(0,ll),nrow=ll,ncol=ll)
-for (i in 1:dim(traindata.3)[1]) {
-  dqmat.3[traindata.3[i,5],traindata.3[i,6]] = dqmat.3[traindata.3[i,5],traindata.3[i,6]] + 1
+for (i in 1:dim(traindata.3.alg)[1]) {
+  dqmat.3[traindata.3.alg[i,5],traindata.3.alg[i,6]] = dqmat.3[traindata.3.alg[i,5],traindata.3.alg[i,6]] + 1
 }
 dvect.3 = rep(0,ll)
 for (i in 1:ll) {
   dvect.3[i] = which.max(dqmat.3[i,])
 }
-sum(dvect != dvect.3) ## 358 
 
-## building matrix 2 
-dqmat.2 = matrix(rep(0,ll),nrow=ll,ncol=ll)
-for (i in 1:dim(traindata.2)[1]) {
-  dqmat.2[traindata.2[i,5],traindata.2[i,6]] = dqmat.2[traindata.2[i,5],traindata.2[i,6]] + 1
-}
-dvect.2 = rep(0,ll)
-for (i in 1:ll) {
-  dvect.2[i] = which.max(dqmat.2[i,])
-}
-sum(dvect != dvect.2) ## 578
-
-## building matrix 1
-dqmat.1 = matrix(rep(0,ll),nrow=ll,ncol=ll)
-for (i in 1:dim(traindata.1)[1]) {
-  dqmat.1[traindata.1[i,5],traindata.1[i,6]] = dqmat.1[traindata.1[i,5],traindata.1[i,6]] + 1
-}
-dvect.1 = rep(0,ll)
-for (i in 1:ll) {
-  dvect.1[i] = which.max(dqmat.1[i,])
-}
-sum(dvect != dvect.1) ## 1018
-
-### computing num 
-testdata.num = ddply(testdata,.(customer_ID),summarise,
-                 num = length(opt)
-                 )
-
-### predicting 
+#### famose una prediction co sto cazzo di dvect.3 
 # testdata$pur_idx = apply(testdata,1,function(x) {
-#   dvect[as.integer(x[3])]
+#   dvect.3[as.integer(x[3])]
 # })
+# testdata$pur = apply(testdata,1,function(x){
+#   labels[as.integer(x[4])]
+# })
+# 
+# testdata.sub = ddply(testdata,.(customer_ID),summarise,
+#                  pur = pur[length(pur)])
+# 
+# testdata.sub.check = merge(submission.csv,testdata.sub,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=F)
+# testdata.sub.check = testdata.sub.check[,-2]
+# colnames(testdata.sub.check) = c("customer_ID","plan")
+# #### storing on fs --> ACC =  0.53392, which is not an improvement of your best score. Keep trying! (KAGGLE)
+# sub.fn = paste(base.path,"sub_opt_related_after_dvect3.zat",sep="")
+# write.csv(testdata.sub.check,quote=F,row.names=F,file=sub.fn)
 
+## traindata.4
+cids = unique(traindata$customer_ID)
+xval_row = length(cids)
+traindata.4 = data.frame(customer_ID = 1:(4*xval_row), record_type = NA , opt = NA , pur = NA , opt_idx = NA , pur_idx = NA , ppur_idx = NA , ppur = NA)
 
-testdata$pur_idx = apply(testdata,1, function(x) {
-  num = testdata.num$num[testdata.num$customer_ID == x[1]]
-  ret = -1
-  if (num >= 4) {
-    ret = dvect[as.integer(x[3])]
-  } else if (num == 3) {
-    ret = dvect.3[as.integer(x[3])]
-  } else if (num == 2) {
-    ret = dvect.2[as.integer(x[3])]
-  } else {
-    ret = dvect.1[as.integer(x[3])]
-  }
+traindata$opt = as.character(traindata$opt)
+traindata$pur = as.character(traindata$pur)
+
+cid = 10000000
+cc = 1 
+ln = 1
+for (i in 1:dim(traindata)[1]) {
+  if (traindata[i,1] == cid & cc <= 4) {
+    traindata.4[ln,] = traindata[i,]
+    ln = ln + 1
+  } else if (traindata[i,1] != cid) {
+    cc = 1
+    cid = traindata[i,1]
+    traindata.4[ln,] = traindata[i,]
+    ln = ln + 1
+  } else { }
   
-  ret
- })
-
-testdata$pur = apply(testdata,1,function(x){
-  labels[as.integer(x[4])]
-})
-
+  cc = cc + 1 
+}
+ 
 #### storing on fs
-fn = paste(base.path,"testdata_new.csv",sep="")
-write.csv(testdata,quote=F,row.names=F,file=fn)
+fn = paste(base.path,"traindata_4.csv",sep="")
+write.csv(xval,quote=F,row.names=F,file=fn)
 
-pur_idx_old = apply(testdata,1,function(x) {
-  dvect[as.integer(x[3])]
-})
-
-sum(pur_idx_old != testdata$pur_idx)  ### 2511 
-sum(pur_idx_old != testdata$pur_idx) / dim(testdata)[1] ### 0.01262723 
-
-
-
-testdata.sub = ddply(testdata,.(customer_ID),summarise,
-                  pur = pur[length(pur)])
-
-testdata.sub.check = merge(submission.csv,testdata.sub,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=F)
-testdata.sub.check = testdata.sub.check[,-2]
-colnames(testdata.sub.check) = c("customer_ID","plan")
-
-#### storing on fs -->  ACC = 0.53422 (KAGGLE) 
-sub.fn = paste(base.path,"sub_opt_related3.zat",sep="")
-write.csv(testdata.sub.check,quote=F,row.names=F,file=sub.fn)
 ```
