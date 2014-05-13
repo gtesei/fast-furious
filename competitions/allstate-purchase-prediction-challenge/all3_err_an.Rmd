@@ -295,9 +295,12 @@ for (i in 1:dim(traindata)[1]) {
   
   cc = cc + 1 
 }
+
+### 38976 NA
+traindata.4 = na.omit(traindata.4)
  
 #### storing on fs
 fn = paste(base.path,"traindata_4.csv",sep="")
-write.csv(xval,quote=F,row.names=F,file=fn)
+write.csv(traindata.4,quote=F,row.names=F,file=fn)
 
 ```
