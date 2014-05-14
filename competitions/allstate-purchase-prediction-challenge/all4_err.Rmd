@@ -1,0 +1,394 @@
+Allstate-purchase-prediction-challenge
+========================================================
+
+
+util 
+```{r}
+encodeCategoricalFeature = function(ddata,i,facts.in=NULL) {
+  
+  fact_max = 0
+  fact_min = 1 
+  facts = NULL
+  if (is.null(facts.in)) {
+    fact_max = length(unique(ddata[,i]))
+    facts = unique(ddata[,i])
+  } else {
+    fact_max = length(facts.in)
+    facts = facts.in
+  }
+  
+  mm = matrix(rep(0,dim(ddata)[1]),nrow=dim(ddata)[1],ncol=fact_max)
+  col_name = colnames(ddata)[i]
+  colnames(mm) = paste(paste(col_name,"_",sep=''),facts,sep='')
+  for (j in fact_min:fact_max) {
+    mm[,j] = ddata [,i] == facts[j]
+  }  
+  ddata = cbind(ddata,mm)
+  ddata = ddata[,-i]
+}
+
+nomalize = function(ddata,i,min.in=NULL,max.in=NULL) {
+  n_col = NULL
+  if( is.null(min.in) | is.null(max.in) )  { 
+    n_col = (ddata[,i] - min(ddata[,i])) / (  max(ddata[,i])  - min (ddata[,i]) )
+  } else {
+    n_col = (ddata[,i] - min.in) / (  max.in  - min.in )
+  }
+  
+  col_name = colnames(ddata)[i]
+  n_col_df = data.frame(  n_col   )
+  colnames(n_col_df) = paste(col_name,"_norm",sep="")
+  ddata = cbind(ddata,n_col_df)
+  ddata = ddata[,-i]
+}
+
+buildOptionVector = function(ddata) {
+  ret = paste(ddata$A,ddata$B,sep='')
+  ret = paste(ret,ddata$C,sep='')
+  ret = paste(ret,ddata$D,sep='')
+  ret = paste(ret,ddata$E,sep='')
+  ret = paste(ret,ddata$F,sep='')
+  ret = paste(ret,ddata$G,sep='')
+  ret_df = data.frame(opt_purch = ret)
+  
+#   ddata = ddata[,-1] ## A
+#   ddata = ddata[,-1] ## B
+#   ddata = ddata[,-1] ## C 
+#   ddata = ddata[,-1] ## D
+#   ddata = ddata[,-1] ## E
+#   ddata = ddata[,-1] ## F
+#   ddata = ddata[,-1] ## G
+  
+  #ddata = cbind(ddata,ret_df)
+ret_df
+}
+
+```
+
+
+Loading train and test file 
+
+```{r}
+### load files 
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+
+train.fn = paste(base.path,"train.csv",sep="")
+test.fn = paste(base.path,"test_v2.csv",sep="")
+submission.fn = paste(base.path,"sampleSubmission.csv",sep="")
+
+
+train.csv = read.csv(train.fn)
+test.csv = read.csv(test.fn)
+submission.csv = read.csv(submission.fn)
+
+ptm <- proc.time()
+```
+
+Building training set and cross validation set 
+
+```{r}
+library(plyr)
+
+### traindata 
+traindata = train.csv
+
+
+##traindata = traindata[,-c(2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,25)] lascio C_previous (16)
+traindata = traindata[,-c(2,4,5,6,7,8,9,10,11,12,13,14,15,17,25)] 
+
+
+#### computing some statistics 
+# traindata_nona = na.omit(traindata) 
+# cp = sum(traindata_nona$C[traindata_nona$record_type == 1] == traindata_nona$C_previous[traindata_nona$record_type == 1]) / dim(traindata_nona[traindata_nona$record_type == 1,])[1]   #### 0.7213459
+
+
+train_labels = buildOptionVector(traindata[,-c(1,2,3)])
+traindata = traindata[,-c(4,5,7,8,9,10)]
+traindata$opt = train_labels$opt_purch
+
+customer_ID_num = ddply(traindata,.(customer_ID),summarise,
+                  num = length(opt)
+                  )
+
+traindata.dec = traindata[traindata$record_type == 1,]
+traindata.dec = merge(traindata.dec,customer_ID_num,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=T)
+colnames(traindata.dec) = c("customer_ID","record_type","C_previous","C","pur","num")
+
+mean(traindata.dec$num) ##6.857601
+sd(traindata.dec$num) ##1.998357
+summary(traindata.dec)
+
+## pur 
+traindata.pur = traindata[traindata$record_type == 1,]
+traindata.pur = traindata.pur[,-2]
+traindata = merge(traindata,traindata.pur,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=T)
+colnames(traindata) = c("customer_ID","record_type","C_previous","C" , "opt", "C_previous_pur","C_pur", "pur")
+
+### building idxMap 
+labels = unique(c(as.character(unique(traindata$opt)),as.character(unique(testdata$opt))))
+idxMap <- new.env(hash = T, parent = emptyenv())
+for (i in 1:length(labels)) {
+  idxMap[[labels[i]]] = i
+}
+
+## indexing traindata 
+traindata$opt_idx = 0
+traindata$pur_idx = 0
+traindata$opt_idx = apply(traindata,1,function(x) {
+  idxMap[[as.character(x[5])]]
+})
+traindata$pur_idx = apply(traindata,1,function(x) {
+  idxMap[[as.character(x[8])]]
+})
+
+### building matrix 
+dqmat = matrix(rep(0,ll),nrow=ll,ncol=ll)
+for (i in 1:dim(traindata)[1]) {
+  dqmat[traindata[i,9],traindata[i,10]] = dqmat[traindata[i,9],traindata[i,10]] + 1
+}
+dvect = rep(0,ll)
+dvect_2 = rep(0,ll)
+for (i in 1:ll) {
+  dvect[i] = which.max(dqmat[i,])
+  t = dqmat[i,dvect[i]] 
+  dqmat[i,dvect[i]]  = 0 
+  dvect_2[i] = which.max(dqmat[i,])
+  dqmat[i,dvect[i]]  = t 
+}
+
+
+## predicting on trainset 
+traindata$ppur1_idx = apply(traindata,1,function(x) {
+  dvect[as.integer(x[9])]
+})
+traindata$ppur2_idx = apply(traindata,1,function(x) {
+  dvect_2[as.integer(x[9])]
+})
+
+
+# traindata.3 = ddply(traindata,.(customer_ID),summarise,
+#                   record_type = record_type[3], 
+#                   C_previous = C_previous[3] , 
+#                   C = C[3] , 
+#                   opt = opt [3],
+#                   C_previous_pur = C_previous_pur [3] , 
+#                   C_pur = C_pur[3] , 
+#                   pur = pur [3], 
+#                   opt_idx = opt_idx[3] , 
+#                   pur_idx = pur_idx[3] , 
+#                   ppur1_idx = ppur1_idx[3] , 
+#                   ppur2_idx = ppur2_idx[3]
+#                   )
+
+
+
+stop("here")
+
+
+
+
+
+
+
+print(sum(is.na(traindata)))
+### testdata 
+testdata = test.csv
+testdata = testdata[,-c(2,3,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,25)]
+test_labels = buildOptionVector(testdata[,-1])
+testdata$opt = test_labels$opt_purch
+testdata = testdata[,-(2:8)]
+print(sum(is.na(testdata)))
+
+### building idxMap 
+labels = unique(c(as.character(unique(traindata$opt)),as.character(unique(testdata$opt))))
+idxMap <- new.env(hash = T, parent = emptyenv())
+for (i in 1:length(labels)) {
+  idxMap[[labels[i]]] = i
+}
+
+## indexing traindata 
+traindata$opt_idx = 0
+traindata$pur_idx = 0
+traindata$opt_idx = apply(traindata,1,function(x) {
+  idxMap[[as.character(x[3])]]
+})
+traindata$pur_idx = apply(traindata,1,function(x) {
+  idxMap[[as.character(x[4])]]
+})
+
+## indexing testdata
+testdata$opt_idx = 0
+testdata$opt_idx = apply(testdata,1,function(x){
+  idxMap[[as.character(x[2])]]
+})
+
+## building matrices 
+traindata.1 = NULL
+traindata.2 = NULL
+traindata.3 = NULL
+
+dqmat = NULL
+dqmat.1 = NULL
+dqmat.2 = NULL
+dqmat.3 = NULL
+
+dvect = NULL
+dvect.1 = NULL
+dvect.2 = NULL
+dvect.3 = NULL
+
+fn.1 = paste(base.path,"traindata_1.csv",sep="")
+fn.2 = paste(base.path,"traindata_2.csv",sep="")
+fn.3 = paste(base.path,"traindata_3.csv",sep="")
+
+traindata.1 = read.csv(fn.1,colClasses = "character")
+traindata.2 = read.csv(fn.2,colClasses = "character")
+traindata.3 = read.csv(fn.3,colClasses = "character")
+
+traindata.1$opt_idx = as.integer(traindata.1$opt_idx)
+traindata.1$pur_idx = as.integer(traindata.1$pur_idx)
+
+traindata.3$opt_idx = as.integer(traindata.3$opt_idx)
+traindata.3$pur_idx = as.integer(traindata.3$pur_idx)
+
+traindata.2$opt_idx = as.integer(traindata.2$opt_idx)
+traindata.2$pur_idx = as.integer(traindata.2$pur_idx)
+
+traindata.3$opt_idx = as.integer(traindata.3$opt_idx)
+traindata.3$pur_idx = as.integer(traindata.3$pur_idx)
+
+## building matrix 
+ll = length(idxMap)
+dqmat = matrix(rep(0,ll),nrow=ll,ncol=ll)
+for (i in 1:dim(traindata)[1]) {
+  dqmat[traindata[i,5],traindata[i,6]] = dqmat[traindata[i,5],traindata[i,6]] + 1
+}
+dvect = rep(0,ll)
+for (i in 1:ll) {
+  dvect[i] = which.max(dqmat[i,])
+}
+
+### error analysis 
+rec_alg.3 = 3 * (1:(dim(traindata.3)[1] / 3))
+traindata.3.alg = traindata.3[rec_alg.3,]
+
+acc_est.3 =  1 - sum(traindata.3.alg$pur_idx != traindata.3.alg$ppur_idx) / dim(traindata.3.alg)[1] ##  0.5574328
+
+err.3 = traindata.3.alg[traindata.3.alg$pur_idx != traindata.3.alg$ppur_idx,]
+
+### e sul trainset quanto verrebbe ?
+traindata$ppur_idx = apply(traindata,1,function(x) {
+  dvect[as.integer(x[5])]
+})
+
+traindata.alg = traindata[traindata$record_type == 1 , ]
+acc_est =  1 - sum(traindata.alg$pur_idx != traindata.alg$ppur_idx) / dim(traindata.alg)[1] ## 0.9971858 
+
+err = traindata.alg[traindata.alg$pur_idx != traindata.alg$ppur_idx,]
+
+
+# testdata.avg = ddply(testdata,.(customer_ID),summarise,
+#                   rec.cid = length(opt)
+#                   )
+### mean = 3.5691 , sd = 1.623887                        {2,5}
+
+# traindata.avg = ddply(traindata,.(customer_ID),summarise,
+#                  rec.cid = length(opt)
+#                  )
+# train.avg.cid = mean(traindata.avg$rec.cid) ##6.857601
+# train.sd.cid = sd (traindata.avg$rec.cid) ## 1.998357    {5,9}
+
+dvect_fix = dvect
+cases_to_fix = unique(err$opt_idx)
+for (i in cases_to_fix) {
+  dvect_fix[i] = i
+}
+
+## checking 
+traindata$ppur_fix_idx = apply(traindata,1,function(x) {
+  dvect_fix[as.integer(x[5])]
+})
+traindata.alg = traindata[traindata$record_type == 1 , ]
+acc_est.fix =  1 - sum(traindata.alg$pur_idx != traindata.alg$ppur_fix_idx) / dim(traindata.alg)[1] ## 1
+
+#### famose una prediction co sto cazzo di dvect_fix .....
+# testdata$pur_idx = apply(testdata,1,function(x) {
+#   dvect_fix[as.integer(x[3])]
+# })
+# testdata$pur = apply(testdata,1,function(x){
+#   labels[as.integer(x[4])]
+# })
+# 
+# testdata.sub = ddply(testdata,.(customer_ID),summarise,
+#                  pur = pur[length(pur)])
+# 
+# testdata.sub.check = merge(submission.csv,testdata.sub,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=F)
+# testdata.sub.check = testdata.sub.check[,-2]
+# colnames(testdata.sub.check) = c("customer_ID","plan")
+# #### storing on fs --> ACC = 0.53751 (KAGGLE)
+# sub.fn = paste(base.path,"sub_opt_related_after_err3.zat",sep="")
+# write.csv(testdata.sub.check,quote=F,row.names=F,file=sub.fn)
+
+### torniamo a err.3 .... 
+####  potrei pensare di costruire una dmat sulla base di traindata.3.alg 
+dqmat.3 = matrix(rep(0,ll),nrow=ll,ncol=ll)
+for (i in 1:dim(traindata.3.alg)[1]) {
+  dqmat.3[traindata.3.alg[i,5],traindata.3.alg[i,6]] = dqmat.3[traindata.3.alg[i,5],traindata.3.alg[i,6]] + 1
+}
+dvect.3 = rep(0,ll)
+for (i in 1:ll) {
+  dvect.3[i] = which.max(dqmat.3[i,])
+}
+
+#### famose una prediction co sto cazzo di dvect.3 
+# testdata$pur_idx = apply(testdata,1,function(x) {
+#   dvect.3[as.integer(x[3])]
+# })
+# testdata$pur = apply(testdata,1,function(x){
+#   labels[as.integer(x[4])]
+# })
+# 
+# testdata.sub = ddply(testdata,.(customer_ID),summarise,
+#                  pur = pur[length(pur)])
+# 
+# testdata.sub.check = merge(submission.csv,testdata.sub,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=F)
+# testdata.sub.check = testdata.sub.check[,-2]
+# colnames(testdata.sub.check) = c("customer_ID","plan")
+# #### storing on fs --> ACC =  0.53392, which is not an improvement of your best score. Keep trying! (KAGGLE)
+# sub.fn = paste(base.path,"sub_opt_related_after_dvect3.zat",sep="")
+# write.csv(testdata.sub.check,quote=F,row.names=F,file=sub.fn)
+
+## traindata.4
+cids = unique(traindata$customer_ID)
+xval_row = length(cids)
+traindata.4 = data.frame(customer_ID = 1:(4*xval_row), record_type = NA , opt = NA , pur = NA , opt_idx = NA , pur_idx = NA , ppur_idx = NA , ppur = NA)
+
+traindata$opt = as.character(traindata$opt)
+traindata$pur = as.character(traindata$pur)
+
+cid = 10000000
+cc = 1 
+ln = 1
+for (i in 1:dim(traindata)[1]) {
+  if (traindata[i,1] == cid & cc <= 4) {
+    traindata.4[ln,] = traindata[i,]
+    ln = ln + 1
+  } else if (traindata[i,1] != cid) {
+    cc = 1
+    cid = traindata[i,1]
+    traindata.4[ln,] = traindata[i,]
+    ln = ln + 1
+  } else { }
+  
+  cc = cc + 1 
+}
+
+### 38976 NA
+traindata.4 = na.omit(traindata.4)
+ 
+#### storing on fs
+fn = paste(base.path,"traindata_4.csv",sep="")
+write.csv(traindata.4,quote=F,row.names=F,file=fn)
+
+```
