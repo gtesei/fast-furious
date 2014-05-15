@@ -63,6 +63,24 @@ buildOptionVector = function(ddata) {
 ret_df
 }
 
+buildTraindataX = function (traindata,k) {
+  # traindata.k 
+  cids = traindata$customer_ID
+  cids.k = rep(as.integer(10000000),length(unique(cids)))
+  ln = 1
+  cids.k[ln] = k
+  cid.previous = cids[k]
+  for (i in 1:length(cids)) {
+    if (cid.previous != cids[i]) {
+      ln = ln + 1
+      cids.k[ln] = (i+k-1)
+      cid.previous = cids[i]
+    }
+  }
+  traindata.k = traindata[cids.k,]
+  traindata.k
+}
+
 ```
 
 
@@ -89,6 +107,14 @@ Building training set and cross validation set
 
 ```{r}
 library(plyr)
+
+### testdata 
+testdata = test.csv
+testdata = testdata[,-c(2,3,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,25)]
+test_labels = buildOptionVector(testdata[,-1])
+testdata$opt = test_labels$opt_purch
+testdata = testdata[,-(2:8)]
+print(sum(is.na(testdata)))
 
 ### traindata 
 traindata = train.csv
@@ -143,17 +169,23 @@ traindata$pur_idx = apply(traindata,1,function(x) {
 })
 
 ### building matrix 
+ll = length(idxMap)
 dqmat = matrix(rep(0,ll),nrow=ll,ncol=ll)
 for (i in 1:dim(traindata)[1]) {
   dqmat[traindata[i,9],traindata[i,10]] = dqmat[traindata[i,9],traindata[i,10]] + 1
 }
 dvect = rep(0,ll)
 dvect_2 = rep(0,ll)
+dvect_3 = rep(0,ll)
 for (i in 1:ll) {
   dvect[i] = which.max(dqmat[i,])
   t = dqmat[i,dvect[i]] 
   dqmat[i,dvect[i]]  = 0 
   dvect_2[i] = which.max(dqmat[i,])
+  tt = dqmat[i,dvect_2[i]] 
+  dqmat[i,dvect_2[i]]  = 0 
+  dvect_3[i] = which.max(dqmat[i,])
+  dqmat[i,dvect_2[i]]  = tt 
   dqmat[i,dvect[i]]  = t 
 }
 
@@ -165,40 +197,39 @@ traindata$ppur1_idx = apply(traindata,1,function(x) {
 traindata$ppur2_idx = apply(traindata,1,function(x) {
   dvect_2[as.integer(x[9])]
 })
+traindata$ppur3_idx = apply(traindata,1,function(x) {
+  dvect_3[as.integer(x[9])]
+})
 
 
-# traindata.3 = ddply(traindata,.(customer_ID),summarise,
-#                   record_type = record_type[3], 
-#                   C_previous = C_previous[3] , 
-#                   C = C[3] , 
-#                   opt = opt [3],
-#                   C_previous_pur = C_previous_pur [3] , 
-#                   C_pur = C_pur[3] , 
-#                   pur = pur [3], 
-#                   opt_idx = opt_idx[3] , 
-#                   pur_idx = pur_idx[3] , 
-#                   ppur1_idx = ppur1_idx[3] , 
-#                   ppur2_idx = ppur2_idx[3]
-#                   )
+# traindata.3 
+traindata.3 = buildTraindataX(traindata,3)
 
+acc.3.pred.1 = sum(traindata.3$ppur1_idx == traindata.3$pur_idx) / dim(traindata.3)[1]
+print(acc.3.pred.1) ## 0.5574328
 
+acc.3.pred.2 = sum(traindata.3$ppur2_idx == traindata.3$pur_idx) / dim(traindata.3)[1]
+print(acc.3.pred.2) ## 0.0735808
+
+err.3.pred.1 = traindata.3[traindata.3$ppur1_idx != traindata.3$pur_idx , ]
+err.3.pred.1 = na.omit(err.3.pred.1)
+print(sum(err.3.pred.1$C == err.3.pred.1$C_previous)/dim(err.3.pred.1)[1]) ## 0.684456
+
+print(sum(err.3.pred.1$C == err.3.pred.1$C_previous)/dim(err.3.pred.1)[1]) ## 0.684456
+
+traindata.3 = na.omit(traindata.3)
+print(sum(traindata.3$C == traindata.3$C_previous)/dim(traindata.3)[1]) ## 0.729002
+
+# traindata.4
+traindata.4 = buildTraindataX(traindata,4)
+acc.4.pred.1 = sum(traindata.4$ppur1_idx == traindata.4$pur_idx) / dim(traindata.4)[1]
+print(acc.4.pred.1) ## 0.6053768
 
 stop("here")
 
 
-
-
-
-
-
 print(sum(is.na(traindata)))
-### testdata 
-testdata = test.csv
-testdata = testdata[,-c(2,3,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,25)]
-test_labels = buildOptionVector(testdata[,-1])
-testdata$opt = test_labels$opt_purch
-testdata = testdata[,-(2:8)]
-print(sum(is.na(testdata)))
+
 
 ### building idxMap 
 labels = unique(c(as.character(unique(traindata$opt)),as.character(unique(testdata$opt))))
