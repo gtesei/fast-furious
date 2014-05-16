@@ -276,31 +276,112 @@ cids = unique(traindata$customer_ID)
 xval_row = length(cids)
 traindata.4 = data.frame(customer_ID = 1:(4*xval_row), record_type = NA , opt = NA , pur = NA , opt_idx = NA , pur_idx = NA , ppur_idx = NA , ppur = NA)
 
-traindata$opt = as.character(traindata$opt)
-traindata$pur = as.character(traindata$pur)
+# traindata$opt = as.character(traindata$opt)
+# traindata$pur = as.character(traindata$pur)
+# 
+# cid = 10000000
+# cc = 1 
+# ln = 1
+# for (i in 1:dim(traindata)[1]) {
+#   if (traindata[i,1] == cid & cc <= 4) {
+#     traindata.4[ln,] = traindata[i,]
+#     ln = ln + 1
+#   } else if (traindata[i,1] != cid) {
+#     cc = 1
+#     cid = traindata[i,1]
+#     traindata.4[ln,] = traindata[i,]
+#     ln = ln + 1
+#   } else { }
+#   
+#   cc = cc + 1 
+# }
+# 
+# ### 38976 NA
+# traindata.4 = na.omit(traindata.4)
+#  
+# #### storing on fs
+# fn = paste(base.path,"traindata_4.csv",sep="")
+# write.csv(traindata.4,quote=F,row.names=F,file=fn)
 
-cid = 10000000
-cc = 1 
-ln = 1
-for (i in 1:dim(traindata)[1]) {
-  if (traindata[i,1] == cid & cc <= 4) {
-    traindata.4[ln,] = traindata[i,]
-    ln = ln + 1
-  } else if (traindata[i,1] != cid) {
-    cc = 1
-    cid = traindata[i,1]
-    traindata.4[ln,] = traindata[i,]
-    ln = ln + 1
-  } else { }
-  
-  cc = cc + 1 
+## se applicassi l'algoritmo di scelta a traindata.4 
+traindata.4$ppur_idx = apply(traindata.4,1,function(x) {
+   dvect[as.integer(x[5])]
+})
+traindata.4$ppur = apply(traindata.4,1,function(x){
+  labels[as.integer(x[7])]
+})
+
+## come previsto, i tipi di errori riscontrati sono relativi al fatto che nel range di 4 non entra la quotazione acquistata 
+
+####  potrei pensare di costruire una dmat sulla base di traindata.3.alg 
+# traindata.4.alg = ddply(traindata.4,.(customer_ID),summarise,
+#                  record_type = record_type[length(opt)],
+#                  opt = opt[length(opt)],
+#                  pur = pur[length(opt)],
+#                  opt_idx = opt_idx[length(opt_idx)],
+#                  pur_idx = pur_idx[length(pur_idx)],
+#                  ppur_idx = ppur_idx[length(ppur_idx)],
+#                  ppur = ppur[length(ppur)])
+#                  
+# 
+# acc_est.4 =  1 - sum(traindata.4.alg$pur_idx != traindata.4.alg$ppur_idx) / dim(traindata.4.alg)[1] ##0.6526199  
+# 
+# err.4 = traindata.4.alg[traindata.4.alg$pur_idx != traindata.4.alg$ppur_idx,]
+# dqmat.4 = matrix(rep(0,ll),nrow=ll,ncol=ll)
+# for (i in 1:dim(traindata.4.alg)[1]) {
+#   dqmat.4[traindata.4.alg[i,5],traindata.4.alg[i,6]] = dqmat.4[traindata.4.alg[i,5],traindata.4.alg[i,6]] + 1
+# }
+# dvect.4 = rep(0,ll)
+# for (i in 1:ll) {
+#   dvect.4[i] = which.max(dqmat.4[i,])
+# }
+# testdata$pur_idx = apply(testdata,1,function(x) {
+#   dvect.4[as.integer(x[3])]
+# })
+# testdata$pur = apply(testdata,1,function(x){
+#   labels[as.integer(x[4])]
+# })
+# 
+# testdata.sub = ddply(testdata,.(customer_ID),summarise,
+#                  pur = pur[length(pur)])
+# 
+# testdata.sub.check = merge(submission.csv,testdata.sub,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=F)
+# testdata.sub.check = testdata.sub.check[,-2]
+# colnames(testdata.sub.check) = c("customer_ID","plan")
+# #### storing on fs --> ACC =  0.53488, which is not an improvement of your best score. Keep trying! (KAGGLE)
+# sub.fn = paste(base.path,"sub_opt_related_after_dvect4.zat",sep="")
+# write.csv(testdata.sub.check,quote=F,row.names=F,file=sub.fn)
+
+train.opts = traindata$opt_idx
+last.opt = train.opts[1]
+dqmat.trans = matrix(rep(0,ll),nrow=ll,ncol=ll)
+for (i in 1:length(train.opts)) {
+  if (train.opts[i] != last.opt) {
+    dqmat.trans[last.opt,train.opts[i]] = dqmat.trans[last.opt,train.opts[i]] + 1
+    last.opt = train.opts[i]
+  }
+}
+dvect.trans = rep(0,ll)
+for (i in 1:ll) {
+  dvect.trans[i] = which.max(dqmat.trans[i,])
 }
 
-### 38976 NA
-traindata.4 = na.omit(traindata.4)
- 
-#### storing on fs
-fn = paste(base.path,"traindata_4.csv",sep="")
-write.csv(traindata.4,quote=F,row.names=F,file=fn)
+colnames(testdata) = c("customer_ID","opt", "opt_idx" ,  "ppur_idx","ppur")
 
+testdata$trans_idx = apply(testdata,1,function(x) {
+  dvect.trans[dvect.trans[as.integer(x[3])]]
+})
+testdata$trans_pur = apply(testdata,1,function(x){
+  labels[as.integer(x[6])]
+})
+
+testdata.sub = ddply(testdata,.(customer_ID),summarise,
+                 pur = ifelse(length(trans_pur) > 2   , ppur[length(trans_pur)] , trans_pur[length(trans_pur)] )   
+                 )
+testdata.sub.check = merge(submission.csv,testdata.sub,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=F)
+testdata.sub.check = testdata.sub.check[,-2]
+colnames(testdata.sub.check) = c("customer_ID","plan")
+#### storing on fs --> ACC =  0.41612, which is not an improvement of your best score. Keep trying! (KAGGLE)
+sub.fn = paste(base.path,"sub_opt_related_after_dvect_trans.zat",sep="")
+write.csv(testdata.sub.check,quote=F,row.names=F,file=sub.fn)
 ```
