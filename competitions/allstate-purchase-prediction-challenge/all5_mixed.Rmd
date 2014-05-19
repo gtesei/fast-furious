@@ -89,14 +89,14 @@ buildTraindata = function(traindata) {
   traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(car_value) == 1
   
   ### approccio 1: eliminare colonne che hanno NA 
-  traindata = traindata[,-1] ## index(risk_factor) == 1 che ha circa il 35% di NA 
+  #traindata = traindata[,-1] ## index(risk_factor) == 1 che ha circa il 35% di NA 
   ############## end of approccio 1 
   
   ### approcccio 2: eliminare righe che hanno NA ~ eliminato, hai appena 0.07319163 di accuracy sul xval set 
-  # traindata = na.omit(traindata)
-  # facts = unique(c(as.character(unique(train.csv$risk_factor[! is.na(train.csv$risk_factor) ])),as.character(unique(test.csv$risk_factor[! is.na(test.csv$risk_factor) ]))))
-  # factMap[["risk_factor"]] = facts 
-  # traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(risk_factor) == 1
+  traindata = na.omit(traindata)
+  facts = unique(c(as.character(unique(train.csv$risk_factor[! is.na(train.csv$risk_factor) ])),as.character(unique(test.csv$risk_factor[! is.na(test.csv$risk_factor) ]))))
+  factMap[["risk_factor"]] <<- facts 
+  traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(risk_factor) == 1
   ############## end of approccio 2 
   
   mi = min(train.csv$age_oldest,test.csv$age_oldest)
@@ -208,7 +208,7 @@ testdata.in = testdata.in[,-2]  ## index(record_type) == 2
 testdata.in = testdata.in[,-2]  ## index(day) == 2 
 testdata.in = testdata.in[,-2]  ## index(time) == 2 
 testdata.in = testdata.in[,-3]  ## index(location) == 3
-testdata.in = testdata.in[,-7]  ## index(risk_factor) == 7
+#testdata.in = testdata.in[,-7]  ## index(risk_factor) == 7
 
 
 testdata.in2 = ddply(testdata.in,.(customer_ID),summarise,
@@ -217,6 +217,7 @@ testdata.in2 = ddply(testdata.in,.(customer_ID),summarise,
                  homeowner = homeowner[1],
                  car_age = car_age[1],
                  car_value = car_value[1],
+                 risk_factor = risk_factor[1],
                  age_oldest = age_oldest[1],
                  age_youngest = age_youngest[1],
                  married_couple = married_couple[1],
@@ -251,6 +252,9 @@ testdata = nomalize(testdata,1,min.in=mima[1],max.in=mima[2]) ## index(car_age) 
 facts = factMap[["car_value"]]  
 testdata = encodeCategoricalFeature(testdata,1,facts.in=facts) ## index(car_value) == 1
 
+facts = factMap[["risk_factor"]]  
+testdata = encodeCategoricalFeature(testdata,1,facts.in=facts) ## index(risk_factor) == 1
+
 mima = factMap[["age_oldest"]] 
 testdata = nomalize(testdata,1,min.in=mima[1],max.in=mima[2]) ## index(age_oldest) == 1
   
@@ -278,7 +282,7 @@ data.union = rbind(testdata,traindata)
 print(dim(data.union))
 
 #### clustering k 
-k = 5
+k = 3
 data.clusters = kmeans(data.union, k)
 print(data.clusters$size)
 
@@ -395,5 +399,29 @@ print("Time elapsed in minutes:")
 tm[3]/60
 ```
 
+error analysis ...
+
+```{r}
+traindata$ppur_idx = apply(traindata,1,function(x) {
+  dvects[   as.integer(x[4])  ,  as.integer(x[7]) ]
+})
+
+traindata.alg = traindata[traindata$record_type == 1 , ]
+acc_est =  1 - sum(traindata.alg$pur_idx != traindata.alg$ppur_idx) / dim(traindata.alg)[1] ## 0.9947153 
+err = traindata.alg[traindata.alg$pur_idx != traindata.alg$ppur_idx,]
+
+dvect_fix = dvects
+for (i in dim(err)[1]) {
+  dvect_fix[as.integer(err[i,4]) , as.integer(err[i,7])] = as.integer(err[i,8])
+}
+
+## checking 
+traindata$ppur_fix_idx = apply(traindata,1,function(x) {
+  dvect_fix[ as.integer(x[4])  ,  as.integer(x[7])]
+})
+traindata.alg = traindata[traindata$record_type == 1 , ]
+acc_est.fix =  1 - sum(traindata.alg$pur_idx != traindata.alg$ppur_fix_idx) / dim(traindata.alg)[1] ## 1
+err = traindata.alg[traindata.alg$pur_idx != traindata.alg$ppur_fix_idx,]
+```
 
 
