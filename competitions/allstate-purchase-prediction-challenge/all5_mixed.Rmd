@@ -1,0 +1,427 @@
+Mixed Approach 
+========================================================
+
+Questa volta partizioniamo in clusters l'unione del trainset e testset al fine di identificare k = 10 clusters di customer_ID piu' omogenei tra di loro che considerando il trainset nella sua globalita'. 
+
+Se l'approcio funziona raffineremo poi k inseguito
+
+Creeremo k differenti dvect 
+
+Faremo la prediction per ogni cid appartenente al testset utilizzando la dvect del cluster a cui appartiene cid 
+
+util 
+```{r}
+
+
+encodeCategoricalFeature = function(ddata,i,facts.in=NULL) {
+  
+  fact_max = 0
+  fact_min = 1 
+  facts = NULL
+  if (is.null(facts.in)) {
+    fact_max = length(unique(ddata[,i]))
+    facts = unique(ddata[,i])
+  } else {
+    fact_max = length(facts.in)
+    facts = facts.in
+  }
+  
+  mm = matrix(rep(0,dim(ddata)[1]),nrow=dim(ddata)[1],ncol=fact_max)
+  col_name = colnames(ddata)[i]
+  colnames(mm) = paste(paste(col_name,"_",sep=''),facts,sep='')
+  for (j in fact_min:fact_max) {
+    mm[,j] = ddata [,i] == facts[j]
+  }  
+  ddata = cbind(ddata,mm)
+  ddata = ddata[,-i]
+}
+
+nomalize = function(ddata,i,min.in=NULL,max.in=NULL) {
+  n_col = NULL
+  if( is.null(min.in) | is.null(max.in) )  { 
+    n_col = (ddata[,i] - min(ddata[,i])) / (  max(ddata[,i])  - min (ddata[,i]) )
+  } else {
+    n_col = (ddata[,i] - min.in) / (  max.in  - min.in )
+  }
+  
+  col_name = colnames(ddata)[i]
+  n_col_df = data.frame(  n_col   )
+  colnames(n_col_df) = paste(col_name,"_norm",sep="")
+  ddata = cbind(ddata,n_col_df)
+  ddata = ddata[,-i]
+}
+
+##################################
+factMap <- new.env(hash = T, parent = emptyenv())
+buildTraindata = function(traindata) {
+  ## put customer_ID at the end 
+  col_idx = grep("customer_ID", names(traindata))
+  traindata = traindata[ , c( (1:ncol(traindata))[-col_idx], col_idx) ]
+  
+  traindata = traindata[,-1] ## index(shopping_pt) == 1
+  traindata = traindata[,-1] ## index(record_type) == 1
+  traindata = traindata[,-1] ## index(day) == 1
+  traindata = traindata[,-1] ## index(time) == 1
+  
+  facts = unique(c(as.character(unique(train.csv$state)),as.character(unique(test.csv$state))))
+  factMap[["state"]] <<- facts 
+  traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(state) == 1
+  
+  traindata = traindata[,-1] ## index(location) == 1
+  
+  mi = min(train.csv$group_size,test.csv$group_size)
+  ma = max(train.csv$group_size,test.csv$group_size)
+  factMap[["group_size"]] <<- c(mi,ma)
+  traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(group_size) == 1
+  
+  mi = min(train.csv$homeowner,test.csv$homeowner)
+  ma = max(train.csv$homeowner,test.csv$homeowner)
+  factMap[["homeowner"]] <<- c(mi,ma)
+  traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(homeowner) == 1
+  
+  mi = min(train.csv$car_age,test.csv$car_age)
+  ma = max(train.csv$car_age,test.csv$car_age)
+  factMap[["car_age"]] <<- c(mi,ma)
+  traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(car_age) == 1
+  
+  facts = unique(c(as.character(unique(train.csv$car_value)),as.character(unique(test.csv$car_value))))
+  factMap[["car_value"]] <<- facts 
+  traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(car_value) == 1
+  
+  ### approccio 1: eliminare colonne che hanno NA 
+  #traindata = traindata[,-1] ## index(risk_factor) == 1 che ha circa il 35% di NA 
+  ############## end of approccio 1 
+  
+  ### approcccio 2: eliminare righe che hanno NA ~ eliminato, hai appena 0.07319163 di accuracy sul xval set 
+  traindata = na.omit(traindata)
+  facts = unique(c(as.character(unique(train.csv$risk_factor[! is.na(train.csv$risk_factor) ])),as.character(unique(test.csv$risk_factor[! is.na(test.csv$risk_factor) ]))))
+  factMap[["risk_factor"]] <<- facts 
+  traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(risk_factor) == 1
+  ############## end of approccio 2 
+  
+  mi = min(train.csv$age_oldest,test.csv$age_oldest)
+  ma = max(train.csv$age_oldest,test.csv$age_oldest)
+  factMap[["age_oldest"]] <<- c(mi,ma)
+  traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(age_oldest) == 1
+  
+  mi = min(train.csv$age_youngest,test.csv$age_youngest)
+  ma = max(train.csv$age_youngest,test.csv$age_youngest)
+  factMap[["age_youngest"]] <<- c(mi,ma)
+  traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(age_youngest) == 1
+  
+  mi = min(train.csv$married_couple,test.csv$married_couple)
+  ma = max(train.csv$married_couple,test.csv$married_couple)
+  factMap[["married_couple"]] <<- c(mi,ma)
+  traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(married_couple) == 1
+  
+  traindata = na.omit(traindata) ### in questo caso propendo per l'eliminazione delle righe che sono solo 1.7% 
+  
+  facts = unique(c(as.character(unique(train.csv$C_previous[! is.na(train.csv$C_previous) ])),as.character(unique(test.csv$C_previous[! is.na(test.csv$C_previous)]))))
+  factMap[["C_previous"]] <<- facts 
+  traindata = encodeCategoricalFeature(traindata,1,facts.in=facts) ## index(C_previous) == 1
+  
+  mi = min(train.csv$duration_previous[! is.na(train.csv$duration_previous)],test.csv$duration_previous[! is.na(test.csv$duration_previous)])
+  ma = max(train.csv$duration_previous[! is.na(train.csv$duration_previous)],test.csv$duration_previous[! is.na(test.csv$duration_previous)])
+  factMap[["duration_previous"]] <<- c(mi,ma)
+  traindata = nomalize(traindata,1,min.in=mi,max.in=ma) ## index(duration_previous) == 1
+  
+  mi = min(train.csv$cost[! is.na(train.csv$cost)] ,test.csv$cost[! is.na(test.csv$cost)])
+  ma = max(train.csv$cost[! is.na(train.csv$cost)] ,test.csv$cost[! is.na(test.csv$cost)])
+  factMap[["cost"]] <<- c(mi,ma)
+  traindata = nomalize(traindata,8,min.in=mi,max.in=ma) ## index(cost) == 8
+  
+  ## train lables  
+  traindata = buildOptionVector(traindata)
+  traindata$opt_purch = as.factor(traindata$opt_purch)
+  
+  traindata
+}
+
+buildOptionVector = function(ddata) {
+  ret = paste(ddata$A,ddata$B,sep='')
+  ret = paste(ret,ddata$C,sep='')
+  ret = paste(ret,ddata$D,sep='')
+  ret = paste(ret,ddata$E,sep='')
+  ret = paste(ret,ddata$F,sep='')
+  ret = paste(ret,ddata$G,sep='')
+  ret_df = data.frame(opt_purch = ret)
+  
+  ddata = ddata[,-1] ## A
+  ddata = ddata[,-1] ## B
+  ddata = ddata[,-1] ## C 
+  ddata = ddata[,-1] ## D
+  ddata = ddata[,-1] ## E
+  ddata = ddata[,-1] ## F
+  ddata = ddata[,-1] ## G
+  
+  ddata = cbind(ret_df,ddata)
+}
+
+```
+
+```{r}
+ptm <- proc.time()
+### load files 
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+
+train.fn = paste(base.path,"train.csv",sep="")
+test.fn = paste(base.path,"test_v2.csv",sep="")
+submission.fn = paste(base.path,"sampleSubmission.csv",sep="")
+
+
+train.csv = read.csv(train.fn)
+test.csv = read.csv(test.fn)
+submission.csv = read.csv(submission.fn)
+```
+
+```{r}
+
+library(class)
+library(plyr)
+library(DMwR)
+library(stats)
+
+### traindata 
+traindata = train.csv[train.csv$record_type == 1,]
+
+print("traindata before transformation:")
+print(dim(traindata))
+
+traindata = buildTraindata(traindata)
+
+train_labels = traindata[,1] ## opt_purch
+traindata = traindata[,-1] ## index(opt_purch) == 1  
+
+train_customer_ID = traindata[,1] ## customer_ID
+traindata = traindata[,-1] ## index(customer_ID) == 1  
+
+print("traindata after transformation:")
+print(dim(traindata))
+
+last.train.idx = dim(traindata)[1]
+
+### testdata 
+testdata.in = test.csv 
+testdata.in = testdata.in[,-2]  ## index(shopping_pt) == 2 
+testdata.in = testdata.in[,-2]  ## index(record_type) == 2 
+testdata.in = testdata.in[,-2]  ## index(day) == 2 
+testdata.in = testdata.in[,-2]  ## index(time) == 2 
+testdata.in = testdata.in[,-3]  ## index(location) == 3
+#testdata.in = testdata.in[,-7]  ## index(risk_factor) == 7
+
+
+testdata.in2 = ddply(testdata.in,.(customer_ID),summarise,
+                 state = state[1],
+                 group_size = group_size[1],
+                 homeowner = homeowner[1],
+                 car_age = car_age[1],
+                 car_value = car_value[1],
+                 risk_factor = risk_factor[1],
+                 age_oldest = age_oldest[1],
+                 age_youngest = age_youngest[1],
+                 married_couple = married_couple[1],
+                 C_previous = na.omit(C_previous)[1],
+                 duration_previous = na.omit(duration_previous)[1],
+                 cost = mean(cost,na.rm=T)
+                 )
+
+testdata.in3 <- knnImputation(testdata.in2, k = 10, meth = "median")
+
+testdata = merge(submission.csv,testdata.in3,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=F)
+
+test_customer_ID = testdata[,1]
+last.test.idx = dim(testdata)[1]
+
+testdata = testdata[,-1] ## remove customer_ID
+testdata = testdata[,-1] ## remove plan
+
+#### begin dummy coding 
+facts = factMap[["state"]]
+testdata = encodeCategoricalFeature(testdata,1,facts.in=facts) ## index(state) == 1
+
+mima = factMap[["group_size"]] 
+testdata = nomalize(testdata,1,min.in=mima[1],max.in=mima[2]) ## index(group_size) == 1
+  
+mima = factMap[["homeowner"]] 
+testdata = nomalize(testdata,1,min.in=mima[1],max.in=mima[2]) ## index(homeowner) == 1
+  
+mima = factMap[["car_age"]] 
+testdata = nomalize(testdata,1,min.in=mima[1],max.in=mima[2]) ## index(car_age) == 1
+  
+facts = factMap[["car_value"]]  
+testdata = encodeCategoricalFeature(testdata,1,facts.in=facts) ## index(car_value) == 1
+
+facts = factMap[["risk_factor"]]  
+testdata = encodeCategoricalFeature(testdata,1,facts.in=facts) ## index(risk_factor) == 1
+
+mima = factMap[["age_oldest"]] 
+testdata = nomalize(testdata,1,min.in=mima[1],max.in=mima[2]) ## index(age_oldest) == 1
+  
+mima = factMap[["age_youngest"]] 
+testdata = nomalize(testdata,1,min.in=mima[1],max.in=mima[2]) ## index(age_youngest) == 1
+
+mima = factMap[["married_couple"]] 
+testdata = nomalize(testdata,1,min.in=mima[1],max.in=mima[2]) ## index(married_couple) == 1
+
+facts = factMap[["C_previous"]] 
+testdata = encodeCategoricalFeature(testdata,1,facts.in=facts) ## index(C_previous) == 1
+  
+mima = factMap[["duration_previous"]] 
+testdata = nomalize(testdata,1,min.in=mima[1],max.in=mima[2]) ## index(duration_previous) == 1
+  
+mima = factMap[["cost"]] 
+testdata = nomalize(testdata,1,min.in=mima[1],max.in=mima[2]) ## index(cost) == 1
+################ end of testdata 
+
+#### fondo traindata e testdata per partizionarli poi in clusters 
+#### mi apsetto una dim 55716 + 96173 = 151889 
+#### in cui i primi 55716 saranno i cids del testdata 
+#### e i restanti 96173 saranno quelli del traindata 
+data.union = rbind(testdata,traindata)
+print(dim(data.union))
+
+#### clustering k 
+k = 3
+data.clusters = kmeans(data.union, k)
+print(data.clusters$size)
+
+data.union$cluster = data.clusters$cluster
+
+#### per ogni cid del trainset prendi a quale cluster appartiene da data.union 
+#### ricostruisci il transet relativo ai soli indici del cluster 
+#### in particolare nel trainset ci sara' opt, opt_idx, pur e pur_idx 
+#### costruisci quindi dvect[k] con questo trainset  
+
+train.cluster = data.frame(customer_ID = train_customer_ID , cluster = data.clusters$cluster[1:last.train.idx])
+test.cluster = data.frame(customer_ID = test_customer_ID , cluster = data.clusters$cluster[(last.train.idx+1):(last.train.idx+last.test.idx)])
+
+## build traindata.mat 
+cid.hash <- new.env(hash = T, parent = emptyenv())
+for (cid in train_customer_ID) {
+  cid.hash[[as.character(cid)]] = 1
+}
+
+#traindata.4 
+traindata.2 = train.csv
+traindata.2$train = 0
+traindata.2$train = apply(traindata.2,1,function(x) ifelse( is.null(cid.hash[[as.character(x[1])]]), 0 , 1  ))
+traindata.3 = traindata.2[traindata.2$train == 1 , ]
+print(dim(traindata.3))
+traindata.4 = merge(traindata.3,train.cluster,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=F)
+print(dim(traindata.4))
+
+traindata.4 = traindata.4[,-c(2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,25)] 
+train_labels = buildOptionVector(traindata.4[,-c(1,2)])
+traindata.4 = traindata.4[,-c(3,4,5,6,7,8,9)]
+traindata.4$opt = train_labels$opt_purch
+
+traindata.pur = traindata.4[traindata.4$record_type == 1,]
+colnames(traindata.pur) = c("customer_ID","record_type","train","cluster","pur")
+traindata.pur = traindata.pur[,-(2:4)]
+traindata.4 = merge(traindata.4,traindata.pur,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=T,all.y=F)
+print(dim(traindata.4))
+traindata = traindata.4
+
+#testdata.2 
+testdata.2 = test.csv
+testdata.2 = testdata.2[,-c(2,3,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17)]
+test_labels = buildOptionVector(testdata.2[,-1])
+testdata.2$opt = test_labels$opt_purch
+testdata.2 = testdata.2[,-(2:9)]
+print(sum(is.na(testdata.2)))
+print(dim(testdata.2))
+testdata = testdata.2
+
+labels = unique(c(as.character(unique(traindata.4$opt)),as.character(unique(testdata.2$opt))))
+idxMap <- new.env(hash = T, parent = emptyenv())
+for (i in 1:length(labels)) {
+  idxMap[[labels[i]]] = i
+}
+
+## indexing traindata 
+traindata$opt_idx = apply(traindata,1,function(x) {
+  idxMap[[as.character(x[5])]]
+})
+traindata$pur_idx = apply(traindata,1,function(x) {
+  idxMap[[as.character(x[6])]]
+})
+
+## indexing testdata
+testdata$opt_idx = apply(testdata,1,function(x){
+  idxMap[[as.character(x[2])]]
+})
+
+## building matrix 
+ll = length(idxMap)
+dqmat = matrix(rep(0,ll),nrow=ll,ncol=ll)
+dvects = matrix( rep(0,ll*k)  , nrow=k , ncol=ll )
+
+for(kk in 1:k) {
+  traindata_k = traindata[traindata$cluster == kk , ]
+  for (i in 1:dim(traindata_k)[1]) {
+    dqmat[as.integer(traindata_k[i,7]),as.integer(traindata_k[i,8])] = dqmat[as.integer(traindata_k[i,7]),as.integer(traindata_k[i,8])] + 1
+  }
+  for (i in 1:ll) {
+    dvects[kk,i] = which.max(dqmat[i,])
+  }
+}
+
+### predicting 
+print(dim(testdata))
+testdata = merge(testdata,test.cluster,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=T,all.y=F)
+print(dim(testdata))
+
+testdata$pur_idx = apply(testdata,1,function(x) {
+  dvects[   as.integer(x[4])  ,  as.integer(x[3]) ]
+})
+testdata$pur = apply(testdata,1,function(x){
+    labels[as.integer(x[5])]
+})
+
+
+testdata.sub = ddply(testdata,.(customer_ID),summarise,
+                 pur = pur[length(pur)])
+
+testdata.sub.check = merge(submission.csv,testdata.sub,by.x=c("customer_ID"),by.y=c("customer_ID"),all.x=F,all.y=F)
+testdata.sub.check = testdata.sub.check[,-2]
+colnames(testdata.sub.check) = c("customer_ID","plan")
+
+#### storing on fs --> ACC = 0.53697 (KAGGLE)
+sub.fn = paste(base.path,"sub_5_mixed.zat",sep="")
+write.csv(testdata.sub.check,quote=F,row.names=F,file=sub.fn)
+
+```
+
+```{r}
+tm = proc.time() - ptm
+print("Time elapsed in minutes:")
+tm[3]/60
+```
+
+error analysis ...
+
+```{r}
+traindata$ppur_idx = apply(traindata,1,function(x) {
+  dvects[   as.integer(x[4])  ,  as.integer(x[7]) ]
+})
+
+traindata.alg = traindata[traindata$record_type == 1 , ]
+acc_est =  1 - sum(traindata.alg$pur_idx != traindata.alg$ppur_idx) / dim(traindata.alg)[1] ## 0.9947153 
+err = traindata.alg[traindata.alg$pur_idx != traindata.alg$ppur_idx,]
+
+dvect_fix = dvects
+for (i in dim(err)[1]) {
+  dvect_fix[as.integer(err[i,4]) , as.integer(err[i,7])] = as.integer(err[i,8])
+}
+
+## checking 
+traindata$ppur_fix_idx = apply(traindata,1,function(x) {
+  dvect_fix[ as.integer(x[4])  ,  as.integer(x[7])]
+})
+traindata.alg = traindata[traindata$record_type == 1 , ]
+acc_est.fix =  1 - sum(traindata.alg$pur_idx != traindata.alg$ppur_fix_idx) / dim(traindata.alg)[1] ## 1
+err = traindata.alg[traindata.alg$pur_idx != traindata.alg$ppur_fix_idx,]
+```
+
+

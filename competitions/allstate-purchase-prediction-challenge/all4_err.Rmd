@@ -185,6 +185,7 @@ traindata$pur_idx = apply(traindata,1,function(x) {
 })
 
 ### building matrix 
+ll = length(idxMap)
 dqmat = buildDQMat(traindata,idxMap)
 
 dvect = rep(0,ll)
@@ -291,6 +292,10 @@ testdata$pur_idx = apply(testdata,1, function(x) {
   
   ret
  })
+
+testdata$pur = apply(testdata,1,function(x){
+  labels[as.integer(x[5])]
+})
 
 testdata.sub = ddply(testdata,.(customer_ID),summarise,
                   pur = pur[length(pur)])
