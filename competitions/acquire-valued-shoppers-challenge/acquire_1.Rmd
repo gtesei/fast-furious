@@ -80,16 +80,19 @@ facts = unique(Xtrain$category)
 Xtrain = encodeCategoricalFeature(Xtrain,2,facts.in=facts) ## category
 
 facts = unique(Xtrain$company)
-Xtrain = encodeCategoricalFeature(Xtrain,2,facts.in=facts) ## company
+Xtrain = encodeCategoricalFeature(Xtrain,3,facts.in=facts) ## company
 
 facts = unique(Xtrain$brand)
-Xtrain = encodeCategoricalFeature(Xtrain,3,facts.in=facts) ## brand
+Xtrain = encodeCategoricalFeature(Xtrain,4,facts.in=facts) ## brand
+
+Xtrain = Xtrain[,-2] ## quantity ha il solo valore 1
 
 mi = min(Xtrain$offervalue)
 ma = max(Xtrain$offervalue)
 Xtrain = nomalize(Xtrain,2,min.in=mi,max.in=ma)
 
-Xtrain = Xtrain[,-1] ## unique 160057 ids 
+Xtrain = Xtrain[,-1] ## ids sono diversi tra loro 
+
 
 ### ytrain 
 ytrain = traindata$repeater
