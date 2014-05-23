@@ -1,0 +1,105 @@
+Acquire Valued Shoppers Challenge 
+========================================================
+
+```{r}
+encodeCategoricalFeature = function(ddata,i,facts.in=NULL) {
+  
+  fact_max = 0
+  fact_min = 1 
+  facts = NULL
+  if (is.null(facts.in)) {
+    fact_max = length(unique(ddata[,i]))
+    facts = unique(ddata[,i])
+  } else {
+    fact_max = length(facts.in)
+    facts = facts.in
+  }
+  
+  mm = matrix(rep(0,dim(ddata)[1]),nrow=dim(ddata)[1],ncol=fact_max)
+  col_name = colnames(ddata)[i]
+  colnames(mm) = paste(paste(col_name,"_",sep=''),facts,sep='')
+  for (j in fact_min:fact_max) {
+    mm[,j] = ddata [,i] == facts[j]
+  }  
+  ddata = cbind(ddata,mm)
+  ddata = ddata[,-i]
+}
+
+nomalize = function(ddata,i,min.in=NULL,max.in=NULL) {
+  n_col = NULL
+  if( is.null(min.in) | is.null(max.in) )  { 
+    n_col = (ddata[,i] - min(ddata[,i])) / (  max(ddata[,i])  - min (ddata[,i]) )
+  } else {
+    n_col = (ddata[,i] - min.in) / (  max.in  - min.in )
+  }
+  
+  col_name = colnames(ddata)[i]
+  n_col_df = data.frame(  n_col   )
+  colnames(n_col_df) = paste(col_name,"_norm",sep="")
+  ddata = cbind(ddata,n_col_df)
+  ddata = ddata[,-i]
+}
+```
+
+```{r}
+### load files 
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
+
+offers.fn = paste(base.path,"offers",sep="")
+testHistory.fn = paste(base.path,"testHistory",sep="")
+trainHistory.fn = paste(base.path,"trainHistory",sep="")
+submission.fn = paste(base.path,"sampleSubmission",sep="")
+
+offers.csv = read.csv(offers.fn)
+testHistory.csv = read.csv(testHistory.fn)
+trainHistory.csv = read.csv(trainHistory.fn)
+submission.csv = read.csv(submission.fn)
+
+ptm <- proc.time()
+```
+
+building model ... 
+
+```{r}
+
+traindata = merge(offers.csv,trainHistory.csv,by.x=c("offer"),by.y=c("offer"),all.x=F,all.y=F)
+traindata = traindata[,-c(1,12)] ## offer , offerdate
+traindata$repeater = ifelse(traindata$repeater == "t" , 1, 0) 
+
+### Xtrain 
+Xtrain = traindata[,c(6,7,8,1,2,3,4,5)]
+
+facts = unique(Xtrain$chain)
+Xtrain = encodeCategoricalFeature(Xtrain,2,facts.in=facts) ## chain 
+
+facts = unique(Xtrain$market)
+Xtrain = encodeCategoricalFeature(Xtrain,2,facts.in=facts) ## market
+
+facts = unique(Xtrain$category)
+Xtrain = encodeCategoricalFeature(Xtrain,2,facts.in=facts) ## category
+
+facts = unique(Xtrain$company)
+Xtrain = encodeCategoricalFeature(Xtrain,2,facts.in=facts) ## company
+
+facts = unique(Xtrain$brand)
+Xtrain = encodeCategoricalFeature(Xtrain,3,facts.in=facts) ## brand
+
+mi = min(Xtrain$offervalue)
+ma = max(Xtrain$offervalue)
+Xtrain = nomalize(Xtrain,2,min.in=mi,max.in=ma)
+
+Xtrain = Xtrain[,-1] ## unique 160057 ids 
+
+### ytrain 
+ytrain = traindata$repeater
+
+
+#### storing on fs ...
+Xtrain.fn = paste(base.path,"Xtrain.zat",sep="")
+write.csv(Xtrain,quote=F,row.names=F,file=Xtrain.fn)
+
+ytrain.fn = paste(base.path,"ytrain.zat",sep="")
+write.csv(ytrain,quote=F,row.names=F,file=ytrain.fn)
+```
+
