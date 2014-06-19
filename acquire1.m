@@ -6,10 +6,10 @@ menv;
 XtrainFile = "Xtrain.zat"; 
 XtestFile = "Xtest.zat"; 
 ytrainFile = "ytrain.zat";
+sampleSub = "sampleSubmission";
 
 printf("|--> loading Xtrain, ytrain files ...\n");
 X = dlmread([curr_dir "/dataset/acquire-valued-shoppers-challenge/" XtrainFile]); 
-
 y = dlmread([curr_dir "/dataset/acquire-valued-shoppers-challenge/" ytrainFile]); 
 
 X = X(1:20000,:);
@@ -52,9 +52,18 @@ printf("|-> trying logistic regression ... \n");
  acc_val = mean(double(pred_val == yval)) * 100;
  printf("|-> acc_train=%f , acc_val=%f \n",acc_train,acc_val);
  
- clear X, Xtrain, Xval; 
+ clear X;
+ clear Xtrain;
+ clear Xval; 
  Xtest = dlmread([curr_dir "/dataset/acquire-valued-shoppers-challenge/" XtestFile]); 
  [Xtest_n,mu,sigma] = treatContFeatures(Xtest,p,1,mu,sigma);
- pred_val = predictOneVsAll(all_theta, Xtest_n);
+ pred_test = predictOneVsAll(all_theta, Xtest_n);
  
+ pred_sub = (pred_test == 1) * 0 + (pred_test == 2) * 1;
+ 
+ 
+ ss = dlmread([curr_dir "/dataset/acquire-valued-shoppers-challenge/" sampleSub]); 
+ sub = [ss pred_sub];
+ fn = "pred_ac.zat";
+ dlmwrite(fn,sub);
  

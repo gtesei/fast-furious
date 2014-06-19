@@ -67,10 +67,16 @@ traindata = merge(offers.csv,trainHistory.csv,by.x=c("offer"),by.y=c("offer"),al
 traindata = traindata[,-c(1,12)] ## offer , offerdate
 traindata$repeater = ifelse(traindata$repeater == "t" , 1, 0) 
 
+testdata = merge(offers.csv,testHistory.csv,by.x=c("offer"),by.y=c("offer"),all.x=F,all.y=F)
+testdata = testdata[,-c(1,12)] ## offer , offerdate
+
+### Xtest 
+Xtest = traindata[,c(6,7,8,1,2,3,4,5)]
+
 ### Xtrain 
 Xtrain = traindata[,c(6,7,8,1,2,3,4,5)]
 
-facts = unique(Xtrain$chain)
+facts = unique(c(Xtrain$chain,Xtest$chain)
 Xtrain = encodeCategoricalFeature(Xtrain,2,facts.in=facts) ## chain 
 
 facts = unique(Xtrain$market)
@@ -111,12 +117,6 @@ generating test ...
 
 ```{r}
 
-testdata = merge(offers.csv,testHistory.csv,by.x=c("offer"),by.y=c("offer"),all.x=F,all.y=F)
-testdata = testdata[,-c(1,12)] ## offer , offerdate
-
-### Xtest 
-Xtest = traindata[,c(6,7,8,1,2,3,4,5)]
-
 facts = unique(Xtest$chain)
 Xtest = encodeCategoricalFeature(Xtest,2,facts.in=facts) ## chain 
 
@@ -144,4 +144,8 @@ Xtest = Xtest[,-1] ## ids sono diversi tra loro
 #### storing on fs ...
 Xtest.fn = paste(base.path,"Xtest.zat",sep="")
 write.csv(Xtest,quote=F,row.names=F,file=Xtest.fn)
+
+ids = testHistory.csv$id
+id.fn = paste(base.path,"id.zat",sep="")
+write.csv(ids,quote=F,row.names=F,file=id.fn)
 ```
