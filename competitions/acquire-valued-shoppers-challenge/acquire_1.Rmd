@@ -106,3 +106,42 @@ ytrain.fn = paste(base.path,"ytrain.zat",sep="")
 write.csv(ytrain,quote=F,row.names=F,file=ytrain.fn)
 ```
 
+
+generating test ... 
+
+```{r}
+
+testdata = merge(offers.csv,testHistory.csv,by.x=c("offer"),by.y=c("offer"),all.x=F,all.y=F)
+testdata = testdata[,-c(1,12)] ## offer , offerdate
+
+### Xtest 
+Xtest = traindata[,c(6,7,8,1,2,3,4,5)]
+
+facts = unique(Xtest$chain)
+Xtest = encodeCategoricalFeature(Xtest,2,facts.in=facts) ## chain 
+
+facts = unique(Xtest$market)
+Xtest = encodeCategoricalFeature(Xtest,2,facts.in=facts) ## market
+
+facts = unique(Xtest$category)
+Xtest = encodeCategoricalFeature(Xtest,2,facts.in=facts) ## category
+
+facts = unique(Xtest$company)
+Xtest = encodeCategoricalFeature(Xtest,3,facts.in=facts) ## company
+
+facts = unique(Xtest$brand)
+Xtest = encodeCategoricalFeature(Xtest,4,facts.in=facts) ## brand
+
+Xtest = Xtest[,-2] ## quantity ha il solo valore 1
+
+mi = min(Xtest$offervalue)
+ma = max(Xtest$offervalue)
+Xtest = nomalize(Xtest,2,min.in=mi,max.in=ma)
+
+Xtest = Xtest[,-1] ## ids sono diversi tra loro 
+
+
+#### storing on fs ...
+Xtest.fn = paste(base.path,"Xtest.zat",sep="")
+write.csv(Xtest,quote=F,row.names=F,file=Xtest.fn)
+```
