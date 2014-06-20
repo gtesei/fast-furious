@@ -43,8 +43,8 @@ nomalize = function(ddata,i,min.in=NULL,max.in=NULL) {
 
 ```{r}
 ### load files 
-#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/allstate-purchase-prediction-challenge/"
-base.path = "C:/docs/ff/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
 
 offers.fn = paste(base.path,"offers",sep="")
 testHistory.fn = paste(base.path,"testHistory",sep="")
@@ -71,33 +71,41 @@ testdata = merge(offers.csv,testHistory.csv,by.x=c("offer"),by.y=c("offer"),all.
 testdata = testdata[,-c(1,12)] ## offer , offerdate
 
 ### Xtest 
-Xtest = traindata[,c(6,7,8,1,2,3,4,5)]
+Xtest = testdata[,c(6,7,8,1,2,3,4,5)]
 
 ### Xtrain 
 Xtrain = traindata[,c(6,7,8,1,2,3,4,5)]
 
-facts = unique(c(Xtrain$chain,Xtest$chain)
+facts = unique(c(Xtrain$chain,Xtest$chain))
 Xtrain = encodeCategoricalFeature(Xtrain,2,facts.in=facts) ## chain 
+Xtest = encodeCategoricalFeature(Xtest,2,facts.in=facts) ## chain 
 
-facts = unique(Xtrain$market)
+facts = unique(c(Xtrain$market,Xtest$market))
 Xtrain = encodeCategoricalFeature(Xtrain,2,facts.in=facts) ## market
+Xtest = encodeCategoricalFeature(Xtest,2,facts.in=facts) ## market
 
-facts = unique(Xtrain$category)
+facts = unique(c(Xtrain$category,Xtest$category))
 Xtrain = encodeCategoricalFeature(Xtrain,2,facts.in=facts) ## category
+Xtest = encodeCategoricalFeature(Xtest,2,facts.in=facts) ## category
 
-facts = unique(Xtrain$company)
+facts = unique(c(Xtrain$company,Xtest$company))
 Xtrain = encodeCategoricalFeature(Xtrain,3,facts.in=facts) ## company
+Xtest = encodeCategoricalFeature(Xtest,3,facts.in=facts) ## company
 
-facts = unique(Xtrain$brand)
+facts = unique(c(Xtrain$brand,Xtest$brand))
 Xtrain = encodeCategoricalFeature(Xtrain,4,facts.in=facts) ## brand
+Xtest = encodeCategoricalFeature(Xtest,4,facts.in=facts) ## brand
 
 Xtrain = Xtrain[,-2] ## quantity ha il solo valore 1
+Xtest = Xtest[,-2] ## quantity ha il solo valore 1
 
-mi = min(Xtrain$offervalue)
-ma = max(Xtrain$offervalue)
+mi = min(c(Xtrain$offervalue,Xtest$offervalue))
+ma = max(c(Xtrain$offervalue,Xtest$offervalue))
 Xtrain = nomalize(Xtrain,2,min.in=mi,max.in=ma)
+Xtest = nomalize(Xtest,2,min.in=mi,max.in=ma)
 
 Xtrain = Xtrain[,-1] ## ids sono diversi tra loro 
+Xtest = Xtest[,-1] ## ids sono diversi tra loro 
 
 
 ### ytrain 
@@ -108,44 +116,13 @@ ytrain = traindata$repeater
 Xtrain.fn = paste(base.path,"Xtrain.zat",sep="")
 write.csv(Xtrain,quote=F,row.names=F,file=Xtrain.fn)
 
-ytrain.fn = paste(base.path,"ytrain.zat",sep="")
-write.csv(ytrain,quote=F,row.names=F,file=ytrain.fn)
-```
-
-
-generating test ... 
-
-```{r}
-
-facts = unique(Xtest$chain)
-Xtest = encodeCategoricalFeature(Xtest,2,facts.in=facts) ## chain 
-
-facts = unique(Xtest$market)
-Xtest = encodeCategoricalFeature(Xtest,2,facts.in=facts) ## market
-
-facts = unique(Xtest$category)
-Xtest = encodeCategoricalFeature(Xtest,2,facts.in=facts) ## category
-
-facts = unique(Xtest$company)
-Xtest = encodeCategoricalFeature(Xtest,3,facts.in=facts) ## company
-
-facts = unique(Xtest$brand)
-Xtest = encodeCategoricalFeature(Xtest,4,facts.in=facts) ## brand
-
-Xtest = Xtest[,-2] ## quantity ha il solo valore 1
-
-mi = min(Xtest$offervalue)
-ma = max(Xtest$offervalue)
-Xtest = nomalize(Xtest,2,min.in=mi,max.in=ma)
-
-Xtest = Xtest[,-1] ## ids sono diversi tra loro 
-
-
-#### storing on fs ...
 Xtest.fn = paste(base.path,"Xtest.zat",sep="")
 write.csv(Xtest,quote=F,row.names=F,file=Xtest.fn)
 
-ids = testHistory.csv$id
-id.fn = paste(base.path,"id.zat",sep="")
-write.csv(ids,quote=F,row.names=F,file=id.fn)
+ytrain.fn = paste(base.path,"ytrain.zat",sep="")
+write.csv(ytrain,quote=F,row.names=F,file=ytrain.fn)
+
+# ids = testHistory.csv$id
+# id.fn = paste(base.path,"id.zat",sep="")
+# write.csv(ids,quote=F,row.names=F,file=id.fn)
 ```

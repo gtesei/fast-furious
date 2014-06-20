@@ -6,7 +6,7 @@ menv;
 XtrainFile = "Xtrain.zat"; 
 XtestFile = "Xtest.zat"; 
 ytrainFile = "ytrain.zat";
-sampleSub = "sampleSubmission";
+sampleSub = "id.zat";
 
 printf("|--> loading Xtrain, ytrain files ...\n");
 X = dlmread([curr_dir "/dataset/acquire-valued-shoppers-challenge/" XtrainFile]); 
@@ -61,9 +61,8 @@ printf("|-> trying logistic regression ... \n");
  
  pred_sub = (pred_test == 1) * 0 + (pred_test == 2) * 1;
  
- 
- ss = dlmread([curr_dir "/dataset/acquire-valued-shoppers-challenge/" sampleSub]); 
- sub = [ss pred_sub];
+ ids = dlmread([curr_dir "/dataset/acquire-valued-shoppers-challenge/" sampleSub]); 
+ sub = [ids pred_sub];
  fn = "pred_ac.zat";
  dlmwrite(fn,sub);
  
