@@ -43,8 +43,8 @@ nomalize = function(ddata,i,min.in=NULL,max.in=NULL) {
 
 ```{r}
 ### load files 
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
-#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
 
 offers.fn = paste(base.path,"offers",sep="")
 testHistory.fn = paste(base.path,"testHistory",sep="")
@@ -68,7 +68,7 @@ traindata = traindata[,-c(1,12)] ## offer , offerdate
 traindata$repeater = ifelse(traindata$repeater == "t" , 1, 0) 
 
 testdata = merge(offers.csv,testHistory.csv,by.x=c("offer"),by.y=c("offer"),all.x=F,all.y=F)
-testdata = testdata[,-c(1,12)] ## offer , offerdate
+testdata = testdata[,-c(1,10)] ## offer , offerdate
 
 ### Xtest 
 Xtest = testdata[,c(6,7,8,1,2,3,4,5)]
