@@ -23,8 +23,8 @@ p = 1;
 [m,n] = size(X);
 rand_indices = randperm(m);
 [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X(rand_indices,:),y(rand_indices,:),0.70); 
-[Xtrain,mu,sigma] = treatContFeatures(Xtrain,p); 
-[Xval,mu,sigma] = treatContFeatures(Xval,p,1,mu,sigma);
+#[Xtrain,mu,sigma] = treatContFeatures(Xtrain,p); 
+#[Xval,mu,sigma] = treatContFeatures(Xval,p,1,mu,sigma);
 
 
 
@@ -56,8 +56,8 @@ printf("|-> trying logistic regression ... \n");
  clear Xtrain;
  clear Xval; 
  Xtest = dlmread([curr_dir "/dataset/acquire-valued-shoppers-challenge/" XtestFile]); 
- [Xtest_n,mu,sigma] = treatContFeatures(Xtest,p,1,mu,sigma);
- pred_test = predictOneVsAll(all_theta, Xtest_n);
+ #[Xtest_n,mu,sigma] = treatContFeatures(Xtest,p,1,mu,sigma);
+ pred_test = predictOneVsAll(all_theta, Xtest);
  
  pred_sub = (pred_test == 1) * 0 + (pred_test == 2) * 1;
  
