@@ -1,0 +1,63 @@
+Acquire Valued Shoppers Challenge  -- comparisons 
+========================================================
+
+```{r}
+### load files 
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
+
+Xtrain.fn = paste(base.path,"Xtrain.zat",sep="")
+ytrain.fn = paste(base.path,"ytrain.zat",sep="")
+Xtest.fn = paste(base.path,"Xtest.zat",sep="")
+ids.fn = paste(base.path,"id.zat",sep="")
+
+Xtrain = read.csv(Xtrain.fn)
+ytrain = read.csv(ytrain.fn)
+Xtest = read.csv(Xtest.fn)
+ids = read.csv(ids.fn)
+```
+
+```{r}
+###### Logistic model -- Kaggle 0.51230
+y = rep("YES",dim(Xtrain)[1])
+y[ytrain == 0] = "NO"
+y = as.factor(y)
+Xtrain$y = y
+glm.fit = glm( y ~  . , data = Xtrain , family="binomial" )
+glm.pred.train = predict(glm.fit , type="response") 
+glm.class.pred = rep("NO",dim(Xtrain)[1])
+glm.class.pred[glm.pred.train > .5 ] = "YES"
+acc.train = mean(glm.class.pred == y )
+
+glm.pred.test = predict(glm.fit , data = Xtest , type="response")[1:151484]
+sub = data.frame(id = ids , repeatProbability = glm.pred.test)
+sub.fn = paste(base.path,"sub.glm.zat",sep="")
+write.csv(sub,quote=F,row.names=F,file=sub.fn)
+```
+
+```{r}
+###### LDA / QDA model -- NA 
+library(MASS)
+y = rep("YES",dim(Xtrain)[1])
+y[ytrain == 0] = "NO"
+y = as.factor(y)
+Xtrain$y = y
+lda.fit = lda( y ~ . , data = Xtrain)
+# Error in lda.default(x, grouping, ...) : 
+#   variables 131 132 133 134 182 183 184 185 186 187 188 200 201 202 203 204 205 206 219 220 221 222 223 224 225 appear to be constant within groups
+qda.fit = qda( y ~ . , data = Xtrain)
+## Error in qda.default(x, grouping, ...) : rank deficiency in group NO
+```
+
+```{r}
+###### KNN model -- NA 
+library(class)
+y = rep("YES",dim(Xtrain)[1])
+y[ytrain == 0] = "NO"
+y = as.factor(y)
+
+set.seed(1)
+knn.pred = knn(train=Xtrain , test=Xtest , cl=y , k = 5)
+
+
+```
