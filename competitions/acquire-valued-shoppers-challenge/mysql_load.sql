@@ -1,4 +1,4 @@
-﻿LOAD DATA LOCAL INFILE  'c:/docs/ff/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/trainHistory'
+﻿LOAD DATA LOCAL INFILE  '/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/trainHistory'
 INTO TABLE TRAIN_HISTORY
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
