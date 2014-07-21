@@ -1,0 +1,47 @@
+---
+title: "liberty-mutual-fire-peril-EXPLONATORY"
+output: html_document
+---
+
+
+
+```{r}
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-group/"
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/liberty-mutual-group/"
+
+
+train.fn = "train.csv"
+test.fn = "test.csv"
+sampleSub.fn = "sampleSubmission.csv"
+
+library(data.table)
+
+train = fread(paste(base.path,train.fn,sep="") , header = TRUE , sep=","  )
+
+train_no_NA = na.omit(train)
+##write.csv(train_no_NA,paste(file = base.path,"train_no_NA.csv",sep=""), quote=F,row.names=F)
+
+dim(train)  ## 452061    302
+dim(train_no_NA)  # 452061    302
+sum(train$target == 0) / dim(train)[1] ## 0.997372
+sum(train$target == 0) ##450873 
+sum(train$target != 0) ##1188
+
+y = train$target
+plot(density(y))
+
+density(y)
+
+density(y[y != 0])
+
+min(y) #0
+max(y) #25.92014 
+min(y[y != 0]) #0.005770778
+plot(density(y[y != 0]))
+mean(y[y != 0]) #2.752728
+sd(y[y != 0]) # 3.288865
+
+
+
+```
+
