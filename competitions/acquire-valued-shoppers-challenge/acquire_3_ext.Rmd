@@ -93,6 +93,13 @@ nomalize = function(ddata,i,min.in=NULL,max.in=NULL) {
   ddata = ddata[,-i]
 }
 
+jitter.matrix = function(mat) {
+  for (i in 1:length(colnames(mat))) {
+    mat[, i] = jitter(mat[,i])
+  }
+  mat
+}
+
 ```
 
 ```{r}
@@ -101,8 +108,10 @@ base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/acquire
 #base.path = "C:/docs/ff/gitHub/fast-furious/dataset/acquire-valued-shoppers-challenge/"
 
 offers.fn = paste(base.path,"offers",sep="")
-testHistory.fn = paste(base.path,"testHistory",sep="")
-trainHistory.fn = paste(base.path,"trainHistory",sep="")
+# testHistory.fn = paste(base.path,"testHistory",sep="")
+# trainHistory.fn = paste(base.path,"trainHistory",sep="")
+testHistory.fn = paste(base.path,"test_history_ext.csv",sep="")
+trainHistory.fn = paste(base.path,"train_history_ext.csv",sep="")
 submission.fn = paste(base.path,"sampleSubmission",sep="")
 
 offers.csv = read.csv(offers.fn)
@@ -116,55 +125,26 @@ ptm <- proc.time()
 building model ... 
 
 ```{r}
-
-traindata = merge(offers.csv,trainHistory.csv,by.x=c("offer"),by.y=c("offer"),all.x=F,all.y=F)
+traindata = merge(offers.csv,trainHistory.csv,by.x=c("offer"),by.y=c("OFFER"),all.x=F,all.y=F)
 traindata = traindata[,-c(1,12)] ## offer , offerdate
 traindata$repeater = ifelse(traindata$repeater == "t" , 1, 0) 
 
-testdata = merge(offers.csv,testHistory.csv,by.x=c("offer"),by.y=c("offer"),all.x=F,all.y=F)
+testdata = merge(offers.csv,testHistory.csv,by.x=c("offer"),by.y=c("OFFER"),all.x=F,all.y=F)
 testdata = testdata[,-c(1,10)] ## offer , offerdate
 
-ids = testHistory.csv$id
+ids = testHistory.csv$ID
 
 ### Xtest 
-Xtest = testdata[,c(6,7,8,1,2,3,4,5)]
+Xtest = testdata[,c(6,7,8,1,2,3,4,5,9,10,11)]
 
 ### Xtrain 
-Xtrain = traindata[,c(6,7,8,1,2,3,4,5)]
+Xtrain = traindata[,c(6,7,8,1,2,3,4,5,11,12,13)]
 
-facts = unique(c(Xtrain$category,Xtest$category))
-Xtrain$category = factor(Xtrain$category  , levels = facts)
-Xtest$category = factor(Xtest$category , levels = facts)
+Xtrain = Xtrain[,-c(1,2,5)] 
+Xtest = Xtest[,-c(1,2,5)]
 
-# facts = unique(c(Xtrain$chain,Xtest$chain))
-# Xtrain$chain = factor(Xtrain$chain , levels = facts)
-# Xtest$chain = factor(Xtest$chain , levels = facts)
-
-Xtrain = Xtrain[,-2] ## cut chain 
-Xtest = Xtest[,-2] ## cut chain 
-
-facts = unique(c(Xtrain$market,Xtest$market))
-Xtrain$market = factor(Xtrain$market , levels = facts)
-Xtest$market = factor(Xtest$market , levels = facts)
-
-facts = unique(c(Xtrain$company,Xtest$company))
-Xtrain$company = factor(Xtrain$company , levels = facts)
-Xtest$company = factor(Xtest$company , levels = facts)
-
-facts = unique(c(Xtrain$brand,Xtest$brand))
-Xtrain$brand = factor(Xtrain$brand , levels = facts)
-Xtest$brand = factor(Xtest$brand , levels = facts)
-
-Xtrain = Xtrain[,-3] ## quantity ha il solo valore 1
-Xtest = Xtest[,-3] ## quantity ha il solo valore 1
-
-mi = min(c(Xtrain$offervalue,Xtest$offervalue))
-ma = max(c(Xtrain$offervalue,Xtest$offervalue))
-Xtrain = nomalize(Xtrain,5,min.in=mi,max.in=ma)
-Xtest = nomalize(Xtest,5,min.in=mi,max.in=ma)
-
-Xtrain = Xtrain[,-1] ## ids sono diversi tra loro 
-Xtest = Xtest[,-1] ## ids sono diversi tra loro 
+Xtrain = jitter.matrix(Xtrain)
+Xtest = jitter.matrix(Xtest)
 
 ### ytrain 
 ytrain = traindata$repeater
@@ -172,25 +152,38 @@ ytrain = traindata$repeater
 
 ```{r}
 ########## XVAL 
-d_train = floor(dim(Xtrain)[1] * 0.7)
-ytrain.train = ytrain[1:d_train]
-ytrain.xval = ytrain[(d_train+1):dim(Xtrain)[1]]
-Xtrain.train = Xtrain[1:d_train , ]
-Xtrain.xval = Xtrain[(d_train+1):dim(Xtrain)[1],]
+# d_train = floor(dim(Xtrain)[1] * 0.7)
+# ytrain.train = ytrain[1:d_train]
+# ytrain.xval = ytrain[(d_train+1):dim(Xtrain)[1]]
+# Xtrain.train = Xtrain[1:d_train , ]
+# Xtrain.xval = Xtrain[(d_train+1):dim(Xtrain)[1],]
+# 
+# glm.fit = glm( ytrain.train ~  . , data = Xtrain.train , family="binomial" )
+# glm.fit$xlevels[['company']] = union (glm.fit$xlevels[['company']] , levels(Xtrain.xval$company) ) 
+# glm.fit$xlevels[['category']] = union (glm.fit$xlevels[['category']] , levels(Xtrain.xval$category) )
+# glm.fit$xlevels[['brand']] = union (glm.fit$xlevels[['brand']] , levels(Xtrain.xval$brand) )
+# glm.fit$xlevels[['CHAIN']] = union (glm.fit$xlevels[['CHAIN']] , levels(Xtrain.xval$CHAIN) )
+# glm.pred.xval = predict(glm.fit , Xtrain.xval , type="response") 
+# auc.train = auc(glm.pred.xval, ytrain.xval) 
+# print(auc.train)
+# ### [1] 0.5584764 
+# 
+# glm.fit = glm( ytrain ~  . , data = Xtrain , family="binomial" )
+# glm.pred.train = predict(glm.fit ,  type="response") 
+# glm.pred.test = predict(glm.fit , data = Xtest , type="response") [1:151484]
+# glm.pred.test.sub = ifelse(glm.pred.test > 0.5 , 1, 0)
+# sub = data.frame(id = ids , repeatProbability = glm.pred.test.sub)
+# sub.fn = paste(base.path,"sub.glm.zat",sep="")
+# write.csv(sub,quote=F,row.names=F,file=sub.fn)
+# ### Your submission scored 0.51184, which is not an improvement of your best score. Keep trying!
 
-glm.fit = glm( ytrain.train ~  . , data = Xtrain.train , family="binomial" )
-glm.fit$xlevels[['company']] = union (glm.fit$xlevels[['company']] , levels(Xtrain.xval$company) ) 
-glm.fit$xlevels[['brand']] = union (glm.fit$xlevels[['brand']] , levels(Xtrain.xval$brand) )
-glm.pred.xval = predict(glm.fit , Xtrain.xval , type="response") 
-auc.train = auc(glm.pred.xval, ytrain.xval) 
-print(auc.train)
-## [1] 0.5584764 
-
-glm.fit = glm( ytrain ~  . , data = Xtrain , family="binomial" )
-glm.pred.test = predict(glm.fit , data = Xtest , type="response")[1:151484]
-sub = data.frame(id = ids , repeatProbability = glm.pred.test)
-sub.fn = paste(base.path,"sub.glm.zat",sep="")
+library(quantreg)
+rq.tau <- 0.5 # you can use other tau like 0.6
+rq.model <- rq(ytrain~., data=Xtrain, tau=rq.tau)
+summary(rq.model)
+rq.pred <- predict(rq.model, new.data=Xtest)
+sub = data.frame(id = ids , repeatProbability = rq.pred)
+sub.fn = paste(base.path,"sub.rq.zat",sep="")
 write.csv(sub,quote=F,row.names=F,file=sub.fn)
-### Your submission scored 0.51184, which is not an improvement of your best score. Keep trying!
 
 ```
