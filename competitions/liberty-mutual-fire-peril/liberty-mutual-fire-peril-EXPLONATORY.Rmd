@@ -4,10 +4,11 @@ output: html_document
 ---
 
 
+Loading data sets (train, test, sample) ... 
 
 ```{r}
 base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-group/"
-#base.path = "/Users/gino/kaggle/fast-furious/gitHub/liberty-mutual-group/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
 
 
 train.fn = "train.csv"
@@ -15,11 +16,7 @@ test.fn = "test.csv"
 sampleSub.fn = "sampleSubmission.csv"
 
 library(data.table)
-
 train = fread(paste(base.path,train.fn,sep="") , header = TRUE , sep=","  )
-
-train_no_NA = na.omit(train)
-##write.csv(train_no_NA,paste(file = base.path,"train_no_NA.csv",sep=""), quote=F,row.names=F)
 
 dim(train)  ## 452061    302
 dim(train_no_NA)  # 452061    302
@@ -36,10 +33,44 @@ density(y[y != 0])
 
 min(y) #0
 max(y) #25.92014 
+mean(y) # 0.00723407
+sd(y) # 0.2196884 
+
 min(y[y != 0]) #0.005770778
 plot(density(y[y != 0]))
 mean(y[y != 0]) #2.752728
 sd(y[y != 0]) # 3.288865
+```
+
+Performing data trasformation 
+
+```{r}
+## set NAs
+train$var1 = ifelse(train$var1 == "Z" , NA , train$var1)
+train$var2 = ifelse(train$var2 == "Z" , NA , train$var2)
+train$var3 = ifelse(train$var3 == "Z" , NA , train$var3)
+train$var4 = ifelse(train$var4 == "Z" , NA , train$var4)
+train$var5 = ifelse(train$var5 == "Z" , NA , train$var5)
+train$var6 = ifelse(train$var6 == "Z" , NA , train$var6)
+train$var7 = ifelse(train$var7 == "Z" , NA , train$var7)
+train$var8 = ifelse(train$var8 == "Z" , NA , train$var8)
+train$var9 = ifelse(train$var9 == "Z" , NA , train$var9)
+
+## set correct classes for regression 
+train$var1 = as.numeric(train$var1)
+train$var2 = as.factor(train$var2)
+train$var3 = as.factor(train$var3)
+train$var4 = as.factor(train$var4) ## TODO BETTER 
+train$var5 = as.factor(train$var5)
+train$var6 = as.factor(train$var6)
+train$var7 = as.numeric(train$var7)
+train$var8 = as.numeric(train$var8)
+train$var9 = as.factor(train$var9)
+train$dummy = as.factor(train$dummy)
+
+## full linear model
+lm.fit = lm( target ~ . , data = train )
+
 
 
 
