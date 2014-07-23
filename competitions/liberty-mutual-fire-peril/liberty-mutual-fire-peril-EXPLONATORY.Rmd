@@ -3,6 +3,45 @@ title: "liberty-mutual-fire-peril-EXPLONATORY"
 output: html_document
 ---
 
+Functions 
+```{r}
+
+getPvalueTypeIError = function(x,y) {
+  test = NA
+  pvalue = NA
+  
+  ## type casting and understanding stat test 
+  if (class(x) == "integer") x = as.numeric(x)
+  if (class(y) == "integer") y = as.numeric(y)
+  
+  if ( class(x) == "factor" & class(y) == "numeric" ) {
+    test = "ANOVA"
+  } else if (class(x) == "factor" & class(y) == "factor" ) {
+    test = "CHI-SQUARE"
+  } else if (class(x) == "numeric" & class(y) == "numeric" ) {
+    test = "PEARSON"
+  }  else {
+    stop ("class x and class y not supported.")
+  }
+  
+  ## performing stat test and computing p-value
+  if (test == "ANOVA") {                
+    test.anova = aov(y~x)
+    pvalue = summary(test.anova)[[1]][["Pr(>F)"]][1]
+  } else if (test == "CHI-SQUARE") {    
+    test.chisq = chisq.test(x = x , y = y)
+    pvalue = test.chisq$p.value
+  } else {                             
+    ###  PEARSON
+    test.corr = cor.test(x =  x , y =  y)
+    pvalue = test.corr$p.value
+  }
+    
+  pvalue
+}
+
+
+```
 
 Loading data sets (train, test, sample) ... 
 
