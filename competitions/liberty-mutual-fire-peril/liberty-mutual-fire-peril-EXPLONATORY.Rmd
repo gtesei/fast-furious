@@ -40,15 +40,57 @@ getPvalueTypeIError = function(x,y) {
   pvalue
 }
 
+getPvalueFeatures = function(response,features) {
+  
+  pValue <- rep(NA, dim(features)[2])
+  is.na <- rep(NA, dim(features)[2])
+  
+  for (i in 1:(dim(features)[2])) {
+    #print(i)
+    pValue[i] <- getPvalueTypeIError(x = features[,i], y = response)
+    is.na[i] = sum(is.na(features[,i])) / length(features[,i]) 
+  }
+    
+  is.significant = ifelse(pValue < 0.05,T,F)
+  data.frame(name = names(features), pValue , is.significant , is.na)
+}
+
+kfolds = function(k,data.length) {
+  k = min(k,data.length)
+  folds = rep(NA,data.length)
+  labels = 1:data.length
+  st = floor(data.length/k)
+  al_labels = NULL
+  for (s in 1:k) {
+    x = NULL
+    if (is.null(al_labels))
+      x = sample(labels,st)
+    else
+      x = sample(labels[-al_labels],st)
+    
+    folds[x] = s
+    if (is.null(al_labels))
+      al_labels = x
+    else
+      al_labels = c(al_labels,x)
+    }
+  ss = 1
+  for (s in 1:length(folds)){
+    if (is.na(folds[s])) {
+      folds[s] = ss
+      ss = ss + 1
+      } 
+    }
+  folds
+}
 
 ```
 
 Loading data sets (train, test, sample) ... 
 
-```{r}
-base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-group/"
+```{r , warning=FALSE}
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-group/"
 base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
-
 
 train.fn = "train.csv"
 test.fn = "test.csv"
@@ -58,7 +100,7 @@ library(data.table)
 train = fread(paste(base.path,train.fn,sep="") , header = TRUE , sep=","  )
 
 dim(train)  ## 452061    302
-dim(train_no_NA)  # 452061    302
+#dim(train_no_NA)  # 452061    302
 sum(train$target == 0) / dim(train)[1] ## 0.997372
 sum(train$target == 0) ##450873 
 sum(train$target != 0) ##1188
@@ -84,6 +126,7 @@ sd(y[y != 0]) # 3.288865
 Performing data trasformation 
 
 ```{r}
+train = as.data.frame.matrix(train) 
 ## set NAs
 train$var1 = ifelse(train$var1 == "Z" , NA , train$var1)
 train$var2 = ifelse(train$var2 == "Z" , NA , train$var2)
@@ -107,11 +150,83 @@ train$var8 = as.numeric(train$var8)
 train$var9 = as.factor(train$var9)
 train$dummy = as.factor(train$dummy)
 
-## full linear model
-lm.fit = lm( target ~ . , data = train )
-
-
-
-
+## exploratory
+pvalues = getPvalueFeatures( features = train[ , - 2] , response = train$target )
+pvalues[order(pvalues$pValue) , ]
 ```
+
+Trying linear regression (k-fold) on target (quantitative response variable) with different set of predicors ... 
+
+```{r}
+## linear model with correlated variables (pvalue < 0.05)
+k = 5
+folds = kfolds(k,dim(train)[1])
+cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+for(j in 1:k) {  
+  traindata = train[folds != j,]
+  xvaldata = train[folds == j,]
+    lm.full = lm(target ~ var13 + var10 + var4 + var8 + dummy + weatherVar118 + weatherVar102 + weatherVar103 + weatherVar227 + weatherVar235 + geodemVar37 + weatherVar47 + geodemVar24 + geodemVar20 + geodemVar13 + geodemVar17 + geodemVar8 + geodemVar26 + var11 + geodemVar11  , data = traindata)
+  pred.xval = predict(lm.full , xvaldata)
+  pred.xval = ifelse(is.na(pred.xval) , 0 , pred.xval)
+  cv.mae[j,1] = mean(abs((xvaldata$target-pred.xval)))
+}
+mean.cv.mae=apply(cv.mae ,2,mean)
+print(mean.cv.mae)  ### 0.01389263 
+
+## all zeros model 
+mean(abs(train$target)) ## 0.00723407
+
+## linear model with correlated variables (pvalue < 0.05) & some other ... 
+k = 5
+folds = kfolds(k,dim(train)[1])
+cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+for(j in 1:k) {  
+  traindata = train[folds != j,]
+  xvaldata = train[folds == j,]
+  lm.full = lm(target ~ var13 + var10 + var4 + var8 + dummy + weatherVar118 + weatherVar102 + weatherVar103 + weatherVar227 + weatherVar235 + geodemVar37 + weatherVar47 + geodemVar24 + geodemVar20 + geodemVar13 + geodemVar17 + geodemVar8 + geodemVar26 + var11 + geodemVar11 + weatherVar61 + weatherVar104 + weatherVar143 + weatherVar54 + weatherVar174 + weatherVar73 + weatherVar177 + weatherVar165  , data = traindata)
+  pred.xval = predict(lm.full , xvaldata)
+  pred.xval = ifelse(is.na(pred.xval) , 0 , pred.xval)
+  cv.mae[j,1] = mean(abs((xvaldata$target-pred.xval)))
+}
+mean.cv.mae=apply(cv.mae ,2,mean)
+print(mean.cv.mae)  ### 0.01388663
+
+## linear model with some correlated variables (pvalue < 0.05)  
+k = 5
+folds = kfolds(k,dim(train)[1])
+cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+for(j in 1:k) {  
+  traindata = train[folds != j,]
+  xvaldata = train[folds == j,]
+  lm.full = lm(target ~ var13 + var10 + var4 + var8 + dummy + weatherVar118 + weatherVar102 + weatherVar103 + weatherVar227   , data = traindata)
+  pred.xval = predict(lm.full , xvaldata)
+  pred.xval = ifelse(is.na(pred.xval) , 0 , pred.xval)
+  cv.mae[j,1] = mean(abs((xvaldata$target-pred.xval)))
+}
+mean.cv.mae=apply(cv.mae ,2,mean)
+print(mean.cv.mae)  ### 0.01379796
+
+## linear model with top 5 correlated variables (pvalue < 0.05)  
+k = 5
+folds = kfolds(k,dim(train)[1])
+cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+for(j in 1:k) {  
+  traindata = train[folds != j,]
+  xvaldata = train[folds == j,]
+  lm.full = lm(target ~ var13 + var10 + var4 + var8 + dummy  , data = traindata)
+  pred.xval = predict(lm.full , xvaldata)
+  pred.xval = ifelse(is.na(pred.xval) , 0 , pred.xval)
+  cv.mae[j,1] = mean(abs((xvaldata$target-pred.xval)))
+}
+mean.cv.mae=apply(cv.mae ,2,mean)
+print(mean.cv.mae)  ### 0.01379796
+```
+
+Some observations 
+
+* all zeros model performs better (mae = 0.00723407) than any other linear regression model 
+* model with top 9 predictors performs better than model with 28 predictors (mae = 0.01388663), that on turn performs better than model with top 21 predictors (mae = 0.01389263)
+* above behaviour suggest that it's probably better before classify 0s target vs non-0s target and then predict target for non-0s target 
+* there's a best minimal set of predictors with best mae to discover with cross validation  
+* predictors with is.na > 0.01 have been discarded 
 
