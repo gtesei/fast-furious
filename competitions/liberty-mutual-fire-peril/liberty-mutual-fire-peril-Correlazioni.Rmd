@@ -1,0 +1,349 @@
+---
+title: "liberty-mutual-fire-peril Correlazioni response variables"
+author: "Gino Tesei"
+date: "July 27, 2014"
+output: html_document
+---
+Functions 
+```{r}
+
+encodeCategoricalFeature = function(ddata,i,facts.in=NULL) {
+  
+  fact_max = 0
+  fact_min = 1 
+  facts = NULL
+  if (is.null(facts.in)) {
+    facts = na.omit(unique(ddata[,i]))
+    fact_max = length(facts)
+  } else {
+    fact_max = length(facts.in)
+    facts = facts.in
+  }
+  
+  mm = matrix(rep(0,dim(ddata)[1]),nrow=dim(ddata)[1],ncol=fact_max)
+  col_name = colnames(ddata)[i]
+  colnames(mm) = paste(paste(col_name,"_",sep=''),facts,sep='')
+  for (j in fact_min:fact_max) {
+    mm[,j] = ddata [,i] == facts[j]
+  }  
+  ddata = cbind(ddata,mm)
+  #ddata = ddata[,-i]
+}
+
+
+bootstrap = function (traindata , labels , positive.ratio = 0.5) {
+  pos.idx.set = which(labels == 1)
+  neg.idx.set = which(labels == 0)
+  
+  traindata.pos.samples = floor(dim(traindata)[1] * positive.ratio)
+  traindata.neg.samples = dim(traindata)[1] - traindata.pos.samples
+  
+  pos.idx = sample(pos.idx.set , traindata.pos.samples , T)
+  neg.idx = sample(neg.idx.set , traindata.neg.samples , T)
+  
+  all.idx = c(pos.idx,neg.idx)
+  
+  traindata.boot = traindata[all.idx , ]
+  traindata.boot
+}
+
+getPvalueTypeIError = function(x,y) {
+  test = NA
+  pvalue = NA
+  
+  ## type casting and understanding stat test 
+  if (class(x) == "integer") x = as.numeric(x)
+  if (class(y) == "integer") y = as.numeric(y)
+  
+  if ( class(x) == "factor" & class(y) == "numeric" ) {
+    test = "ANOVA"
+  } else if (class(x) == "factor" & class(y) == "factor" ) {
+    test = "CHI-SQUARE"
+  } else if (class(x) == "numeric" & class(y) == "numeric" ) {
+    test = "PEARSON"
+  }  else {
+    #stop ("class x and class y not supported.")
+    test = "ANOVA"
+    tmp = x 
+    x = y 
+    y = tmp 
+  }
+  
+  ## performing stat test and computing p-value
+  if (test == "ANOVA") {                
+    test.anova = aov(y~x)
+    pvalue = summary(test.anova)[[1]][["Pr(>F)"]][1]
+  } else if (test == "CHI-SQUARE") {    
+    test.chisq = chisq.test(x = x , y = y)
+    pvalue = test.chisq$p.value
+  } else {                             
+    ###  PEARSON
+    test.corr = cor.test(x =  x , y =  y)
+    pvalue = test.corr$p.value
+  }
+    
+  pvalue
+}
+
+getPvalueFeatures = function(response,features) {
+  
+  pValue <- rep(NA, dim(features)[2])
+  is.na <- rep(NA, dim(features)[2])
+  
+  for (i in 1:(dim(features)[2])) {
+    #print(i)
+    pValue[i] <- getPvalueTypeIError(x = features[,i], y = response)
+    is.na[i] = sum(is.na(features[,i])) / length(features[,i]) 
+  }
+    
+  is.significant = ifelse(pValue < 0.05,T,F)
+  data.frame(name = names(features), pValue , is.significant , is.na)
+}
+
+kfolds = function(k,data.length) {
+  k = min(k,data.length)
+  folds = rep(NA,data.length)
+  labels = 1:data.length
+  st = floor(data.length/k)
+  al_labels = NULL
+  for (s in 1:k) {
+    x = NULL
+    if (is.null(al_labels))
+      x = sample(labels,st)
+    else
+      x = sample(labels[-al_labels],st)
+    
+    folds[x] = s
+    if (is.null(al_labels))
+      al_labels = x
+    else
+      al_labels = c(al_labels,x)
+    }
+  ss = 1
+  for (s in 1:length(folds)){
+    if (is.na(folds[s])) {
+      folds[s] = ss
+      ss = ss + 1
+      } 
+    }
+  folds
+}
+
+```
+
+Loading data sets (train, test, sample) ... 
+
+```{r , warning=FALSE}
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-group/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
+
+train.fn = "train.csv"
+test.fn = "test.csv"
+sampleSub.fn = "sampleSubmission.csv"
+
+library(data.table)
+train = fread(paste(base.path,train.fn,sep="") , header = TRUE , sep=","  )
+
+dim(train)  ## 452061    302
+#dim(train_no_NA)  # 452061    302
+sum(train$target == 0) / dim(train)[1] ## 0.997372
+sum(train$target == 0) ##450873 
+sum(train$target != 0) ##1188
+
+y = train$target
+plot(density(y))
+
+density(y)
+
+density(y[y != 0])
+
+min(y) #0
+max(y) #25.92014 
+mean(y) # 0.00723407
+sd(y) # 0.2196884 
+
+min(y[y != 0]) #0.005770778
+plot(density(y[y != 0]))
+mean(y[y != 0]) #2.752728
+sd(y[y != 0]) # 3.288865
+```
+
+Performing data trasformation 
+
+```{r}
+train = as.data.frame.matrix(train) 
+## set NAs
+train$var1 = ifelse(train$var1 == "Z" , NA , train$var1)
+train$var2 = ifelse(train$var2 == "Z" , NA , train$var2)
+train$var3 = ifelse(train$var3 == "Z" , NA , train$var3)
+train$var4 = ifelse(train$var4 == "Z" , NA , train$var4)
+train$var5 = ifelse(train$var5 == "Z" , NA , train$var5)
+train$var6 = ifelse(train$var6 == "Z" , NA , train$var6)
+train$var7 = ifelse(train$var7 == "Z" , NA , train$var7)
+train$var8 = ifelse(train$var8 == "Z" , NA , train$var8)
+train$var9 = ifelse(train$var9 == "Z" , NA , train$var9)
+
+## set correct classes for regression 
+train$var1 = as.numeric(train$var1)
+train$var2 = as.factor(train$var2)
+train$var3 = as.factor(train$var3)
+
+## TODO BETTER: perdi l'informazione sul secondo livello  
+train$var4_4 = factor(train$var4 , ordered = T)
+train$var4 = factor( ifelse(is.na(train$var4), NA , substring(train$var4 , 1 ,1) ) , ordered = T)
+
+train$var5 = as.factor(train$var5)
+train$var6 = as.factor(train$var6)
+train$var7 = as.numeric(train$var7)
+train$var8 = as.numeric(train$var8)
+train$var9 = as.factor(train$var9)
+train$dummy = as.factor(train$dummy)
+
+train$target_0 = factor(ifelse(train$target == 0,0,1))
+
+## association with target_0
+pvalues.class = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target_0 )
+pvalues.class.ord = pvalues.class [order(pvalues.class$pValue) , ]
+pvalues.class.ord
+
+## association with target
+pvalues = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target )
+pvalues.ord = pvalues[order(pvalues$pValue) , ]
+pvalues.ord
+
+
+```
+
+Finding best set of predictors for Classification problem target_0 
+
+```{r}
+pval.threshold = 0.01
+is.na.threshold = 0.05
+
+form.base = "target_0 ~"
+form.new = form.base 
+acc = 0
+first.var = F 
+for (i in 1:dim(pvalues.class.ord)[1]) {
+  if (pvalues.class.ord$pValue[i] < pval.threshold & pvalues.class.ord$is.na[i] < is.na.threshold) {
+    if(! first.var) { 
+      form.new = paste(form.base,pvalues.class.ord$name[i],sep=' ')
+      first.var = T
+    } else {
+      form.new = paste(form.base,pvalues.class.ord$name[i],sep=' + ')
+    }
+    ###############
+    k = 5
+    folds = kfolds(k,dim(train)[1])
+    cv.acc=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    for(j in 1:k) {  
+      traindata = train[folds != j,]
+      #traindata = bootstrap(traindata , traindata$target_0 , positive.ratio = 0.5)
+      xvaldata = train[folds == j,]      
+      target0.class = glm( as.formula(form.new)   , data = traindata , family = "binomial")
+      pred.class = predict(target0.class , xvaldata , type = "response")
+      pred.class = ifelse(is.na(pred.class) , 0 , pred.class)
+      pred.class = ifelse( pred.class < 0.5 , 0 , 1)
+      cv.acc[j,1] = sum(xvaldata$target_0 == pred.class) / dim(xvaldata)[1]
+    }
+    mean.cv.acc=apply(cv.acc ,2,mean)
+    cat("i=" , i, " --- mean.cv.acc=",mean.cv.acc, "acc=" ,acc   , ", form.new=",form.new," , form.base=",form.base,"\n")  
+    if (acc < mean.cv.acc) {
+      acc = mean.cv.acc
+      form.base = form.new 
+    } else {
+      break
+    }
+    ###############
+  } else{
+    cat("i=" , i, " --> discarded. ", " name=" ,pvalues.class.ord$name[i] ,"\n") 
+    next
+  }
+}
+
+cat("formula=",form.base,"\n")
+cat("accuracy=",acc,"\n")
+```
+
+Finding best p.ratio 
+
+```{r}
+#library(e1071)
+
+acc.all0 = sum(train$target_0 == 0) / dim(train)[1]
+
+#train = encodeCategoricalFeature(train,6)
+
+form = "target_0 ~ var11 + var13 + var10 + var12 + dummy + weatherVar104"
+acc = 0
+p.ratio.best = NA
+first.var = F 
+for (i in 1:50) {
+  
+    p.ratio = i / 100
+    ###############
+    k = 4
+    folds = kfolds(k,dim(train)[1])
+    cv.acc=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    for(j in 1:k) {  
+      traindata = train[folds != j,]
+      traindata = bootstrap(traindata , traindata$target_0 , positive.ratio = p.ratio)
+      xvaldata = train[folds == j,]      
+      target0.class = glm( as.formula(form)   , data = traindata , family = "binomial")
+      #target0.class = svm( as.formula(form)   , data = traindata , kernel="linear" , cost=1 , scale=F)
+      pred.class = predict(target0.class , xvaldata , type = "response")
+      #pred.class = predict(target0.class , xvaldata )
+      pred.class = ifelse(is.na(pred.class) , 0 , pred.class)
+      pred.class = ifelse( pred.class < 0.5 , 0 , 1)
+      cv.acc[j,1] = sum(xvaldata$target_0 == pred.class) / dim(xvaldata)[1]
+    }
+    mean.cv.acc=apply(cv.acc ,2,mean)
+    cat("i=" , i, " p.ratio=" , p.ratio , " --- mean.cv.acc=",mean.cv.acc, "acc=" ,acc   , " acc.model0=", acc.all0, " , best.p.value=", p.ratio.best ,", form=",form,"\n")  
+    ###############
+    if (acc < mean.cv.acc) {
+      acc = mean.cv.acc
+      p.ratio.best = p.ratio
+    } 
+}
+
+cat("formula=",form,"\n")
+cat("p.ratio.best=",p.ratio.best,"\n")
+cat("accuracy=",acc,"\n")
+```
+
+Quantile Regression 
+
+```{r}
+library(mboost)
+
+mae.all0 = sum(abs(train$target)) / dim(train)[1]
+
+#train = encodeCategoricalFeature(train,6)
+
+form = "target ~ var14 + var4 + var10 + var4_4 + var8 + dummy + var16 "
+mae = 0
+p.ratio.best = NA
+first.var = F 
+
+    k = 4
+    folds = kfolds(k,dim(train)[1])
+    cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    for(j in 1:k) {  
+      traindata = train[folds != j,]
+      #traindata = bootstrap(traindata , traindata$target_0 , positive.ratio = 0.1)
+      xvaldata = train[folds == j,]      
+      fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 300) , baselearner = "bns"  ) ## 0.00806575
+      #fit = gamboost( target ~ bbs(var14 ) + bols(var14 , by = var4) + bbs(var4) + bbs(var10) + bols(var4_4) + bbs(var8) + bols(dummy) + bbs(var16 )   , data = traindata , control = boost_control(trace=T)  )
+      #fit = glmboost( as.formula(form)   , data = traindata , control = boost_control(trace=T) , center = T) ## 0.008093833
+      #target0.class = svm( as.formula(form)   , data = traindata , kernel="linear" , cost=1 , scale=F)
+      pred.fit = predict(fit , xvaldata )
+      #pred.class = predict(target0.class , xvaldata )
+      pred.fit = ifelse(is.na(pred.fit) , 0 , pred.fit)
+      
+      cv.mae[j,1] = mean(abs((xvaldata$target-pred.fit)))
+    }
+    mean.cv.acc=apply(cv.mae ,2,mean)
+    cat(" --- mean.cv.acc=",mean.cv.acc , " me.model0=", mae.all0,"\n")  
+    ###############
+
+```

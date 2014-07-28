@@ -1,5 +1,5 @@
 ---
-title: "liberty-mutual-fire-peril-EXPLONATORY"
+title: "liberty-mutual-fire-peril- Smanettamenti generali"
 output: html_document
 ---
 
@@ -21,7 +21,11 @@ getPvalueTypeIError = function(x,y) {
   } else if (class(x) == "numeric" & class(y) == "numeric" ) {
     test = "PEARSON"
   }  else {
-    stop ("class x and class y not supported.")
+    #stop ("class x and class y not supported.")
+    test = "ANOVA"
+    tmp = x 
+    x = y 
+    y = tmp 
   }
   
   ## performing stat test and computing p-value
@@ -150,8 +154,10 @@ train$var8 = as.numeric(train$var8)
 train$var9 = as.factor(train$var9)
 train$dummy = as.factor(train$dummy)
 
+train$target_0 = as.factor(ifelse(train$target == 0,0,1))
+
 ## exploratory
-pvalues = getPvalueFeatures( features = train[ , - 2] , response = train$target )
+pvalues = getPvalueFeatures( features = train[ , - 2] , response = train$target_0 )
 pvalues[order(pvalues$pValue) , ]
 ```
 
@@ -220,6 +226,117 @@ for(j in 1:k) {
 }
 mean.cv.mae=apply(cv.mae ,2,mean)
 print(mean.cv.mae)  ### 0.01379796
+
+## regression trees with top 5 correlated variables (pvalue < 0.05)  
+library(rpart)
+k = 5
+folds = kfolds(k,dim(train)[1])
+cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+for(j in 1:k) {  
+  traindata = train[folds != j,]
+  xvaldata = train[folds == j,]
+  lm.full = rpart(target ~ var13 + var10 + var4 + var8 + dummy + weatherVar118 + weatherVar102 + weatherVar103 + weatherVar227   , data = traindata)
+  pred.xval = predict(lm.full , xvaldata)
+  pred.xval = ifelse(is.na(pred.xval) , 0 , pred.xval)
+  cv.mae[j,1] = mean(abs((xvaldata$target-pred.xval)))
+}
+mean.cv.mae=apply(cv.mae ,2,mean)
+print(mean.cv.mae)  ### 0.01443015 
+
+library(rpart.plot)
+rpart.plot(lm.full,digits=3)
+
+## regression trees with top 5 correlated variables (pvalue < 0.05)  
+library(RWeka)
+k = 5
+folds = kfolds(k,dim(train)[1])
+cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+for(j in 1:k) {  
+  traindata = train[folds != j,]
+  xvaldata = train[folds == j,]
+  lm.full = M5P(target ~ var13 + var10 + var4 + var8 + dummy + weatherVar118 + weatherVar102 + weatherVar103 + weatherVar227   , data = traindata)
+  pred.xval = predict(lm.full , xvaldata)
+  pred.xval = ifelse(is.na(pred.xval) , 0 , pred.xval)
+  cv.mae[j,1] = mean(abs((xvaldata$target-pred.xval)))
+}
+mean.cv.mae=apply(cv.mae ,2,mean)
+print(mean.cv.mae)  ### 0.01459
+
+## rneural networks  with top 5 correlated variables (pvalue < 0.05)  
+library(neuralnet)
+k = 5
+folds = kfolds(k,dim(train)[1])
+cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+for(j in 1:k) {  
+  traindata = train[folds != j,]
+  xvaldata = train[folds == j,]
+  lm.full = neuralnet(target ~ var13 + var10 + var4 + var8 + dummy + weatherVar118 + weatherVar102 + weatherVar103 + weatherVar227   , data = traindata)
+  pred.xval = compute(lm.full , xvaldata)
+  pred.xval = ifelse(is.na(pred.xval) , 0 , pred.xval)
+  cv.mae[j,1] = mean(abs((xvaldata$target-pred.xval)))
+}
+mean.cv.mae=apply(cv.mae ,2,mean)
+print(mean.cv.mae)  ## Error in neurons[[i]] %*% weights[[i]] : requires numeric/complex matrix/vector arguments 
+                    ## neuralnet only deals with quantitative variables
+
+## classifier (target == 0) +  regressor   with top 5 correlated variables (pvalue < 0.05)  
+k = 5
+folds = kfolds(k,dim(train)[1])
+cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+for(j in 1:k) {  
+  traindata = train[folds != j,]
+  xvaldata = train[folds == j,]
+  
+  lm.full = lm(target ~ var13 + var10 + var4 + var8 + dummy + weatherVar118 + weatherVar102 + weatherVar103 + weatherVar227   , data = traindata)
+  
+  target0.class = glm(target_0 ~ var11 + var4 + var13+var10 + dummy   , data = traindata , family = "binomial")
+  
+  pred.class = predict(target0.class , xvaldata , type = "response")
+  pred.class = ifelse(is.na(pred.class) , 0 , pred.class)
+  pred.class = ifelse( pred.class < 0.5 , 0 , 1)
+  
+  pred.reg.xval = predict(lm.full , xvaldata)
+  pred.reg.xval = ifelse(is.na(pred.reg.xval) , 0 , pred.reg.xval)
+  
+  pred.xval = ifelse(pred.class == 0 , 0 , pred.reg.xval)
+  
+  cv.mae[j,1] = mean(abs((xvaldata$target-pred.xval)))
+}
+mean.cv.mae=apply(cv.mae ,2,mean)
+print(mean.cv.mae)  ## 0.007234069512
+
+## classifier (target == 0) +  regressor   with top 5 correlated variables (pvalue < 0.05)  
+library(class)
+k = 5
+trainknn = data.frame(train$var13,train$var10,train$var4,train$var8,train$dummy, train$weatherVar118,train$weatherVar102,train$weatherVar103,train$weatherVar227)
+
+label = train$target_0
+
+folds = kfolds(k,dim(train)[1])
+cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+for(j in 1:k) {  
+  traindata = train[folds != j,]
+  xvaldata = train[folds == j,]
+  
+  traindata_knn = trainknn[folds != j,]
+  label_knn = trainknn[folds != j,]
+  xvaldata_knn = trainknn[folds == j,]
+  
+  lm.full = lm(target ~ var13 + var10 + var4 + var8 + dummy + weatherVar118 + weatherVar102 + weatherVar103 + weatherVar227   , data = traindata)
+  
+  pred.class = knn(traindata_knn,xvaldata_knn,label_knn,5)
+  pred.class = ifelse(is.na(pred.class) , 0 , pred.class)
+  
+  pred.reg.xval = predict(lm.full , xvaldata)
+  pred.reg.xval = ifelse(is.na(pred.reg.xval) , 0 , pred.reg.xval)
+  
+  pred.xval = ifelse(pred.class == 0 , 0 , pred.reg.xval)
+  
+  cv.mae[j,1] = mean(abs((xvaldata$target-pred.xval)))
+}
+mean.cv.mae=apply(cv.mae ,2,mean)
+print(mean.cv.mae)  ## Error in knn(traindata_knn, xvaldata_knn, label_knn, 5) :  no missing values are allowed
+
 ```
 
 Some observations 
