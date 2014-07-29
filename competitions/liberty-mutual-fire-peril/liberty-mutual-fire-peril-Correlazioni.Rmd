@@ -211,58 +211,57 @@ pvalues = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$
 pvalues.ord = pvalues[order(pvalues$pValue) , ]
 pvalues.ord
 
-
 ```
 
 Finding best set of predictors for Classification problem target_0 
 
 ```{r}
-pval.threshold = 0.01
-is.na.threshold = 0.05
-
-form.base = "target_0 ~"
-form.new = form.base 
-acc = 0
-first.var = F 
-for (i in 1:dim(pvalues.class.ord)[1]) {
-  if (pvalues.class.ord$pValue[i] < pval.threshold & pvalues.class.ord$is.na[i] < is.na.threshold) {
-    if(! first.var) { 
-      form.new = paste(form.base,pvalues.class.ord$name[i],sep=' ')
-      first.var = T
-    } else {
-      form.new = paste(form.base,pvalues.class.ord$name[i],sep=' + ')
-    }
-    ###############
-    k = 5
-    folds = kfolds(k,dim(train)[1])
-    cv.acc=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
-    for(j in 1:k) {  
-      traindata = train[folds != j,]
-      #traindata = bootstrap(traindata , traindata$target_0 , positive.ratio = 0.5)
-      xvaldata = train[folds == j,]      
-      target0.class = glm( as.formula(form.new)   , data = traindata , family = "binomial")
-      pred.class = predict(target0.class , xvaldata , type = "response")
-      pred.class = ifelse(is.na(pred.class) , 0 , pred.class)
-      pred.class = ifelse( pred.class < 0.5 , 0 , 1)
-      cv.acc[j,1] = sum(xvaldata$target_0 == pred.class) / dim(xvaldata)[1]
-    }
-    mean.cv.acc=apply(cv.acc ,2,mean)
-    cat("i=" , i, " --- mean.cv.acc=",mean.cv.acc, "acc=" ,acc   , ", form.new=",form.new," , form.base=",form.base,"\n")  
-    if (acc < mean.cv.acc) {
-      acc = mean.cv.acc
-      form.base = form.new 
-    } else {
-      break
-    }
-    ###############
-  } else{
-    cat("i=" , i, " --> discarded. ", " name=" ,pvalues.class.ord$name[i] ,"\n") 
-    next
-  }
-}
-
-cat("formula=",form.base,"\n")
-cat("accuracy=",acc,"\n")
+# pval.threshold = 0.01
+# is.na.threshold = 0.05
+# 
+# form.base = "target_0 ~"
+# form.new = form.base 
+# acc = 0
+# first.var = F 
+# for (i in 1:dim(pvalues.class.ord)[1]) {
+#   if (pvalues.class.ord$pValue[i] < pval.threshold & pvalues.class.ord$is.na[i] < is.na.threshold) {
+#     if(! first.var) { 
+#       form.new = paste(form.base,pvalues.class.ord$name[i],sep=' ')
+#       first.var = T
+#     } else {
+#       form.new = paste(form.base,pvalues.class.ord$name[i],sep=' + ')
+#     }
+#     ###############
+#     k = 5
+#     folds = kfolds(k,dim(train)[1])
+#     cv.acc=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+#     for(j in 1:k) {  
+#       traindata = train[folds != j,]
+#       #traindata = bootstrap(traindata , traindata$target_0 , positive.ratio = 0.5)
+#       xvaldata = train[folds == j,]      
+#       target0.class = glm( as.formula(form.new)   , data = traindata , family = "binomial")
+#       pred.class = predict(target0.class , xvaldata , type = "response")
+#       pred.class = ifelse(is.na(pred.class) , 0 , pred.class)
+#       pred.class = ifelse( pred.class < 0.5 , 0 , 1)
+#       cv.acc[j,1] = sum(xvaldata$target_0 == pred.class) / dim(xvaldata)[1]
+#     }
+#     mean.cv.acc=apply(cv.acc ,2,mean)
+#     cat("i=" , i, " --- mean.cv.acc=",mean.cv.acc, "acc=" ,acc   , ", form.new=",form.new," , form.base=",form.base,"\n")  
+#     if (acc < mean.cv.acc) {
+#       acc = mean.cv.acc
+#       form.base = form.new 
+#     } else {
+#       break
+#     }
+#     ###############
+#   } else{
+#     cat("i=" , i, " --> discarded. ", " name=" ,pvalues.class.ord$name[i] ,"\n") 
+#     next
+#   }
+# }
+# 
+# cat("formula=",form.base,"\n")
+# cat("accuracy=",acc,"\n")
 ```
 
 Finding best p.ratio 
@@ -311,7 +310,7 @@ cat("p.ratio.best=",p.ratio.best,"\n")
 cat("accuracy=",acc,"\n")
 ```
 
-Quantile Regression 
+Mboost Regression 
 
 ```{r}
 library(mboost)
@@ -321,10 +320,13 @@ mae.all0 = sum(abs(train$target)) / dim(train)[1]
 #train = encodeCategoricalFeature(train,6)
 
 form = "target ~ var14 + var4 + var10 + var4_4 + var8 + dummy + var16 "
-mae = 0
-p.ratio.best = NA
-first.var = F 
+#form = "target ~ var13 + var10 + var4 + var4_4 + var8 + dummy + weatherVar118 + weatherVar102 + weatherVar103 + weatherVar227 + weatherVar235 + geodemVar37 + weatherVar47 + geodemVar24 + geodemVar20 + geodemVar13 + geodemVar17 + geodemVar8 + geodemVar26 + var11 + geodemVar11 "
 
+#form = "target ~ var13 + var10 + var4 + var4_4 + var8 + dummy  "
+
+families = c("Gaussian()" , "Laplace()" , "QuantReg()" ,  "ExprectReg()", "Huber()" , "GammaReg()" )
+for (fam in families) {
+    cat(" ################################################# family=",fam , "\n") 
     k = 4
     folds = kfolds(k,dim(train)[1])
     cv.mae=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
@@ -332,8 +334,21 @@ first.var = F
       traindata = train[folds != j,]
       #traindata = bootstrap(traindata , traindata$target_0 , positive.ratio = 0.1)
       xvaldata = train[folds == j,]      
-      fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 300) , baselearner = "bns"  ) ## 0.00806575
-      #fit = gamboost( target ~ bbs(var14 ) + bols(var14 , by = var4) + bbs(var4) + bbs(var10) + bols(var4_4) + bbs(var8) + bols(dummy) + bbs(var16 )   , data = traindata , control = boost_control(trace=T)  )
+      #fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 300) , baselearner = "bns"  ) ## 0.00806575
+      if (fam == "Gaussian()") { 
+        fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 300) , baselearner = "bns" , family = Gaussian() )
+      } else if (fam == "Laplace()") { 
+        fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 300) , baselearner = "bns" , family = Laplace() )
+      } else if (fam == "QuantReg()") { 
+        fit = glmboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 500)  , family = QuantReg(tau = 0.01 ) ) #0.007339842
+      } else if (fam == "ExprectReg()") { 
+        fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 300) , baselearner = "bns" , family = ExpectReg() ) # 0.008065573
+      } else if (fam == "Huber()") { 
+        fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 300) , baselearner = "bns" , family = Huber() )
+      } else { 
+        fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 300) , baselearner = "bns" , family = GammaReg() )
+      }
+      
       #fit = glmboost( as.formula(form)   , data = traindata , control = boost_control(trace=T) , center = T) ## 0.008093833
       #target0.class = svm( as.formula(form)   , data = traindata , kernel="linear" , cost=1 , scale=F)
       pred.fit = predict(fit , xvaldata )
@@ -343,7 +358,57 @@ first.var = F
       cv.mae[j,1] = mean(abs((xvaldata$target-pred.fit)))
     }
     mean.cv.acc=apply(cv.mae ,2,mean)
-    cat(" --- mean.cv.acc=",mean.cv.acc , " me.model0=", mae.all0,"\n")  
+    cat(" -->- mean.cv.acc=",mean.cv.acc , " me.model0=", mae.all0,"\n")  
+    gc()
     ###############
+}
 
+
+
+```
+
+Mboost Classification 
+
+```{r}
+require(mboost)
+
+acc.all0 = sum( train$target_0 == 0  ) / dim(train)[1]  # 0.99737
+
+#form = "target_0 ~ bols(var11,var4,var13,var10,dummy) +  bols(var11) + bols(var4) + bols(var13) + bols(var10) + bols(dummy) "
+
+form = "target_0 ~ var14 + var4 + var10 + var4_4 + var8 + dummy + var16"
+
+families = c("Binomial()" , "AdaExp()" , "AUC()" )
+for (fam in families) {
+    cat(" ################################################# family=",fam , "\n") 
+    k = 4
+    folds = kfolds(k,dim(train)[1])
+    cv.acc=matrix(NA,k,1, dimnames=list(NULL, paste(1:1)))
+    for(j in 1:k) {  
+      traindata = train[folds != j,]
+      xvaldata = train[folds == j,]      
+      if (fam == "Binomial()") { 
+        fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 300)  , family = Binomial() )
+      } else if (fam == "AdaExp()") { 
+        fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 300) , family = AdaExp() )
+      } else  { 
+        fit = gamboost( as.formula(form)   , data = traindata , control = boost_control(trace=T ,mstop = 500)  , family = AUC()) 
+      } 
+      
+      pred.fit = predict(fit , xvaldata , type = "response")
+      #pred.class = predict(target0.class , xvaldata )
+      pred.fit = ifelse(is.na(pred.fit) , 0 , pred.fit)
+      pred.fit.lab = ifelse( pred.fit > 0.5 , 1 , 0)
+      
+      num.mod = (1 - acc.all0) * dim(xvaldata) [1]
+      num.mod.idx =  order(pred.fit,decreasing = T)[1:num.mod]
+      pred.fit.lab[num.mod.idx] = 1
+      
+      cv.acc[j,1] = sum(xvaldata$target_0 == pred.fit.lab) / dim(xvaldata)[1]
+    }
+    mean.cv.acc=apply(cv.acc ,2,mean)
+    cat(" -->- mean.cv.acc=",mean.cv.acc , " acc.model0=", acc.all0,"\n")  
+    gc()
+    ###############
+}
 ```
