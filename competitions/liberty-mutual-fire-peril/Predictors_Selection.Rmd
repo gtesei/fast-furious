@@ -1,0 +1,325 @@
+---
+title: "Predictors Selection"
+author: "Gino Tesei"
+date: "August 2, 2014"
+output: html_document
+---
+
+TFunctions 
+```{r}
+encodeCategoricalFeature = function(ddata,i,facts.in=NULL) {
+  fact_max = 0
+  fact_min = 1 
+  facts = NULL
+  if (is.null(facts.in)) {
+    facts = na.omit(unique(ddata[,i]))
+    fact_max = length(facts)
+  } else {
+    fact_max = length(facts.in)
+    facts = facts.in
+  }
+  
+  mm = matrix(rep(0,dim(ddata)[1]),nrow=dim(ddata)[1],ncol=fact_max)
+  col_name = colnames(ddata)[i]
+  colnames(mm) = paste(paste(col_name,"_",sep=''),facts,sep='')
+  for (j in fact_min:fact_max) {
+    mm[,j] = ddata [,i] == facts[j]
+  }  
+  ddata = cbind(ddata,mm)
+  #ddata = ddata[,-i]
+}
+
+bootstrap = function (traindata , labels , positive.ratio = 0.5) {
+  pos.idx.set = which(labels == 1)
+  neg.idx.set = which(labels == 0)
+  
+  traindata.pos.samples = floor(dim(traindata)[1] * positive.ratio)
+  traindata.neg.samples = dim(traindata)[1] - traindata.pos.samples
+  
+  pos.idx = sample(pos.idx.set , traindata.pos.samples , T)
+  neg.idx = sample(neg.idx.set , traindata.neg.samples , T)
+  
+  all.idx = c(pos.idx,neg.idx)
+  
+  traindata.boot = traindata[all.idx , ]
+  traindata.boot
+}
+
+getPvalueTypeIError = function(x,y) {
+  test = NA
+  pvalue = NA
+  
+  ## type casting and understanding stat test 
+  if (class(x) == "integer") x = as.numeric(x)
+  if (class(y) == "integer") y = as.numeric(y)
+  
+  if ( class(x) == "factor" & class(y) == "numeric" ) {
+    # C -> Q
+    test = "ANOVA"
+  } else if (class(x) == "factor" & class(y) == "factor" ) {
+    # C -> C
+    test = "CHI-SQUARE"
+  } else if (class(x) == "numeric" & class(y) == "numeric" ) {
+    test = "PEARSON"
+  }  else {
+    # Q -> C 
+    # it performs anova test x ~ y 
+    test = "ANOVA"
+    tmp = x 
+    x = y 
+    y = tmp 
+  }
+  
+  ## performing stat test and computing p-value
+  if (test == "ANOVA") {                
+    test.anova = aov(y~x)
+    pvalue = summary(test.anova)[[1]][["Pr(>F)"]][1]
+  } else if (test == "CHI-SQUARE") {    
+    test.chisq = chisq.test(x = x , y = y)
+    pvalue = test.chisq$p.value
+  } else {                             
+    ###  PEARSON
+    test.corr = cor.test(x =  x , y =  y)
+    pvalue = test.corr$p.value
+  }
+    
+  pvalue
+}
+
+getPerfOnTestSet = function(x , y , k = 4) {
+  reg.type = NA
+  perf = NA
+  
+  if ( class(y) == "factor" & length(levels(y)) > 2 ) stop("TODO Multinomial support.")
+  
+  ## type casting and understanding stat test 
+  if (class(x) == "integer") x = as.numeric(x)
+  if (class(y) == "integer") y = as.numeric(y)
+  
+  if ( class(x) == "factor" & class(y) == "numeric" ) {
+    # C -> Q
+    reg.type = "LINEAR_REG"
+  } else if (class(x) == "factor" & class(y) == "factor" ) {
+    # C -> C
+    reg.type = "LOGISTIC_REG"
+  } else if (class(x) == "numeric" & class(y) == "numeric" ) {
+    reg.type = "LINEAR_REG"
+  }  else {
+    # Q -> C 
+    reg.type = "LOGISTIC_REG"
+  }
+  
+  y = y[! is.na(x)]
+  x = x[! is.na(x)]
+  ## k-fold cross validation 
+  folds = kfolds(k,length(x))
+  cv=rep(x = -1 , k)
+  
+  if (reg.type == "LINEAR_REG") {
+    for(j in 1:k) {  
+      train.df = data.frame(y = y[folds != j] , x = x[folds != j])
+      test.df = data.frame(x = x[folds == j])
+      fit = lm(y ~ x , data=train.df)
+      pred = predict(fit , test.df)
+      cv[j]= mean(abs((y[folds == j] - pred)))
+    }
+  } else { #LOGISTIC_REG
+    for(j in 1:k) {  
+      train.df = data.frame(y = y[folds != j] , x = x[folds != j])
+      test.df = data.frame(x = x[folds == j])
+      fit = glm(y ~ x , data=train.df , family=binomial)
+      pred.probs = predict(fit , test.df , type = "response")
+      label0 = rownames(contrasts(y))[1]
+      label1 = rownames(contrasts(y))[2]
+      pred = ifelse(pred.probs > 0.5 , label1 , label0)
+      cv[j]= mean( y[folds == j] == pred  )
+    }
+  }
+  
+  perf=mean(cv)
+  perf
+}
+
+getPvalueFeatures = function(response,features , p = 1) {
+  
+  label.formula = rep(NA, dim(features)[2])
+  pValue <- rep(NA, dim(features)[2])
+  is.na <- rep(NA, dim(features)[2])
+  perf.xval <- rep(NA, dim(features)[2])
+  
+  for (i in 1:(dim(features)[2])) {
+    if ( p == 1) {
+      label.formula[i] = colnames(features[i])
+      pValue[i] <- getPvalueTypeIError(x = features[,i], y = response)
+      perf.xval[i] = getPerfOnTestSet(x = features[,i], y = response)
+    } else {
+      ## label 
+      if (p == 2) label.formula[i] = paste0(paste0("I(",colnames(features[i])),"^2)")
+      if (p == 3) label.formula[i] = paste0(paste0("I(",colnames(features[i])),"^3)")
+      if (p == 4) label.formula[i] = paste0(paste0("I(",colnames(features[i])),"^4)")
+      if (p == 5) label.formula[i] = paste0(paste0("I(",colnames(features[i])),"^5)")
+      if (p >  5) stop("p > 5 not supported.")
+      
+      ## pvalue , perf.xval
+      if (class(features[,i]) == "factor") {
+        pValue[i] = NA
+        perf.xval[i] = NA
+      } else {
+        x.poly = features[,i]^p
+        pValue[i] = getPvalueTypeIError(x = x.poly, y = response)
+        perf.xval[i] = getPerfOnTestSet(x = x.poly, y = response)
+      }
+    }
+    
+    is.na[i] = sum(is.na(features[,i])) / length(features[,i]) 
+  }
+    
+  is.significant = ifelse(pValue < 0.05,T,F)
+  data.frame(label = label.formula, pValue , is.significant , is.na , perf.xval)
+}
+
+kfolds = function(k,data.length) {
+  k = min(k,data.length)
+  folds = rep(NA,data.length)
+  labels = 1:data.length
+  st = floor(data.length/k)
+  al_labels = NULL
+  for (s in 1:k) {
+    x = NULL
+    if (is.null(al_labels))
+      x = sample(labels,st)
+    else
+      x = sample(labels[-al_labels],st)
+    
+    folds[x] = s
+    if (is.null(al_labels))
+      al_labels = x
+    else
+      al_labels = c(al_labels,x)
+    }
+  ss = 1
+  for (s in 1:length(folds)){
+    if (is.na(folds[s])) {
+      folds[s] = ss
+      ss = ss + 1
+      } 
+    }
+  folds
+}
+
+```
+
+Loading data sets (train, test, sample) ... 
+
+```{r , warning=FALSE}
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-group/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
+
+train.fn = "train.csv"
+test.fn = "test.csv"
+sampleSub.fn = "sampleSubmission.csv"
+
+library(data.table)
+train.tab = fread(paste(base.path,train.fn,sep="") , header = TRUE , sep=","  )
+
+dim(train.tab)  ## 452061    302
+#dim(train_no_NA)  # 452061    302
+sum(train.tab$target == 0) / dim(train.tab)[1] ## 0.997372
+sum(train.tab$target == 0) ##450873 
+sum(train.tab$target != 0) ##1188
+
+y = train.tab$target
+plot(density(y))
+
+density(y)
+
+density(y[y != 0])
+
+min(y) #0
+max(y) #25.92014 
+mean(y) # 0.00723407
+sd(y) # 0.2196884 
+
+min(y[y != 0]) #0.005770778
+plot(density(y[y != 0]))
+mean(y[y != 0]) #2.752728
+sd(y[y != 0]) # 3.288865
+```
+
+Performing data trasformation 
+
+```{r}
+train = as.data.frame.matrix(train.tab) 
+## set NAs
+train$var1 = ifelse(train$var1 == "Z" , NA , train$var1)
+train$var2 = ifelse(train$var2 == "Z" , NA , train$var2)
+train$var3 = ifelse(train$var3 == "Z" , NA , train$var3)
+train$var4 = ifelse(train$var4 == "Z" , NA , train$var4)
+train$var5 = ifelse(train$var5 == "Z" , NA , train$var5)
+train$var6 = ifelse(train$var6 == "Z" , NA , train$var6)
+train$var7 = ifelse(train$var7 == "Z" , NA , train$var7)
+train$var8 = ifelse(train$var8 == "Z" , NA , train$var8)
+train$var9 = ifelse(train$var9 == "Z" , NA , train$var9)
+
+## set correct classes for regression 
+train$var1 = as.numeric(train$var1)
+train$var2 = as.factor(train$var2)
+train$var3 = as.factor(train$var3)
+
+## TODO BETTER: perdi l'informazione sul secondo livello  
+#train$var4_4 = factor(train$var4 , ordered = T)
+train$var4_4 = factor(train$var4 )
+#train$var4 = factor( ifelse(is.na(train$var4), NA , substring(train$var4 , 1 ,1) ) , ordered = T)
+train$var4 = factor( ifelse(is.na(train$var4), NA , substring(train$var4 , 1 ,1) ) )
+
+train$var5 = as.factor(train$var5)
+train$var6 = as.factor(train$var6)
+train$var7 = as.numeric(train$var7)
+train$var8 = as.numeric(train$var8)
+train$var9 = as.factor(train$var9)
+train$dummy = as.factor(train$dummy)
+
+train$target_0 = factor(ifelse(train$target == 0,0,1))
+
+## all0s model 
+all0.mae = mean(abs(train$target))
+all0.acc = mean(train$target_0 == 0)
+all0.mae
+all0.acc
+
+## association with target_0
+predictors.class.linear = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target_0 )
+predictors.class.linear.ord = predictors.class.linear [order(predictors.class.linear$pValue) , ]
+predictors.class.linear.ord
+predictors.class.linear.fn = paste(base.path,"predictors_class_linear.csv",sep="")
+write.csv(predictors.class.linear,quote=F,row.names=F,file=predictors.class.linear.fn)
+
+## association with target
+predictors.reg.linear = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target )
+predictors.reg.linear.ord = predictors.reg.linear[order(predictors.reg.linear$pValue) , ]
+predictors.reg.linear.ord
+predictors.reg.linear.fn = paste(base.path,"predictors_reg_linear.csv",sep="")
+write.csv(predictors.reg.linear,quote=F,row.names=F,file=predictors.reg.linear.fn)
+
+## correlation for polinomial terms 
+predictors.class.linear.poly = rep(x = NA , 5)
+predictors.reg.linear.poly = rep(x = NA , 5)
+for (p in 2:5) {
+  ## association with target_0
+  predictors.class.linear[p] = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target_0 , p)
+  predictors.class.linear.ord = predictors.class.linear[p] [order(predictors.class.linear[p]$pValue) , ]
+  predictors.class.linear.ord
+  predictors.class.linear.fn = paste0(paste0(paste(base.path,"predictors_class_linear_",sep=""),p),".csv")
+  write.csv(predictors.class.linear[p],quote=F,row.names=F,file=predictors.class.linear.fn)
+  
+  ## association with target
+  predictors.reg.linear[p] = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target , p )
+  predictors.reg.linear.ord = predictors.reg.linear[p][order(predictors.reg.linear[p]$pValue) , ]
+  predictors.reg.linear.ord
+  predictors.reg.linear.fn = paste0(paste0(paste(base.path,"predictors_reg_linear_",sep=""),p),".csv")
+  write.csv(predictors.reg.linear[p],quote=F,row.names=F,file=predictors.reg.linear.fn)
+}
+
+
+
+```
