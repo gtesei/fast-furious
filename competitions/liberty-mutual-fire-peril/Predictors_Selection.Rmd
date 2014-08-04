@@ -302,22 +302,20 @@ predictors.reg.linear.fn = paste(base.path,"predictors_reg_linear.csv",sep="")
 write.csv(predictors.reg.linear,quote=F,row.names=F,file=predictors.reg.linear.fn)
 
 ## correlation for polinomial terms 
-predictors.class.linear.poly = rep(x = NA , 5)
-predictors.reg.linear.poly = rep(x = NA , 5)
 for (p in 2:5) {
   ## association with target_0
-  predictors.class.linear[p] = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target_0 , p)
-  predictors.class.linear.ord = predictors.class.linear[p] [order(predictors.class.linear[p]$pValue) , ]
+  predictors.class.linear.p = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target_0 , p)
+  predictors.class.linear.ord = predictors.class.linear.p [order(predictors.class.linear.p$pValue) , ]
   predictors.class.linear.ord
   predictors.class.linear.fn = paste0(paste0(paste(base.path,"predictors_class_linear_",sep=""),p),".csv")
-  write.csv(predictors.class.linear[p],quote=F,row.names=F,file=predictors.class.linear.fn)
+  write.csv(predictors.class.linear.p,quote=F,row.names=F,file=predictors.class.linear.fn)
   
   ## association with target
-  predictors.reg.linear[p] = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target , p )
-  predictors.reg.linear.ord = predictors.reg.linear[p][order(predictors.reg.linear[p]$pValue) , ]
+  predictors.reg.linear.p = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target , p )
+  predictors.reg.linear.ord = predictors.reg.linear.p[order(predictors.reg.linear.p$pValue) , ]
   predictors.reg.linear.ord
   predictors.reg.linear.fn = paste0(paste0(paste(base.path,"predictors_reg_linear_",sep=""),p),".csv")
-  write.csv(predictors.reg.linear[p],quote=F,row.names=F,file=predictors.reg.linear.fn)
+  write.csv(predictors.reg.linear.p,quote=F,row.names=F,file=predictors.reg.linear.fn)
 }
 
 
