@@ -1,5 +1,5 @@
 ---
-title: "Predictors Selection"
+title: "Predictors Selection Interaction Terms"
 author: "Gino Tesei"
 date: "August 2, 2014"
 output: html_document
@@ -7,6 +7,8 @@ output: html_document
 
 Functions 
 ```{r}
+library(quantreg)
+
 encodeCategoricalFeature = function(ddata,i,facts.in=NULL) {
   fact_max = 0
   fact_min = 1 
@@ -140,6 +142,65 @@ getPerfOnTestSet = function(x , y , k = 4) {
   perf
 }
 
+getLinerRegPerfXval = function(form, train, k=4) {
+  folds = kfolds(k,dim(train)[1])
+  cv=rep(x = -1 , k)
+  
+  for(j in 1:k) {  
+      traindata = train[folds != j,]
+      xvaldata = train[folds == j,]
+      #fit = lm(as.formula(form) , data=traindata)
+      fit = rq(as.formula(form) , data=traindata , tau = 0.1 )
+      pred = predict(fit , xvaldata)
+      pred = ifelse(is.na(pred) , 0 , pred)    ## TODO BETTER 
+      cv[j]= mean(abs((xvaldata$target - pred^2)))
+    }
+  
+  perf=mean(cv)
+  perf
+}
+
+getPvalueInteractionTerms = function(response,features,pvalueFeatures,pvalue.threshold = 0.05) {
+  
+  n = dim(features)[2] * (dim(features)[2] - 1) / 2 
+  
+  label.formula = rep(NA, n)
+  pValue <- rep(NA, n)
+  is.na <- rep(NA, n)
+  perf.xval <- rep(NA, n)
+  
+  p = 1 
+  for (i in 1:(dim(features)[2]) ) {
+    if ( class(features[,i]) == "factor" ) next 
+    if ( ! is.na(pvalueFeatures$pValue[pvalueFeatures$label == colnames(features[i])]) & pvalueFeatures$pValue[pvalueFeatures$label == colnames(features[i])] > pvalue.threshold) next 
+    
+    for (j in (i+1):(dim(features)[2]) ) {
+       if ( class(features[,j]) == "factor" ) next 
+       if ( ! is.na(pvalueFeatures$pValue[pvalueFeatures$label == colnames(features[j])]) & pvalueFeatures$pValue[pvalueFeatures$label == colnames(features[j])] > pvalue.threshold) next
+       
+       label.formula[p] = paste0(paste0( colnames(features[i]) , ":" ) , colnames(features[j]) )
+       pValue[p] <- getPvalueTypeIError(x = (features[,i]*features[,j]), y = response)
+       perf.xval[p] = getPerfOnTestSet(x = (features[,i]*features[,j]) , y = response)
+       is.na[p] = sum(is.na(  features[,i]*features[,j]  )) / length(features[,i]) 
+       
+       p = p + 1
+    }
+  }
+  
+  is.significant = ifelse(pValue < 0.05,T,F)
+  
+  ## trim 
+  idx = which(! is.na(label.formula) )
+  label.formula = label.formula[idx]
+  pValue <- pValue[idx]
+  is.na <- is.na[idx]
+  perf.xval <- perf.xval[idx]
+  is.significant = is.significant[idx]
+  
+  ## return 
+  data.frame(label = label.formula, pValue , is.significant , is.na , perf.xval)
+}
+
 getPvalueFeatures = function(response,features , p = 1) {
   
   label.formula = rep(NA, dim(features)[2])
@@ -212,38 +273,45 @@ kfolds = function(k,data.length) {
 Loading data sets (train, test, sample) ... 
 
 ```{r , warning=FALSE}
-#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-group/"
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
+base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
+#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
 
 train.fn = "train.csv"
 test.fn = "test.csv"
 sampleSub.fn = "sampleSubmission.csv"
 
+predictors.reg.linear.fn  = "predictors_reg_linear.csv"
+predictors.reg.linear2.fn  = "predictors_reg_linear_2.csv"
+predictors.reg.linear3.fn  = "predictors_reg_linear_3.csv"
+predictors.reg.linear4.fn  = "predictors_reg_linear_4.csv"
+predictors.reg.linear5.fn  = "predictors_reg_linear_5.csv"
+
+predictors.class.linear.fn  = "predictors_class_linear.csv"
+predictors.class.linear2.fn  = "predictors_class_linear_2.csv"
+predictors.class.linear3.fn  = "predictors_class_linear_3.csv"
+predictors.class.linear4.fn  = "predictors_class_linear_4.csv"
+predictors.class.linear5.fn  = "predictors_class_linear_5.csv"
+
+predictors.reg.interaction.fn  = "predictors_reg_interaction_terms_.csv"
+predictors.class.interaction.fn  = "predictors_class_interaction_terms_.csv"
+
 library(data.table)
 train.tab = fread(paste(base.path,train.fn,sep="") , header = TRUE , sep=","  )
 
-dim(train.tab)  ## 452061    302
-#dim(train_no_NA)  # 452061    302
-sum(train.tab$target == 0) / dim(train.tab)[1] ## 0.997372
-sum(train.tab$target == 0) ##450873 
-sum(train.tab$target != 0) ##1188
+predictors.reg.linear = read.csv(paste(base.path,predictors.reg.linear.fn,sep="") , sep=","  )
+predictors.reg.linear2 = read.csv(paste(base.path,predictors.reg.linear2.fn,sep="") , sep=","  )
+predictors.reg.linear3 = read.csv(paste(base.path,predictors.reg.linear3.fn,sep="") , sep=","  )
+predictors.reg.linear4= read.csv(paste(base.path,predictors.reg.linear4.fn,sep="") , sep=","  )
+predictors.reg.linear5 = read.csv(paste(base.path,predictors.reg.linear5.fn,sep="") , sep=","  )
 
-y = train.tab$target
-plot(density(y))
+predictors.class.linear = read.csv(paste(base.path,predictors.class.linear.fn,sep="") ,  sep=","  )
+predictors.class.linear2 = read.csv(paste(base.path,predictors.class.linear2.fn,sep="") ,  sep=","  )
+predictors.class.linear3 = read.csv(paste(base.path,predictors.class.linear3.fn,sep="") ,  sep=","  )
+predictors.class.linear4 = read.csv(paste(base.path,predictors.class.linear4.fn,sep="") ,  sep=","  )
+predictors.class.linear5 = read.csv(paste(base.path,predictors.class.linear5.fn,sep="") ,  sep=","  )
 
-density(y)
-
-density(y[y != 0])
-
-min(y) #0
-max(y) #25.92014 
-mean(y) # 0.00723407
-sd(y) # 0.2196884 
-
-min(y[y != 0]) #0.005770778
-plot(density(y[y != 0]))
-mean(y[y != 0]) #2.752728
-sd(y[y != 0]) # 3.288865
+predictors.reg.interaction =  read.csv(paste(base.path,predictors.reg.interaction.fn,sep="") ,  sep=","  )
+#predictors.class.interaction = read.csv(paste(base.path,predictors.class.interaction.fn,sep="") ,  sep=","  )
 ```
 
 Performing data trasformation 
@@ -287,37 +355,45 @@ all0.acc = mean(train$target_0 == 0)
 all0.mae
 all0.acc
 
-## association with target_0
-predictors.class.linear = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target_0 )
-predictors.class.linear.ord = predictors.class.linear [order(predictors.class.linear$pValue) , ]
-predictors.class.linear.ord
-predictors.class.linear.fn = paste(base.path,"predictors_class_linear.csv",sep="")
-write.csv(predictors.class.linear,quote=F,row.names=F,file=predictors.class.linear.fn)
+### merge reg
+p.thresold = 0.05 
+na.thresold = 0.5 
 
-## association with target
-predictors.reg.linear = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target )
-predictors.reg.linear.ord = predictors.reg.linear[order(predictors.reg.linear$pValue) , ]
-predictors.reg.linear.ord
-predictors.reg.linear.fn = paste(base.path,"predictors_reg_linear.csv",sep="")
-write.csv(predictors.reg.linear,quote=F,row.names=F,file=predictors.reg.linear.fn)
+reg.merge = predictors.reg.linear
+reg.merge = rbind(reg.merge , predictors.reg.linear2)
+reg.merge = rbind(reg.merge , predictors.reg.linear3)
+reg.merge = rbind(reg.merge , predictors.reg.linear4)
+reg.merge = rbind(reg.merge , predictors.reg.linear5)
+reg.merge = rbind(reg.merge , predictors.reg.interaction)
 
-## correlation for polinomial terms 
-for (p in 2:5) {
-  ## association with target_0
-  predictors.class.linear.p = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target_0 , p)
-  predictors.class.linear.ord = predictors.class.linear.p [order(predictors.class.linear.p$pValue) , ]
-  predictors.class.linear.ord
-  predictors.class.linear.fn = paste0(paste0(paste(base.path,"predictors_class_linear_",sep=""),p),".csv")
-  write.csv(predictors.class.linear.p,quote=F,row.names=F,file=predictors.class.linear.fn)
+reg.merge.ord.pvalue = reg.merge[order(reg.merge$pValue) , ]
+head(reg.merge.ord.pvalue)
+
+reg.merge.ord.perf.xval = reg.merge[order(reg.merge$perf.xval) , ]
+head(reg.merge.ord.perf.xval)
+
+#### trying pvalue order with no constraints 
+form = "sqrt(target) ~ "
+perf.xval.best = NULL
+for (i in 1:dim(reg.merge.ord.pvalue)[1]) {
+  t = reg.merge.ord.pvalue[i,]
+  if (i == 1) {
+    form = paste0(form,t$label)
+  } else {
+    form = paste0(paste0(form," + "),t$label)
+  }
   
-  ## association with target
-  predictors.reg.linear.p = getPvalueFeatures( features = train[ , - c(2,304)] , response = train$target , p )
-  predictors.reg.linear.ord = predictors.reg.linear.p[order(predictors.reg.linear.p$pValue) , ]
-  predictors.reg.linear.ord
-  predictors.reg.linear.fn = paste0(paste0(paste(base.path,"predictors_reg_linear_",sep=""),p),".csv")
-  write.csv(predictors.reg.linear.p,quote=F,row.names=F,file=predictors.reg.linear.fn)
-}
-
+  cat("model:",form,"\n")
+  perf.xval = getLinerRegPerfXval(form = form, train = train)
+  cat("xval.perf:",perf.xval,"\n")
+  
+  if (i == 1) {
+    perf.xval.best = perf.xval
+  } else {
+    if (perf.xval < perf.xval.best) perf.xval.best = perf.xval
+    else break 
+  } 
+} 
 
 
 ```
