@@ -9,6 +9,24 @@ Functions
 ```{r}
 library(quantreg)
 
+
+WeightedGini <- function(solution, weights, submission){
+  df = data.frame(solution = solution, weights = weights, submission = submission)
+  df <- df[order(df$submission, decreasing = TRUE),]
+  df$random = cumsum((df$weights/sum(df$weights)))
+  totalPositive <- sum(df$solution * df$weights)
+  df$cumPosFound <- cumsum(df$solution * df$weights)
+  df$Lorentz <- df$cumPosFound / totalPositive
+  n <- nrow(df)
+  gini <- sum(df$Lorentz[-1]*df$random[-n]) - sum(df$Lorentz[-n]*df$random[-1])
+  return(gini)
+}
+
+NormalizedWeightedGini <- function(solution, weights, submission) {
+  WeightedGini(solution, weights, submission) / WeightedGini(solution, weights, solution)
+}
+
+
 encodeCategoricalFeature = function(ddata,i,facts.in=NULL) {
   fact_max = 0
   fact_min = 1 
@@ -143,17 +161,22 @@ getPerfOnTestSet = function(x , y , k = 4) {
 }
 
 getLinerRegPerfXval = function(form, train, k=4) {
+  
+  #k = 4 
+  #form = "target ~ var11 + var12 + var13 + var14 + var15 + var16 + var17 "
+  
   folds = kfolds(k,dim(train)[1])
   cv=rep(x = -1 , k)
   
   for(j in 1:k) {  
       traindata = train[folds != j,]
       xvaldata = train[folds == j,]
-      #fit = lm(as.formula(form) , data=traindata)
-      fit = rq(as.formula(form) , data=traindata , tau = 0.1 )
+      fit = lm(as.formula(form) , data=traindata)
+      #fit = rq(as.formula(form) , data=traindata , tau = 0.1 )
       pred = predict(fit , xvaldata)
       pred = ifelse(is.na(pred) , 0 , pred)    ## TODO BETTER 
-      cv[j]= mean(abs((xvaldata$target - pred^2)))
+      #cv[j]= mean(abs((xvaldata$target - pred)))
+      cv[j] = NormalizedWeightedGini (xvaldata$target, xvaldata$var11, pred)
     }
   
   perf=mean(cv)
@@ -373,27 +396,54 @@ reg.merge.ord.perf.xval = reg.merge[order(reg.merge$perf.xval) , ]
 head(reg.merge.ord.perf.xval)
 
 #### trying pvalue order with no constraints 
-form = "sqrt(target) ~ "
+formulas = rep(NA,dim(reg.merge.ord.pvalue)[1])
+perf = rep(NA,dim(reg.merge.ord.pvalue)[1])
+
+form = "target ~ "
+p = 1 
 perf.xval.best = NULL
+
 for (i in 1:dim(reg.merge.ord.pvalue)[1]) {
   t = reg.merge.ord.pvalue[i,]
+  
+  form.prev = form 
   if (i == 1) {
     form = paste0(form,t$label)
   } else {
     form = paste0(paste0(form," + "),t$label)
   }
   
-  cat("model:",form,"\n")
+  cat("model:",form,"  (adding:", toString(t$label)  , " - na perc. = " , t$is.na, ")\n")
   perf.xval = getLinerRegPerfXval(form = form, train = train)
   cat("xval.perf:",perf.xval,"\n")
   
-  if (i == 1) {
+  if (is.null(perf.xval.best)) {
     perf.xval.best = perf.xval
   } else {
-    if (perf.xval < perf.xval.best) perf.xval.best = perf.xval
-    else break 
+    if (perf.xval > perf.xval.best) {
+      perf.xval.best = perf.xval
+    } else {
+      formulas[p] = form.prev
+      perf[p] = perf.xval.best
+      
+      form = paste0("target ~ ", t$label )
+      cat("model:",form,"  (adding:", toString(t$label)  , " - na perc. = " , t$is.na, ")\n")
+      perf.xval = getLinerRegPerfXval(form = form, train = train)
+      perf.xval.best = perf.xval
+      cat("xval.perf:",perf.xval,"\n")
+      
+      p = p + 1
+    }
   } 
 } 
 
+idx = which(!is.na(formulas))
+formulas = formulas[idx]
+perf = perf[idx]
 
+results = data.frame(fomula = formulas , perf = perf)
+results[order(results$perf , decreasing = T) , ]
+
+results.fn = paste0(base.path,"results_reg_linear.csv")
+write.csv(results,quote=F,row.names=F,file=results.fn)
 ```
