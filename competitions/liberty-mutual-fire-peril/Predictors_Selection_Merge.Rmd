@@ -296,8 +296,8 @@ kfolds = function(k,data.length) {
 Loading data sets (train, test, sample) ... 
 
 ```{r , warning=FALSE}
-base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
-#base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
+#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
+base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
 
 train.fn = "train.csv"
 test.fn = "test.csv"
@@ -382,12 +382,19 @@ all0.acc
 p.thresold = 0.05 
 na.thresold = 0.5 
 
-reg.merge = predictors.reg.linear
-reg.merge = rbind(reg.merge , predictors.reg.linear2)
-reg.merge = rbind(reg.merge , predictors.reg.linear3)
-reg.merge = rbind(reg.merge , predictors.reg.linear4)
-reg.merge = rbind(reg.merge , predictors.reg.linear5)
-reg.merge = rbind(reg.merge , predictors.reg.interaction)
+# reg.merge = predictors.reg.linear
+# reg.merge = rbind(reg.merge , predictors.reg.linear2)
+# reg.merge = rbind(reg.merge , predictors.reg.linear3)
+# reg.merge = rbind(reg.merge , predictors.reg.linear4)
+# reg.merge = rbind(reg.merge , predictors.reg.linear5)
+# reg.merge = rbind(reg.merge , predictors.reg.interaction)
+
+reg.merge = predictors.class.linear
+reg.merge = rbind(reg.merge , predictors.class.linear2)
+reg.merge = rbind(reg.merge , predictors.class.linear3)
+reg.merge = rbind(reg.merge , predictors.class.linear4)
+reg.merge = rbind(reg.merge , predictors.class.linear5)
+reg.merge = rbind(reg.merge , predictors.class.interaction)
 
 reg.merge.ord.pvalue = reg.merge[order(reg.merge$pValue) , ]
 head(reg.merge.ord.pvalue)
@@ -444,6 +451,6 @@ perf = perf[idx]
 results = data.frame(fomula = formulas , perf = perf)
 results[order(results$perf , decreasing = T) , ]
 
-results.fn = paste0(base.path,"results_reg_linear.csv")
+results.fn = paste0(base.path,"results_class_linear.csv")
 write.csv(results,quote=F,row.names=F,file=results.fn)
 ```
