@@ -534,84 +534,86 @@ test.fn = "test.csv"
 sampleSub.fn = "sampleSubmission.csv"
 
 train.tab = fread(paste(base.path,train.fn,sep="") , header = TRUE , sep=","  )
-test.tab = fread(paste(base.path,test.fn,sep="") , header = TRUE , sep=","  )
-sampleSub.tab = fread(paste(base.path,sampleSub.fn,sep="") , header = TRUE , sep=","  )
 
 ## training on not NA values ... 
 train = getData(train.tab)
 train = train[! getNasRows(train) ,]
 
-## split test into test.na (id,...) test.nona (id,...)
-test = getData(test.tab , id = T)
-testNAs = getNasRows(test)
-
-## NA injection ... 
-# NA_in = floor(dim(test)[1] * 0.2)
-# NA_in_idx = sample(x = 1:dim(test)[1] , size = NA_in)
-# NA_in_cond = 1:dim(test)[1] %in% NA_in_idx
-# testNAs = testNAs | NA_in_cond
-
-test.na = test[testNAs , ]
-test.nona = test[! testNAs , ]
-
-### --------- 
-
-##### MODEL TREES 
-trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"m5")
-
-##### SVM 
-trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"svm")
-
-## CONDITIONAL TREE 
-trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"ctree2")
-
-##### CUBIST
-trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"cubist")
-
-#### MARS 
-trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"mars")
-
-
-### TESTS 
-models = c("svm","cubist","mars","ctree2","m5","gbm")
-tests = data.frame(model = models , NormalizedWeightedGini = NA , time = NA) 
-
-tests = trainPredict4Test(form.nlinear,train,"svm",train.size=5000,test.size=5000,tests)
-tests = trainPredict4Test(form.nlinear,train,"cubist",train.size=5000,test.size=5000)
-tests = trainPredict4Test(form.nlinear,train,"mars",train.size=5000,test.size=5000)
-tests = trainPredict4Test(form.nlinear,train,"ctree2",train.size=5000,test.size=5000)
-
-tests = trainPredict4Test(form.nlinear,train,"m5",train.size=5000,test.size=5000)
-# trainPredict4Test(form.nlinear,train,"rf",train.size=5000,test.size=5000)
-# tests = trainPredict4Test(form.nlinear,train,"gbm",train.size=5000,test.size=5000)
-
-########## SUBMISSIONS ... 
-
 ## MY RIDGE 
-pred.nona = trainAndPredict(form, train, test.nona[,-1], type = "myRidge" )
-subI = mergeTestSet (test.na , test.nona , 0, pred.nona, sampleSub.tab) 
-writeOnDisk(base.path , "sub_my_ridge.csv.gz" , subI)
+ptm <- Sys.time()
+print(ptm)
+tp = 0.8
+ti = createDataPartition(y = train$target , p=tp , list=F)
+ttrain = train[ti,]
+ttest = train[-ti,]
 
-## RIDGE 
-pred.nona = trainAndPredict(form, train, test.nona[,-1], type = "ridge")
-subI = mergeTestSet (test.na , test.nona , 0, pred.nona, sampleSub.tab) 
-writeOnDisk(base.path , "sub_ridge.csv.gz" , subI)
+pred = trainAndPredict(form, ttrain, ttest[,-1], type = "myRidge" )
+prf = NormalizedWeightedGini (ttest$target, ttest$var11, pred)
+cat("--> NormalizedWeightedGini: ",prf,"\n")
+tm = Sys.time() - ptm
+cat("Time (min.) elapsed:",tm,"\n")
 
-##### PLS 
-pred.nona = trainAndPredict(form, train, test.nona[,-1], type = "pls")
-subI = mergeTestSet (test.na , test.nona , 0 , pred.nona, sampleSub.tab) 
-writeOnDisk(base.path , "sub_pls.csv.gz" , subI)
+residualValues = ttest$target - pred 
+summary(residualValues)
+axisRange <- extendrange(c(ttest$target, pred))
+plot(ttest$target, pred,
+       ylim = axisRange,
+       xlim = axisRange)
+# Add a 45 degree reference line
+abline(0, 1, col = "darkgrey", lty = 2)
 
-##### KNN 
-pred.nona = trainAndPredict(form, train, test.nona[,-1], type = "knn")
-subI = mergeTestSet (test.na , test.nona , 0 , pred.nona, sampleSub.tab) 
-writeOnDisk(base.path , "sub_knn.csv.gz" , subI)
+# Predicted values versus residuals
+plot(pred, residualValues, ylab = "residual")
+abline(h = 0, col = "darkgrey", lty = 2)
+
+caret::R2(pred, ttest$target) ##0.0004932898
+caret::RMSE(pred, ttest$target) ##0.2530056
 
 
-# ##### RANDOM FOREST
-# trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"rf")
+## idea: multiply target x 1kxx so that the natural loss function take more into account such observations 
+# k = 10 
+# boost_factors = 1000 * c(1,5,10,20,50,100,200,300,400,500,600,700,800,900,1000)
+# perf.mean = rep(NA,length(boost_factors))
+# perf.sd = rep(NA,length(boost_factors))
+# for (i in 1:length(boost_factors)) {
+#   cat("==========>>>> boost factor = ",boost_factors[i]," ... \n")
+#   folds = kfolds(k,dim(train)[1])
+#   cv=rep(x = -1 , k)
+#   for(j in 1:k) {  
+#     cat("k = ",j," .. \n")
+#     traindata = train[folds != j,]
+#     xvaldata = train[folds == j,]
+#     traindata$target = traindata$target * i 
+#     
+#     ## find best lambda in trainset 
+#     x = model.matrix ( as.formula(form)  , train )[,-1]
+#     y = traindata$target
+#     cv.out =cv.glmnet (x[folds != j,],y,alpha = 0)
+#     bestlam =cv.out$lambda.min
+#     cat("found  bestlam= ",bestlam," \n")
+#     
+#     ## fit the model with such as lambda 
+#     fit = glmnet (x[folds != j,] , y  , alpha = 0, lambda = bestlam , thresh = 1e-12)
+#     pred = as.numeric( predict(fit , s = bestlam , newx = x[folds == j,] )  )
+#    
+#     prf = NormalizedWeightedGini (xvaldata$target, xvaldata$var11, pred)  
+#     cat("prf=",prf,"\n")
+#     cv[j] = prf
+#   }
+#   prf.mean=mean(cv)
+#   prf.sd=sd(cv)
+#   cat("===>>> boost factor[",boost_factors[i],"] ====>>> (prf.mean=",prf.mean,", prf.sd=",prf.sd,")\n")
+#   perf.mean[i] = prf.mean
+#   perf.sd[i] = prf.sd
+# }
+# plot(boost_factors,perf.mean)
+### ===>>> non funziona 
 
-# ##### BOOSTED TREES 
-# trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"gbm")
+ 
+
+
+
+
+
 
 

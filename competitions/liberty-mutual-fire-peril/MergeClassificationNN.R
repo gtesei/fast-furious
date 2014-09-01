@@ -226,10 +226,11 @@ getPvalueFeatures = function(response,features , p = 1) {
   perf.xval <- rep(NA, dim(features)[2])
   
   for (i in 1:(dim(features)[2])) {
+    print(i)
     if ( p == 1) {
       label.formula[i] = colnames(features[i])
       pValue[i] <- getPvalueTypeIError(x = features[,i], y = response)
-      perf.xval[i] = getPerfOnTestSet(x = features[,i], y = response)
+      #perf.xval[i] = getPerfOnTestSet(x = features[,i], y = response)
     } else {
       ## label 
       if (p == 2) label.formula[i] = paste0(paste0("I(",colnames(features[i])),"^2)")
@@ -350,6 +351,48 @@ getData = function(myData.tab , id = F) {
     var.er = "id|target|var13|geodemVar24|weatherVar47|var8|var10|var4|geodemVar37|var4_4|var11"
     var.idx = grep(pattern = var.er , names (myData) )
     myData = myData[, var.idx]
+  }
+  
+  ## garbage collector 
+  gc() 
+  
+  ## return myData
+  myData
+}
+
+getData4Analysis = function(myData.tab) {
+  myData = as.data.frame.matrix(myData.tab) 
+  ## set NAs
+  myData$var1 = ifelse(myData$var1 == "Z" , NA , myData$var1)
+  myData$var2 = ifelse(myData$var2 == "Z" , NA , myData$var2)
+  myData$var3 = ifelse(myData$var3 == "Z" , NA , myData$var3)
+  myData$var4 = ifelse(myData$var4 == "Z" , NA , myData$var4)
+  myData$var5 = ifelse(myData$var5 == "Z" , NA , myData$var5)
+  myData$var6 = ifelse(myData$var6 == "Z" , NA , myData$var6)
+  myData$var7 = ifelse(myData$var7 == "Z" , NA , myData$var7)
+  myData$var8 = ifelse(myData$var8 == "Z" , NA , myData$var8)
+  myData$var9 = ifelse(myData$var9 == "Z" , NA , myData$var9)
+  
+  ## set correct classes for regression 
+  myData$var1 = as.numeric(myData$var1)
+  myData$var2 = as.factor(myData$var2)
+  myData$var3 = as.factor(myData$var3)
+  
+  ## TODO BETTER: perdi l'informazione sul secondo livello  
+  #myData$var4_4 = factor(myData$var4 , ordered = T)
+  myData$var4_4 = factor(myData$var4 )
+  #myData$var4 = factor( ifelse(is.na(myData$var4), NA , substring(myData$var4 , 1 ,1) ) , ordered = T)
+  myData$var4 = factor( ifelse(is.na(myData$var4), NA , substring(myData$var4 , 1 ,1) ) )
+  
+  myData$var5 = as.factor(myData$var5)
+  myData$var6 = as.factor(myData$var6)
+  myData$var7 = as.numeric(myData$var7)
+  myData$var8 = as.numeric(myData$var8)
+  myData$var9 = as.factor(myData$var9)
+  myData$dummy = as.factor(myData$dummy)
+  
+  if (! is.null(myData$target) ) {
+    myData$target_0 = factor(ifelse(myData$target == 0,0,1))
   }
   
   ## garbage collector 
@@ -521,97 +564,47 @@ trainPredict4Test = function(form,train,model,train.size=5000,test.size=5000,tes
 
 ##############  Loading data sets (train, test, sample) ... 
 
-### formulas ...
-form = "target ~ var13:geodemVar24 + var13:weatherVar47 + var8:var13 + I(var13^2) + I(var13^3) + I(var13^4) + var10 + var4 + I(var10^2) + var10:var13 + var13 + var13:geodemVar37 + I(var13^5) + I(var10^5) + var4_4 + var8:var10" 
-form.error = "error ~ geodemVar19 + weatherVar67 + geodemVar30 + geodemVar29 + I(weatherVar133^2) + I(geodemVar19^2) + geodemVar30:weatherVar104 + geodemVar19:weatherVar67 + geodemVar19:weatherVar66"
-form.nlinear = "target ~ ."
-
 #base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
 base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
-
-train.fn = "train.csv"
-test.fn = "test.csv"
 sampleSub.fn = "sampleSubmission.csv"
 
-train.tab = fread(paste(base.path,train.fn,sep="") , header = TRUE , sep=","  )
-test.tab = fread(paste(base.path,test.fn,sep="") , header = TRUE , sep=","  )
-sampleSub.tab = fread(paste(base.path,sampleSub.fn,sep="") , header = TRUE , sep=","  )
 
-## training on not NA values ... 
-train = getData(train.tab)
-train = train[! getNasRows(train) ,]
+nnSub.fn = "pred_nn_test.zat"
+nnSub01.fn = "pred_nn_test01.zat"
+subToMerge.fn = "sub_boost.csv"
 
-## split test into test.na (id,...) test.nona (id,...)
-test = getData(test.tab , id = T)
-testNAs = getNasRows(test)
+nnSub.tab = fread(paste(base.path,nnSub.fn,sep="") , header = TRUE )
+nnSub01.tab = fread(paste(base.path,nnSub01.fn,sep="") , header = TRUE )
+sampleSub.tab = fread(paste0(base.path,sampleSub.fn) , header = TRUE , sep=","  )
+subToMerge.tab = fread(paste0(base.path,subToMerge.fn) , header = TRUE , sep=","  )
 
-## NA injection ... 
-# NA_in = floor(dim(test)[1] * 0.2)
-# NA_in_idx = sample(x = 1:dim(test)[1] , size = NA_in)
-# NA_in_cond = 1:dim(test)[1] %in% NA_in_idx
-# testNAs = testNAs | NA_in_cond
+###### pred
+nnSub.df = as.data.frame(nnSub.tab)
+subI = data.frame(id = sampleSub.tab$id , pred = nnSub.df$pred) 
+writeOnDisk(base.path , paste0("sub_myNN.csv.gz") , subI)
 
-test.na = test[testNAs , ]
-test.nona = test[! testNAs , ]
-
-### --------- 
-
-##### MODEL TREES 
-trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"m5")
-
-##### SVM 
-trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"svm")
-
-## CONDITIONAL TREE 
-trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"ctree2")
-
-##### CUBIST
-trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"cubist")
-
-#### MARS 
-trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"mars")
+##### pred01 
+nnSub01.df = as.data.frame(nnSub01.tab)
+subToMerge = as.data.frame(subToMerge.tab)
+pred = rep(NA,dim(subToMerge)[1])
+mmin = min(subToMerge$target)
+for (i in 1:length(pred)){
+  if (nnSub01.df$pred[i] > 0) {
+    pred[i] = subToMerge$target[i]
+  }
+  else pred[i] = mmin - 0.1
+}
+subI = data.frame(id = sampleSub.tab$id , pred = pred) 
+writeOnDisk(base.path , paste0("sub_myNN_merged.csv.gz") , subI)
 
 
-### TESTS 
-models = c("svm","cubist","mars","ctree2","m5","gbm")
-tests = data.frame(model = models , NormalizedWeightedGini = NA , time = NA) 
-
-tests = trainPredict4Test(form.nlinear,train,"svm",train.size=5000,test.size=5000,tests)
-tests = trainPredict4Test(form.nlinear,train,"cubist",train.size=5000,test.size=5000)
-tests = trainPredict4Test(form.nlinear,train,"mars",train.size=5000,test.size=5000)
-tests = trainPredict4Test(form.nlinear,train,"ctree2",train.size=5000,test.size=5000)
-
-tests = trainPredict4Test(form.nlinear,train,"m5",train.size=5000,test.size=5000)
-# trainPredict4Test(form.nlinear,train,"rf",train.size=5000,test.size=5000)
-# tests = trainPredict4Test(form.nlinear,train,"gbm",train.size=5000,test.size=5000)
-
-########## SUBMISSIONS ... 
-
-## MY RIDGE 
-pred.nona = trainAndPredict(form, train, test.nona[,-1], type = "myRidge" )
-subI = mergeTestSet (test.na , test.nona , 0, pred.nona, sampleSub.tab) 
-writeOnDisk(base.path , "sub_my_ridge.csv.gz" , subI)
-
-## RIDGE 
-pred.nona = trainAndPredict(form, train, test.nona[,-1], type = "ridge")
-subI = mergeTestSet (test.na , test.nona , 0, pred.nona, sampleSub.tab) 
-writeOnDisk(base.path , "sub_ridge.csv.gz" , subI)
-
-##### PLS 
-pred.nona = trainAndPredict(form, train, test.nona[,-1], type = "pls")
-subI = mergeTestSet (test.na , test.nona , 0 , pred.nona, sampleSub.tab) 
-writeOnDisk(base.path , "sub_pls.csv.gz" , subI)
-
-##### KNN 
-pred.nona = trainAndPredict(form, train, test.nona[,-1], type = "knn")
-subI = mergeTestSet (test.na , test.nona , 0 , pred.nona, sampleSub.tab) 
-writeOnDisk(base.path , "sub_knn.csv.gz" , subI)
 
 
-# ##### RANDOM FOREST
-# trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"rf")
+ 
 
-# ##### BOOSTED TREES 
-# trainPredict4Sub (form.nlinear,train,test.nona,test.na,sampleSub.tab,"gbm")
+
+
+
+
 
 

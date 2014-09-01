@@ -16,11 +16,16 @@ for i = 1:L-1
   endif
 endfor 
 
-%%[dummy, p] = max(cell2mat(h(L-1,1)), [], 2);
+# [dummy, p] = max(cell2mat(h(L-1,1)), [], 2);
 
 hx = cell2mat(h(L-1,1));
 for (i = 1:size(hx,1) )
-  [dummy , p(i)] = max(hx(i,:));
+  if (size(hx,2) > 1 )
+    [dummy , p(i)] = max(hx(i,:));
+  else
+    #p(i) = (hx(i) > 0.5 );
+    p(i) = hx(i);
+  endif
 endfor 
 
 pred = p;
