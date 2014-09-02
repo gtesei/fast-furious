@@ -547,7 +547,7 @@ ti = createDataPartition(y = train$target , p=tp , list=F)
 ttrain = train[ti,]
 ttest = train[-ti,]
 
-pred = trainAndPredict(form, ttrain, ttest[,-1], type = "myRidge" )
+pred = trainAndPredict(form.nlinear, ttrain, ttest[,-1], type = "myRidge" )
 prf = NormalizedWeightedGini (ttest$target, ttest$var11, pred)
 cat("--> NormalizedWeightedGini: ",prf,"\n")
 tm = Sys.time() - ptm

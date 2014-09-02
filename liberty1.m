@@ -34,6 +34,23 @@ mtrain = floor(m * perc_train);
 target_train = target(1:mtrain);
 target_xval = target(mtrain+1:end);
 
+###### train mediator ...
+#id0 = find(ytrain == 0);
+#id1 = find(ytrain == 1);
+#mean0 = mean(Xtrain(id0,2:end));
+#mean1 = mean(Xtrain(id1,2:end));
+#meanT = mean(Xtrain);
+#mean01 = (mean0+mean1)/2;
+#Mean1InfMean0 = mean1 < mean0;
+#t = (Xval(:,2:end) < mean01 ) .* Mean1InfMean0;
+#pred_val = mode(t')';
+#printClassMetrics(pred_val,yval);
+                
+#---> con 61 variabili tutte le previsioni a 0
+
+
+
+
 ###### train NN ...
 num_label = 1;
 NNMeta = buildNNMeta([(n-1) (n-1) num_label]);disp(NNMeta);
