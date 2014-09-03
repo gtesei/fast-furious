@@ -40,7 +40,7 @@ tic(); [lambda_opt,J_opt] = findOptLambda_RegLin(Xtrain, ytrain, Xval, yval , la
 lambda = 0;
                                                  
                                                  
-[theta] = trainLinearReg(Xtrain, ytrain, 0 , 900 );
+[theta] = trainLinearReg(Xtrain, ytrain, 0 , 300 );
 pred_val = predictLinearReg(Xval,theta);
 pred_train =predictLinearReg(Xtrain,theta);
 cost_val_gd1 = MSE(pred_val, yval);
@@ -72,6 +72,25 @@ printf("NN - MSE on cross validation set = %f \n",cost_val_gd1);
 gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,20),pred_train);
 printf("NN - NormalizedWeightedGini on train = %f \n", gini_train );
                                                  
+gini_xval = NormalizedWeightedGini(yval,_Xval(:,20),pred_val);
+printf("NN - NormalizedWeightedGini on cv = %f \n", gini_xval );
+                                                 
+### NN EGS
+num_label = 1;
+NNMeta = buildNNMeta([(n-1) (n-1)  num_label]);disp(NNMeta);
+[Theta] = trainNeuralNetworkRegEGS(NNMeta, Xtrain, ytrain, 0 , iter = 300, featureScaled = 1 );
+
+pred_train = NNPredictRegEGS(NNMeta, Theta , Xtrain , featureScaled = 1);
+pred_val = NNPredictRegEGS(NNMeta, Theta , Xval , featureScaled = 1);
+cost_val_gd1 = MSE(pred_val, yval);
+cost_train_gd1 = MSE(pred_train, ytrain);
+
+printf("NN - MSE on training set = %f \n",cost_train_gd1);
+printf("NN - MSE on cross validation set = %f \n",cost_val_gd1);
+
+gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,20),pred_train);
+printf("NN - NormalizedWeightedGini on train = %f \n", gini_train );
+
 gini_xval = NormalizedWeightedGini(yval,_Xval(:,20),pred_val);
 printf("NN - NormalizedWeightedGini on cv = %f \n", gini_xval );
 

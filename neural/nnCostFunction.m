@@ -75,7 +75,7 @@ d = cell(L,1);
 
 d(L,1) = cell2mat(a(L,1)) - yVect;
 
-%%%%%% pesi
+%%%%%% pesi  (non funzionano per le multiclass!!!)
 d(L,1) = cell2mat(d(L,1)) .* ( (cell2mat(d(L,1)) < 0 ) * weigth(1) + (cell2mat(d(L,1)) > 0 ) * weigth(2) );
 %%%%%%%
 

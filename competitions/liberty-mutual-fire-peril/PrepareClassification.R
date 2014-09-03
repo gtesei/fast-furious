@@ -380,9 +380,9 @@ getData4Analysis = function(myData.tab) {
   
   ## TODO BETTER: perdi l'informazione sul secondo livello  
   #myData$var4_4 = factor(myData$var4 , ordered = T)
-  myData$var4_4 = factor(myData$var4 )
+  myData$var4 = factor(myData$var4 )
   #myData$var4 = factor( ifelse(is.na(myData$var4), NA , substring(myData$var4 , 1 ,1) ) , ordered = T)
-  myData$var4 = factor( ifelse(is.na(myData$var4), NA , substring(myData$var4 , 1 ,1) ) )
+  #myData$var4 = factor( ifelse(is.na(myData$var4), NA , substring(myData$var4 , 1 ,1) ) )
   
   myData$var5 = as.factor(myData$var5)
   myData$var6 = as.factor(myData$var6)
@@ -592,7 +592,7 @@ dim(test)
 
 ### just retain the variable higly correlated without NAs 
 var.er = "target|var13|var11|var10|dummy|var17"
-var.er = "target|var13|var11|var10|dummy|var17|var4|var4_4|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|weatherVar190|weatherVar194"
+#var.er = "target|var13|var11|var10|dummy|var17|var4|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|weatherVar190|weatherVar194"
 
 ## train 
 var.idx = grep(pattern = var.er , names (train) )
@@ -616,51 +616,51 @@ write.csv(mm.df.test,quote=F,row.names=F,file=fn)
 
 
 
-### 
-m1 = rep(NA,5)
-m0 = rep(NA,5)
-
-mmin = rep(NA,5) 
-mmax = rep(NA,5) 
-mmed = rep(NA,5) 
-upper = rep(NA,5) 
-lower = rep(NA,5)
-
-for (i in 1:length(colnames(mm.df))) {
-  var.idx = grep(pattern = "target" , colnames(mm.df)[i] )
-  if (length(var.idx) == 0) {
-    print(colnames(mm.df)[i])
-    m1[i] = mean(mm.df[mm.df$targetPos == 1,i])
-    m0[i] = mean(mm.df[mm.df$targetPos == 0,i])
-    sdi = sd(mm.df[,i])
-    
-    mmin[i] = min(m1[i],m0[i])
-    mmax[i] = max(m1[i],m0[i])
-    mmed[i] = (mmin[i]+mmax[i])/2
-    upper[i] = ifelse (m1[i]  < m0[i] , 0 , 1) 
-    lower[i] = ifelse (upper[i] == 1 , 0 ,  1)
-    
-    cat("m1 == ",m1[i]," m0 == ",m0[i] , "sd == ",sdi,"\n")
-  }
-}
-
-
-pred = rep(NA,5000)
-for (j in 1:5000 ) {
-  vots = NULL
-  for (i in 2:6) {
-    
-    
-      if(mm.df[j,i] < mmed[i]) {
-        vots = c(vots,lower[i])
-      } else {
-        vots = c(vots,upper[i])
-      }
-    
-  }
-  pred[j] = median(vots)
-  if (j %% 1000 == 0 ) print(j)
-}
+# ### classifier basato sulle medie - 
+# m1 = rep(NA,5)
+# m0 = rep(NA,5)
+# 
+# mmin = rep(NA,5) 
+# mmax = rep(NA,5) 
+# mmed = rep(NA,5) 
+# upper = rep(NA,5) 
+# lower = rep(NA,5)
+# 
+# for (i in 1:length(colnames(mm.df))) {
+#   var.idx = grep(pattern = "target" , colnames(mm.df)[i] )
+#   if (length(var.idx) == 0) {
+#     print(colnames(mm.df)[i])
+#     m1[i] = mean(mm.df[mm.df$targetPos == 1,i])
+#     m0[i] = mean(mm.df[mm.df$targetPos == 0,i])
+#     sdi = sd(mm.df[,i])
+#     
+#     mmin[i] = min(m1[i],m0[i])
+#     mmax[i] = max(m1[i],m0[i])
+#     mmed[i] = (mmin[i]+mmax[i])/2
+#     upper[i] = ifelse (m1[i]  < m0[i] , 0 , 1) 
+#     lower[i] = ifelse (upper[i] == 1 , 0 ,  1)
+#     
+#     cat("m1 == ",m1[i]," m0 == ",m0[i] , "sd == ",sdi,"\n")
+#   }
+# }
+# 
+# 
+# pred = rep(NA,5000)
+# for (j in 1:5000 ) {
+#   vots = NULL
+#   for (i in 2:6) {
+#     
+#     
+#       if(mm.df[j,i] < mmed[i]) {
+#         vots = c(vots,lower[i])
+#       } else {
+#         vots = c(vots,upper[i])
+#       }
+#     
+#   }
+#   pred[j] = median(vots)
+#   if (j %% 1000 == 0 ) print(j)
+# }
 
 
 
