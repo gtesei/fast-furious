@@ -31,27 +31,32 @@ rand_indices = randperm(m);
 [Xval,mu,sigma] = treatContFeatures(_Xval,1,1,mu,sigma);
 
 ####### Linear Regression
+p_opt = 1;
+lambda_opt = 0.100000;
+
 printf("|--> finding optimal polinomial degree ... \n");
 tic(); [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval , p_vec = [1 2 3 4 5 6 7 8 9 10]'); toc();
-p = 1;
                                        
 printf("|--> finding optimal regularization parameter ... \n");
-tic(); [lambda_opt,J_opt] = findOptLambda_RegLin(Xtrain, ytrain, Xval, yval , lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]' , p=1); toc();
-lambda = 0;
+tic(); [lambda_opt,J_opt] = findOptLambda_RegLinLiberty(_Xtrain, ytrain, _Xval, yval , lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]' , p=1); toc();
+                                                 
+## predicting setting p = p_opt and lambda = lambda_opt
+[X_poly_train,mu,sigma] = treatContFeatures(Xtrain,p_opt);
+[X_poly_val,mu_val,sigma_val] = treatContFeatures(Xval,p_opt,1,mu,sigma);
                                                  
                                                  
-[theta] = trainLinearReg(Xtrain, ytrain, 0 , 300 );
-pred_val = predictLinearReg(Xval,theta);
-pred_train =predictLinearReg(Xtrain,theta);
+[theta] = trainLinearReg(X_poly_train, ytrain, lambda_opt , 300 );
+pred_val = predictLinearReg(X_poly_val,theta);
+pred_train =predictLinearReg(X_poly_train,theta);
 cost_val_gd1 = MSE(pred_val, yval);
 cost_train_gd1 = MSE(pred_train, ytrain);
 printf("MSE on training set = %f \n",cost_train_gd1);
 printf("MSE on cross validation set = %f \n",cost_val_gd1);
                                                  
-gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,20),pred_train);
+gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,43),pred_train);
 printf("LR - NormalizedWeightedGini on train = %f \n", gini_train );
                                                  
-gini_xval = NormalizedWeightedGini(yval,_Xval(:,20),pred_val);
+gini_xval = NormalizedWeightedGini(yval,_Xval(:,43),pred_val);
 printf("LR - NormalizedWeightedGini on cv = %f \n", gini_xval );
                                                  
 ####### Neural Networks 
@@ -69,10 +74,10 @@ cost_train_gd1 = MSE(pred_train, ytrain);
 printf("NN - MSE on training set = %f \n",cost_train_gd1);
 printf("NN - MSE on cross validation set = %f \n",cost_val_gd1);
                                                  
-gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,20),pred_train);
+gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,43),pred_train);
 printf("NN - NormalizedWeightedGini on train = %f \n", gini_train );
                                                  
-gini_xval = NormalizedWeightedGini(yval,_Xval(:,20),pred_val);
+gini_xval = NormalizedWeightedGini(yval,_Xval(:,43),pred_val);
 printf("NN - NormalizedWeightedGini on cv = %f \n", gini_xval );
                                                  
 ### NN EGS
@@ -88,10 +93,10 @@ cost_train_gd1 = MSE(pred_train, ytrain);
 printf("NN - MSE on training set = %f \n",cost_train_gd1);
 printf("NN - MSE on cross validation set = %f \n",cost_val_gd1);
 
-gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,20),pred_train);
+gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,43),pred_train);
 printf("NN - NormalizedWeightedGini on train = %f \n", gini_train );
 
-gini_xval = NormalizedWeightedGini(yval,_Xval(:,20),pred_val);
+gini_xval = NormalizedWeightedGini(yval,_Xval(:,43),pred_val);
 printf("NN - NormalizedWeightedGini on cv = %f \n", gini_xval );
 
 

@@ -562,6 +562,42 @@ trainPredict4Test = function(form,train,model,train.size=5000,test.size=5000,tes
   tests
 }
 
+transfrom4Skewness = function (train) {
+  library(e1071)
+  
+  skewValues <- apply(train[,-c(2,7,15)], 2, skewness)
+  cat("skewValues  before transformation ... \n")
+  print(skewValues)
+  
+  idx = (1:15)[-c(2,7,15)]
+  for (i in idx) {
+    cat("processing ",colnames(train)[i]," ... \n")
+    tr = BoxCoxTrans(train[,i])
+    print(tr)
+    if (! is.na(tr$lambda) ) {
+      cat("tranforming ... \n")
+      newVal = predict(tr,train[,i])
+      train[,i] = newVal
+      cat("skewness after transformation: " , skewness(train[,i]), "  \n")
+    }
+  } 
+  
+  skewValues <- apply(train[,-c(2,7,15)], 2, skewness)
+  cat("skewValues  before transformation ... \n")
+  print(skewValues)
+  
+  train 
+}
+
+charInd = function (c) {
+  ret = which(c == LETTERS)
+}
+var4FromFactor2Num = function (v) {
+  letters = substr(v,1,1) 
+  val = as.numeric(sapply(letters,charInd))
+  val = val * 10 + as.numeric(substr(v,2,2))
+}
+
 ##############  Loading data sets (train, test, sample) ... 
 
 #base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
@@ -591,14 +627,17 @@ dim(test)
 # predictors.class.linear.ord[ predictors.class.linear.ord$is.na == 0 , ]
 
 ### just retain the variable higly correlated without NAs 
-var.er = "target|var13|var11|var10|dummy|var17"
-#var.er = "target|var13|var11|var10|dummy|var17|var4|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|weatherVar190|weatherVar194"
+#var.er = "target|var13|var11|var10|dummy|var17"
+var.er = "target|var13|var11|var10|dummy|var17|var4|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|weatherVar190|weatherVar194"
 
 ## train 
 var.idx = grep(pattern = var.er , names (train) )
 train.old = train 
 train = train[, var.idx]
 train = na.omit(train)
+
+## skewness  
+train = transfrom4Skewness(train)
 
 mm = model.matrix ( target_0 ~ .  , train )[,-1]
 mm.df = as.data.frame(mm)
@@ -665,8 +704,7 @@ write.csv(mm.df.test,quote=F,row.names=F,file=fn)
 
 
 
-
-
+  
 
 
 
