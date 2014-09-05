@@ -32,7 +32,7 @@ rand_indices = randperm(m);
 
 ####### Linear Regression
 p_opt = 1;
-lambda_opt = 0.100000;
+lambda_opt = 0;
 
 printf("|--> finding optimal polinomial degree ... \n");
 tic(); [p_opt,J_opt] = findOptP_RegLin(Xtrain, ytrain, Xval, yval , p_vec = [1 2 3 4 5 6 7 8 9 10]'); toc();
@@ -45,7 +45,7 @@ tic(); [lambda_opt,J_opt] = findOptLambda_RegLinLiberty(_Xtrain, ytrain, _Xval, 
 [X_poly_val,mu_val,sigma_val] = treatContFeatures(Xval,p_opt,1,mu,sigma);
                                                  
                                                  
-[theta] = trainLinearReg(X_poly_train, ytrain, lambda_opt , 300 );
+[theta] = trainLinearRegLiberty(X_poly_train, ytrain, lambda_opt , 300 );
 pred_val = predictLinearReg(X_poly_val,theta);
 pred_train =predictLinearReg(X_poly_train,theta);
 cost_val_gd1 = MSE(pred_val, yval);
@@ -58,6 +58,7 @@ printf("LR - NormalizedWeightedGini on train = %f \n", gini_train );
                                                  
 gini_xval = NormalizedWeightedGini(yval,_Xval(:,43),pred_val);
 printf("LR - NormalizedWeightedGini on cv = %f \n", gini_xval );
+                                                        
                                                  
 ####### Neural Networks 
 [m,n] = size(Xtrain);

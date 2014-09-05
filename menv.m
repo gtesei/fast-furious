@@ -8,5 +8,6 @@ addpath([curr_dir "/util"]);
 addpath([curr_dir "/linear_reg"]);
 addpath([curr_dir "/logistic_reg"]);
 addpath([curr_dir "/neural"]);
+addpath([curr_dir "/competitions/liberty-mutual-fire-peril"]);
 
 addpath([curr_dir "/dataset/poly/"]);
