@@ -11,3 +11,7 @@ addpath([curr_dir "/neural"]);
 addpath([curr_dir "/competitions/liberty-mutual-fire-peril"]);
 
 addpath([curr_dir "/dataset/poly/"]);
+
+addpath(["/Users/gino/kaggle/libsvm/matlab"]);
+
+

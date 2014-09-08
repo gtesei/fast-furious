@@ -562,31 +562,55 @@ trainPredict4Test = function(form,train,model,train.size=5000,test.size=5000,tes
   tests
 }
 
-transfrom4Skewness = function (train) {
+transfrom4Skewness = function (train,test) {
   library(e1071)
   
-  skewValues <- apply(train[,-c(2,7,15)], 2, skewness)
-  cat("skewValues  before transformation ... \n")
-  print(skewValues)
+  no = which(as.numeric(lapply(train,is.factor)) == 1)
+  noT = which(as.numeric(lapply(test,is.factor)) == 1)
   
-  idx = (1:15)[-c(2,7,15)]
+  skewValuesTrainBefore <- apply(train[,-no], 2, skewness)
+  cat("----> skewValues  before transformation (train) \n\n")
+  print(skewValuesTrainBefore)
+  
+  skewValuesTestBefore <- apply(test[,-noT], 2, skewness)
+  cat("----> skewValues  before transformation (test): \n")
+  print(skewValuesTestBefore)
+  
+  idx = (1:15)[-no]
   for (i in idx) {
-    cat("processing ",colnames(train)[i]," ... \n")
+    varname = colnames(train)[i]
+    cat("processing ",varname," ... \n")
+    inTest = (sum(colnames(test) == varname) == 1)
     tr = BoxCoxTrans(train[,i])
     print(tr)
     if (! is.na(tr$lambda) ) {
-      cat("tranforming ... \n")
+      cat("tranforming train ... \n")
       newVal = predict(tr,train[,i])
       train[,i] = newVal
-      cat("skewness after transformation: " , skewness(train[,i]), "  \n")
+      cat("skewness after transformation (train): " , skewness(train[,i]), "  \n")
+      if (inTest) {
+        idxTest = which((colnames(test) == varname) == T )
+        cat("tranforming test ... \n")
+        newVal = predict(tr,test[,idxTest])
+        test[,idxTest] = newVal
+        cat("skewness after transformation (test): " , skewness(train[,i]), "  \n")
+      } 
     }
   } 
   
-  skewValues <- apply(train[,-c(2,7,15)], 2, skewness)
-  cat("skewValues  before transformation ... \n")
+  cat("---->  skewValues  before transformation (train) \n")
+  print(skewValuesTrainBefore)
+  skewValues <- apply(train[,-no], 2, skewness)
+  cat("\n---->  skewValues  after transformation (train):  \n")
   print(skewValues)
   
-  train 
+  cat("\n\n\n---->  skewValues  before transformation (test) \n")
+  print(skewValuesTestBefore)
+  skewValues <- apply(test[,-noT], 2, skewness)
+  cat("\n---->  skewValues  after transformation (test):  \n")
+  print(skewValues)
+  
+  list(train,test) 
 }
 
 charInd = function (c) {
@@ -636,9 +660,6 @@ train.old = train
 train = train[, var.idx]
 train = na.omit(train)
 
-## skewness  
-train = transfrom4Skewness(train)
-
 mm = model.matrix ( target_0 ~ .  , train )[,-1]
 mm.df = as.data.frame(mm)
 mm.df = cbind(mm.df,targetPos = train$target_0)
@@ -648,11 +669,28 @@ write.csv(mm.df,quote=F,row.names=F,file=fn)
 ## test 
 var.idx = grep(pattern = var.er , names (test) )
 test = test[, var.idx]
+test$id = test.tab$id 
+test = na.omit(test)
+
 mm = model.matrix ( ~ .  , test )[,-1]
 mm.df.test = as.data.frame(mm)
 fn = paste(base.path,"test_nn.csv",sep="")
 write.csv(mm.df.test,quote=F,row.names=F,file=fn)
 
+## skewness  
+l = transfrom4Skewness(train,test)
+ttrain = l[[1]]
+mm = model.matrix ( target_0 ~ .  , ttrain )[,-1]
+mm.df = as.data.frame(mm)
+mm.df = cbind(mm.df,targetPos = ttrain$target_0)
+fn = paste(base.path,"train_nn_no_skewness.csv",sep="")
+write.csv(mm.df,quote=F,row.names=F,file=fn)
+
+ttest = l[[2]]
+mm = model.matrix ( ~ .  , ttest )[,-1]
+mm.df.test = as.data.frame(mm)
+fn = paste(base.path,"test_nn_no_skewness.csv",sep="")
+write.csv(mm.df.test,quote=F,row.names=F,file=fn)
 
 
 # ### classifier basato sulle medie - 

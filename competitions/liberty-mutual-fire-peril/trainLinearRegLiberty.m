@@ -1,4 +1,4 @@
-function [theta] = trainLinearRegLiberty(X, y, lambda , iter = 200 , _theta=[])
+function [theta] = trainLinearRegLiberty(X, y, lambda , iter = 200 , _theta=[] , var11 )
 %TRAINLINEARREG Trains linear regression given a dataset (X, y) and a
 %regularization parameter lambda
 %   [theta] = TRAINLINEARREG (X, y, lambda) trains linear regression using
@@ -12,7 +12,7 @@ theta = _theta;
 endif
 
 % Create "short hand" for the cost function to be minimized
-costFunction = @(t) linearRegCostFunctionLiberty(X, y, t, lambda);
+costFunction = @(t) linearRegCostFunctionLiberty(X, y, t, lambda , var11);
 
 % Now, costFunction is a function that takes in only one argument
 options = optimset('MaxIter', iter, 'GradObj', 'on');

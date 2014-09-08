@@ -69,7 +69,7 @@ regTerm = 0;
 for i = 1:(L-1)
   tr = cell2mat(Theta(i,1))(:,2:end);
   tr = tr .* tr;
-  regTerm = regTerm + (lambda/(2 * m)) * sum(tr(:));
+  regTerm = regTerm + (lambda/(1 * m)) * sum(tr(:));
 endfor 
 
 J = J + regTerm;

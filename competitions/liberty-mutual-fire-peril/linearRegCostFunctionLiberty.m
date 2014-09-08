@@ -1,73 +1,111 @@
-function [J, grad] = linearRegCostFunctionLiberty(X, y, theta, lambda)
-%LINEARREGCOSTFUNCTION Compute cost and gradient for regularized linear 
-%regression with multiple variables
-%   [J, grad] = LINEARREGCOSTFUNCTION(X, y, theta, lambda) computes the 
-%   cost of using theta as the parameter for linear regression to fit the 
-%   data points in X and y. Returns the cost in J and the gradient in grad
+function [J, grad] = linearRegCostFunctionLiberty(X, y, theta, lambda , var11 )
 
-% Initialize some useful values
-m = length(y); % number of training examples
-J = 0; % cost
-grad = zeros(size(theta)); % gradient 
+m = length(y);
+J = 0;
+grad = zeros(size(theta));
 
 % ====================== 
 tai = [0;theta(2:end,1)];
-%J = 1/(2*m) * sum((X * theta - y) .^ 2) + (lambda/(2*m)) * (tai' * tai);
-%grad =   (1/m)*(X' * (X * theta -y)) + (lambda/m)*tai;
                  
 hx = X * theta;
-gini = NormalizedWeightedGini(y,X(:,43),hx);
-if (gini < 0)
-  gini = 0.01;
-elseif (gini > 1.5)
-  gini = 1;
-end
-J = (1 - gini)^2 + (lambda/(2*m)) * (tai' * tai);
-
-                                   
-                                   
-################# calcola grad numericamente
-numgrad = zeros(size(theta));
-perturb = zeros(size(theta));
+gini = NormalizedWeightedGini(y,var11,hx);
+norm = 0;
+if (lambda > 0)
+  norm = ( lambda / (2*m) ) * (tai' * tai);
+endif 
+J = (1 - gini) + norm;
+printf("gini = %f , J = %f , norm = %f \n",gini,J,norm);
+                                                                      
+% ======= calcola grad numericamente
+n = size(theta,1);
 e = 1e-4;
-for p = 1:size(theta,1)
-  % Set perturbation vector
-                                   
-  perturb(p) = e;
-                                   
-  theta1 = theta - perturb;
-  hx1 = X * theta1;
-  gini1 = NormalizedWeightedGini(y,X(:,43),hx1);
-  if (gini1 < 0)
-    gini1 = 0.01;
-  elseif gini1 > 1.5
-    gini1 = 1;
-  end
-  loss1 = (1 - gini1)^2 + (lambda/(2*m)) * (tai' * tai);
-  
-  theta2 = theta + perturb;
-  hx2 = X * theta2;
-  gini2 = NormalizedWeightedGini(y,X(:,43),hx2);
-  if (gini2 < 0)
-    gini2 = 0.01;
-  elseif gini2 > 1.5
-    gini2 = 1;
-  end
-                                            
-  loss2 = (1 - gini2)^2 + (lambda/(2*m)) * (tai' * tai);
-                                                                                  
-                                   
-  % Compute Numerical Gradient
-  numgrad(p) = (loss2 - loss1) / (2*e);
-  perturb(p) = 0;
-end
-                    disp(p); disp(J); fflush(stdout);
-if (J == 0)
-    disp(theta);
-end
+E = diag(e * ones(n,1));
+                         
+Theta1 = zeros(n,n);
+Theta2 = zeros(n,n);                         
+for i = 1:n 
+  Theta1(:,i) = theta;
+  Theta2(:,i) = theta; 
+endfor                          
 
-% =========================================================================
+Theta1 = Theta1 + E;
+Theta2 = Theta2 - E;
 
+H1 = X * Theta1; 
+H2 = X * Theta2; 
+
+####### WG1 = NormalizedWeightedGiniVect (y, var11, H1);
+
+  %%%% submissions
+  nn = size(H1,2);
+  giniVect = zeros(nn,1);
+
+  for i = 1:nn
+   df = [y var11 H1(:,i)];
+
+   df = sortrows(df,-3);
+   random = cumsum(df(:,2)/sum(df(:,2)));
+   totalPositive = sum( df(:,1) .* df(:,2) );
+   cumPosFound = cumsum( df(:,1) .* df(:,2) );
+   Lorentz = cumPosFound / totalPositive;
+   k = size(df,1);
+   gini =  sum( Lorentz(2:end) .* random(1:(k-1)) ) - sum( Lorentz(1:(k-1)) .* random(2:end) );
+   giniVect(i) = gini;
+  endfor
+
+
+  %%%% solution
+  df = [y var11 y];
+
+  df = sortrows(df,-3);
+  random = cumsum(df(:,2)/sum(df(:,2)));
+  totalPositive = sum( df(:,1) .* df(:,2) );
+  cumPosFound = cumsum( df(:,1) .* df(:,2) );
+  Lorentz = cumPosFound / totalPositive;
+  k = size(df,1);
+  giniSolution =  sum( Lorentz(2:end) .* random(1:(k-1)) ) - sum( Lorentz(1:(k-1)) .* random(2:end) );
+
+  %%%% return
+WG1 = giniVect / giniSolution;
+
+
+
+####### WG2 = NormalizedWeightedGiniVect (y, var11, H2);
+
+  %%%% submissions
+  nn = size(H2,2);
+  giniVect = zeros(nn,1);
+
+  for i = 1:nn
+   df = [y var11 H2(:,i)];
+
+   df = sortrows(df,-3);
+   random = cumsum(df(:,2)/sum(df(:,2)));
+   totalPositive = sum( df(:,1) .* df(:,2) );
+   cumPosFound = cumsum( df(:,1) .* df(:,2) );
+   Lorentz = cumPosFound / totalPositive;
+   k = size(df,1);
+   gini =  sum( Lorentz(2:end) .* random(1:(k-1)) ) - sum( Lorentz(1:(k-1)) .* random(2:end) );
+   giniVect(i) = gini;
+  endfor
+
+
+  %%%% return
+WG2= giniVect / giniSolution;
+
+LOSS1 = ones(n,1) - WG1;
+LOSS2 = ones(n,1) - WG2;
+
+if (lambda > 0)
+  Theta1(1,:) = zeros(1,n);
+  Theta2(1,:) = zeros(1,n);
+
+  LOSS1 = LOSS1 + (lambda/(2*m)) * diag(Theta1 * Theta1'); 
+  LOSS2 = LOSS2 + (lambda/(2*m)) * diag(Theta2 * Theta2');  
+endif  
+
+numgrad = (1 / (2*e)) * (LOSS1 - LOSS2); 
 grad = numgrad(:);
 
+fflush(stdout);
 endfunction 
