@@ -3,12 +3,14 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
   C_vec = [2^-5 2^-3 2^-1 2^1 2^3 2^5 2^7 2^11 2^15]' , 
   g_vec = [2^-15 2^-11 2^-7 2^-3 2^-1 2^1 2^2 2^3 2^5 2^7]')
   
+  gLen = length(C_vec)*length(g_vec);
+  
   if (! featureScaled) 
     [X_poly_train,mu,sigma] = treatContFeatures(Xtrain,1);
     [X_poly_val,mu_val,sigma_val] = treatContFeatures(Xval,1,1,mu,sigma);
   endif 
   
-  grid = zeros(length(C_vec)*length(g_vec),11);
+  grid = zeros(gLen,11);
 
   %% Finding ...
   i = 1; 
@@ -67,24 +69,58 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
   
   ### print grid 
   fprintf('i \tC \tgamma \tRecall(Train) \tAccuracy(Train) \tPrecision(Train) \tF1(Train) \tRecall(Val) \tAccuracy(Val) \tPrecision(Val) \tF1(Val)\n');
-  for i = 1:length(C_vec)*length(g_vec)
+  for i = 1:gLen
         fprintf('\t%i\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n', 
         	i, grid(i,2), grid(i,3),grid(i,4),grid(i,5),grid(i,6),grid(i,7),grid(i,8),grid(i,9),grid(i,10),grid(i,11) );
   endfor
 
-  fprintf('C_opt_recall ==  %f , g_opt_recall == %f \n', C_opt_recall , g_opt_recall);
-  fprintf('C_opt_accuracy ==  %f , g_opt_accuracy == %f \n', C_opt_accuracy , g_opt_accuracy);
-  fprintf('C_opt_precision ==  %f , g_opt_precision == %f \n', C_opt_precision , g_opt_precision);
-  fprintf('C_opt_F1 ==  %f , g_opt_F1 == %f \n', C_opt_F1 , g_opt_F1);
+  fprintf('C_opt_recall ==  %f , g_opt_recall == %f , i ==%i \n', C_opt_recall , g_opt_recall,recall_val_opt_idx);
+  fprintf('C_opt_accuracy ==  %f , g_opt_accuracy == %f , i ==%i  \n', C_opt_accuracy , g_opt_accuracy,accuracy_val_opt_idx);
+  fprintf('C_opt_precision ==  %f , g_opt_precision == %f , i ==%i  \n', C_opt_precision , g_opt_precision,precision_val_opt_idx);
+  fprintf('C_opt_F1 ==  %f , g_opt_F1 == %f , i ==%i  \n', C_opt_F1 , g_opt_F1,F1_val_opt_idx);
 
-  %%plot 
-  plot(lambda_vec, error_train, lambda_vec, error_val);
-  title(sprintf('Validation Curve (p = %f)', p));
-  xlabel('Regression Parameter lambda')
-  ylabel('Error')
-  max_X = max(lambda_vec);
-  max_Y = max(max(error_train) , max(error_val));
+  %%plot recall
+  subplot (2, 2, 1);
+  plot(1:gLen, grid(:,3), 1:gLen, grid(:,8));
+  title(sprintf('Validation Curve -- Recall ' ));
+  xlabel('i')
+  ylabel('Recall')
+  max_X = max(1:gLen);
+  max_Y = max(grid(:,3) , grid(:,8));
   axis([0 max_X 0 max_Y]);
   legend('Train', 'Cross Validation')
+  
+  %%plot accuracy
+  subplot (2, 2, 2);
+  plot(1:gLen, grid(:,4), 1:gLen, grid(:,9));
+  title(sprintf('Validation Curve -- Accuracy ' ));
+  xlabel('i');
+  ylabel('Accuracy');
+  max_X = max(1:gLen);
+  max_Y = max(grid(:,3) , grid(:,8));
+  axis([0 max_X 0 max_Y]);
+  legend('Train', 'Cross Validation');
+  
+  %%plot precision
+  subplot (2, 2, 3);
+  plot(1:gLen, grid(:,5), 1:gLen, grid(:,10));
+  title(sprintf('Validation Curve -- Precision ' ));
+  xlabel('i');
+  ylabel('Precision');
+  max_X = max(1:gLen);
+  max_Y = max(grid(:,3) , grid(:,8));
+  axis([0 max_X 0 max_Y]);
+  legend('Train', 'Cross Validation')
+  
+  %%plot F1
+  subplot (2, 2, 4);
+  plot(1:gLen, grid(:,6), 1:gLen, grid(:,11));
+  title(sprintf('Validation Curve -- F1 ' ));
+  xlabel('i');
+  ylabel('F1');
+  max_X = max(1:gLen);
+  max_Y = max(grid(:,3) , grid(:,8));
+  axis([0 max_X 0 max_Y]);
+  legend('Train', 'Cross Validation');
 
 endfunction 
