@@ -15,8 +15,8 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
 
   %% Finding ...
   i = 1; 
-  for CIdx = 1:length(C_vec)
   for gIdx = 1:length(g_vec)
+  for CIdx = 1:length(C_vec)
 
     C = C_vec(CIdx);
     gamma = g_vec(gIdx);    
