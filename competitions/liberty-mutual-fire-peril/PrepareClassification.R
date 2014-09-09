@@ -218,7 +218,7 @@ getPvalueInteractionTerms = function(response,features,pvalueFeatures,pvalue.thr
   data.frame(label = label.formula, pValue , is.significant , is.na , perf.xval)
 }
 
-getPvalueFeatures = function(response,features , p = 1) {
+getPvalueFeatures = function(response,features , p = 1 , computePerfOnTrainSet = F) {
   
   label.formula = rep(NA, dim(features)[2])
   pValue <- rep(NA, dim(features)[2])
@@ -230,7 +230,9 @@ getPvalueFeatures = function(response,features , p = 1) {
     if ( p == 1) {
       label.formula[i] = colnames(features[i])
       pValue[i] <- getPvalueTypeIError(x = features[,i], y = response)
-      #perf.xval[i] = getPerfOnTestSet(x = features[,i], y = response)
+      if (computePerfOnTrainSet) {
+        perf.xval[i] = getPerfOnTestSet(x = features[,i], y = response)
+      }
     } else {
       ## label 
       if (p == 2) label.formula[i] = paste0(paste0("I(",colnames(features[i])),"^2)")
@@ -246,7 +248,9 @@ getPvalueFeatures = function(response,features , p = 1) {
       } else {
         x.poly = features[,i]^p
         pValue[i] = getPvalueTypeIError(x = x.poly, y = response)
-        perf.xval[i] = getPerfOnTestSet(x = x.poly, y = response)
+        if (computePerfOnTrainSet) {
+          perf.xval[i] = getPerfOnTestSet(x = x.poly, y = response)
+        }
       }
     }
     
@@ -622,6 +626,47 @@ var4FromFactor2Num = function (v) {
   val = val * 10 + as.numeric(substr(v,2,2))
 }
 
+rowNa = function (row) {
+  ifelse (sum(is.na(row)) > 0 , 1,0)
+}
+getNasRows = function (myData) {
+  ret = 0
+  if ( ! is.data.frame(myData) ) {
+    ret = sum( is.na(myData) )
+  } else { 
+    ret = apply(myData,1, rowNa   )
+    ret = sum(ret)
+  }
+  ret
+}
+
+getVarClassification = function (predPvalues = predictors.class.linear2 , data = train , th = 0.05) {
+  var.name = NULL
+  var.index = NULL
+  
+  for (i in 1:dim(predPvalues)[1]) {
+    if ( ! predPvalues[i,]$is.significant ) break 
+    
+    var = as.character(predPvalues[i,]$label)
+    cat ("processing ",var," ...\n")
+    idx = as.numeric( grep(pattern = var  , x = colnames(data)) )
+    
+    var.name.tmp = c(var.name , var)
+    var.index.tmp = c(var.index , idx)
+      
+    sumNA = getNasRows(data[,var.index.tmp])
+    th.tmp = sumNA / dim(data)[1]
+    
+    if (th.tmp < th) {
+      var.name = var.name.tmp
+      var.index = var.index.tmp
+    } else {
+      next 
+    }
+  }
+  list(var.name,var.index)
+}
+
 ##############  Loading data sets (train, test, sample) ... 
 
 #base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
@@ -642,17 +687,25 @@ dim(train)
 dim(test)
 
 ## Analysis 
-# predictors.class.linear = getPvalueFeatures( features = train[ , - c(1,2,304)] , response = train$target_0 )
-# predictors.class.linear.ord = predictors.class.linear [order(predictors.class.linear$pValue) , ]
-# predictors.class.linear.ord
+predictors.class.linear2 = getPvalueFeatures( features = train[ , - c(1,2,303)] , response = train$target_0 )
+predictors.class.linear2 = predictors.class.linear2[order(predictors.class.linear2$pValue,decreasing = F),]
 # predictors.class.linear.fn = paste(base.path,"predictors_class_linear2.csv",sep="")
 # write.csv(predictors.class.linear,quote=F,row.names=F,file=predictors.class.linear.fn)
 # predictors.class.linear.ord[!is.na(predictors.class.linear.ord$is.significant) & predictors.class.linear.ord$is.na == 0 , ]
 # predictors.class.linear.ord[ predictors.class.linear.ord$is.na == 0 , ]
 
-### just retain the variable higly correlated without NAs 
+l = getVarClassification(predPvalues = predictors.class.linear2 , data = train , th = 0.05)
+var.name = l[[1]]
+var.index = l[[2]]
+
+var.er = "target"
+for (i in 1:length(var.name)) {
+  var.er = paste0(paste0(var.er,"|"),var.name[i])
+}
+
+### just retain the variable higly correlated without NAs -- questi sono per la regression 
 #var.er = "target|var13|var11|var10|dummy|var17"
-var.er = "target|var13|var11|var10|dummy|var17|var4|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|weatherVar190|weatherVar194"
+#var.er = "target|var13|var11|var10|dummy|var17|var4|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|weatherVar190|weatherVar194"
 
 ## train 
 var.idx = grep(pattern = var.er , names (train) )
@@ -663,7 +716,7 @@ train = na.omit(train)
 mm = model.matrix ( target_0 ~ .  , train )[,-1]
 mm.df = as.data.frame(mm)
 mm.df = cbind(mm.df,targetPos = train$target_0)
-fn = paste(base.path,"train_nn.csv",sep="")
+fn = paste(base.path,"train_class.csv",sep="")
 write.csv(mm.df,quote=F,row.names=F,file=fn)
 
 ## test 
@@ -674,7 +727,7 @@ test = na.omit(test)
 
 mm = model.matrix ( ~ .  , test )[,-1]
 mm.df.test = as.data.frame(mm)
-fn = paste(base.path,"test_nn.csv",sep="")
+fn = paste(base.path,"test_class.csv",sep="")
 write.csv(mm.df.test,quote=F,row.names=F,file=fn)
 
 ## skewness  
