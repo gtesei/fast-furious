@@ -52,7 +52,8 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
     grid(i,10) = precision;
     grid(i,11) = F1;
     
-    i = i + 1; 
+    i = i + 1;
+    dlmwrite('grid_tmp.mat',grid); 
   endfor
   endfor
 
