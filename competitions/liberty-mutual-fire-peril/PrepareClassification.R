@@ -640,7 +640,7 @@ getNasRows = function (myData) {
   ret
 }
 
-getVarClassification = function (predPvalues = predictors.class.linear2 , data = train , th = 0.05) {
+getVarClassification = function (predPvalues, data = train , th = 0.05) {
   var.name = NULL
   var.index = NULL
   
@@ -667,10 +667,154 @@ getVarClassification = function (predPvalues = predictors.class.linear2 , data =
   list(var.name,var.index)
 }
 
-##############  Loading data sets (train, test, sample) ... 
+getBasePath = function () {
+  ret = ""
+  base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril"
+  base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
+  
+  if (file.exists(base.path1))  {
+    ret = paste0(base.path1,"/")
+  } else {
+    ret = base.path2
+  }
+  ret
+} 
 
-#base.path = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
-base.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
+prepare4Classification = function(train,test,pca = T,trasnf4skew = F) {
+  
+  fn.train = ""
+  fn.test = "" 
+  if (pca) { 
+    if (! trasnf4skew) {
+      fn.train = "train_class_pca.csv"
+      fn.test = "test_class_pca.csv" 
+    } else {
+      fn.train = "train_class_pca_noskew.csv"
+      fn.test = "test_class_pca_noskew.csv"
+    }
+  } else {
+    if (! trasnf4skew) {
+      fn.train = "train_class.csv"
+      fn.test = "test_class.csv" 
+    } else {
+      fn.train = "train_class_noskew.csv"
+      fn.test = "test_class_noskew.csv" 
+    }
+  }
+  
+  ## Analysis (p-values)
+  predictors.class.linear = getPvalueFeatures( features = train[ , - c(1,2,303)] , response = train$target_0 )
+  predictors.class.linear = predictors.class.linear[order(predictors.class.linear$pValue,decreasing = F),]
+  
+  l = getVarClassification(predPvalues = predictors.class.linear , data = train , th = 0.05)
+  var.name = l[[1]]
+  var.index = l[[2]]
+  
+  if (pca) {
+    
+    ### pca 
+     trainClass = train[,var.index]
+     trainClass = na.omit(trainClass)
+     trainClass = trainClass[, -c(2,5)] ## elimino var4 e dummy che sono factor 
+#     trainClass.pca = prcomp(trainClass , center = T , scale. = T)  
+#     plot(trainClass.pca, type = "l")
+#     percVar = trainClass.pca$sd^2/sum(trainClass.pca$sd^2)
+#     sum(percVar[1:11]) ## catturo 80% della variance 
+#     trainClass.pca = trainClass.pca$x[,1:11]
+    
+    trainClassTrans = NULL 
+    if (! trasnf4skew) { 
+      trainClassTrans = preProcess(trainClass, method = c("center","scale","pca") )
+    } else {
+      trainClassTrans = preProcess(trainClass, method = c("BoxCox", "center","scale","pca") )
+    }
+    trainClass.pca.caret = predict(trainClassTrans,trainClass)
+    percVar = apply(trainClass.pca.caret,2,sd)^2/sum(apply(trainClass.pca.caret,2,sd)^2)
+    sum(percVar[1:10]) ## catturo 83% della variance
+    
+    #train
+    trainClass = train[,var.index]
+    trainClass = trainClass[, -c(2,5)]
+    trainClass.pca = predict(trainClassTrans,trainClass)
+    trainClass.pca = cbind(trainClass.pca[,1:11] , var4 = train$var4 , dummy = train$dummy)
+    train = cbind(target = train$target , trainClass.pca , targetPos = train$target_0)
+    
+    ## test 
+    var.index = var.index - 1
+    testClass = test[,var.index]
+    testClass = testClass[, -c(2,5)]
+    testClass.pca = predict(trainClassTrans,testClass)
+    testClass.pca = cbind(testClass.pca[,1:11] , var4 = test$var4 , dummy = test$dummy)
+    test = testClass.pca
+    
+    ## write train  
+    train = na.omit(train)
+    mm = model.matrix (   ~ .   , train )[,-1]
+    mm.df = as.data.frame(mm)
+    fn = fn.train
+    write.csv(mm.df,quote=F,row.names=F,file=fn)
+    
+    ## write test 
+    test$id = test.tab$id
+    test = na.omit(test)
+    mm = model.matrix ( ~ .  , test )[,-1]
+    mm.df.test = as.data.frame(mm)
+    fn = fn.test
+    write.csv(mm.df.test,quote=F,row.names=F,file=fn)
+    
+  } else {
+    var.er = "target|var11|var4|var13|var10|dummy|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|geodemVar31|var17|geodemVar37"
+    
+    ### just retain the variable higly correlated without NAs -- questi sono per la regression 
+    #var.er = "target|var13|var11|var10|dummy|var17"
+    #var.er = "target|var13|var11|var10|dummy|var17|var4|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|weatherVar190|weatherVar194"
+    
+    ## train 
+    var.idx = grep(pattern = var.er , names (train) )
+    train.old = train 
+    train = train[, var.idx]  
+    
+    ## test 
+    var.idx = grep(pattern = var.er , names (test) )
+    test = test[, var.idx]
+    
+    if ( ! trasnf4skew ) {
+      ## write train  
+      train = na.omit(train)
+      mm = model.matrix (  target_0 ~ .   , train )[,-1]
+      mm.df = as.data.frame(mm)
+      mm.df = cbind(mm.df,targetPos = train$target_0)
+      fn = fn.train
+      write.csv(mm.df,quote=F,row.names=F,file=fn)
+      
+      ## write test 
+      test$id = test.tab$id
+      test = na.omit(test)
+      mm = model.matrix ( ~ .  , test )[,-1]
+      mm.df.test = as.data.frame(mm)
+      fn = fn.test
+      write.csv(mm.df.test,quote=F,row.names=F,file=fn)
+    } else {
+      ## skewness  
+      l = transfrom4Skewness(train,test)
+      ttrain = l[[1]]
+      mm = model.matrix ( target_0 ~ .  , ttrain )[,-1]
+      mm.df = as.data.frame(mm)
+      mm.df = cbind(mm.df,targetPos = ttrain$target_0)
+      fn = paste(base.path,"train_nn_no_skewness.csv",sep="")
+      write.csv(mm.df,quote=F,row.names=F,file=fn)
+      
+      ttest = l[[2]]
+      mm = model.matrix ( ~ .  , ttest )[,-1]
+      mm.df.test = as.data.frame(mm)
+      fn = paste(base.path,"test_nn_no_skewness.csv",sep="")
+      write.csv(mm.df.test,quote=F,row.names=F,file=fn)
+    }
+  }
+}
+
+##############  Loading data sets (train, test, sample) ... 
+base.path = getBasePath()
 
 train.fn = "train.csv"
 test.fn = "test.csv"
@@ -679,7 +823,7 @@ sampleSub.fn = "sampleSubmission.csv"
 train.tab = fread(paste(base.path,train.fn,sep="") , header = TRUE , sep=","  )
 test.tab = fread(paste(base.path,test.fn,sep="") , header = TRUE , sep=","  )
 
-## training on not NA values ... 
+## data formatting 
 train = getData4Analysis(train.tab)
 test = getData4Analysis(test.tab)
 
@@ -689,122 +833,7 @@ test.bkp = test
 dim(train)
 dim(test)
 
-## Analysis 
-predictors.class.linear2 = getPvalueFeatures( features = train[ , - c(1,2,303)] , response = train$target_0 )
-predictors.class.linear2 = predictors.class.linear2[order(predictors.class.linear2$pValue,decreasing = F),]
-# predictors.class.linear.fn = paste(base.path,"predictors_class_linear2.csv",sep="")
-# write.csv(predictors.class.linear,quote=F,row.names=F,file=predictors.class.linear.fn)
-# predictors.class.linear.ord[!is.na(predictors.class.linear.ord$is.significant) & predictors.class.linear.ord$is.na == 0 , ]
-# predictors.class.linear.ord[ predictors.class.linear.ord$is.na == 0 , ]
-
-l = getVarClassification(predPvalues = predictors.class.linear2 , data = train , th = 0.05)
-var.name = l[[1]]
-var.index = l[[2]]
-
-var.er = "target"
-for (i in 1:length(var.name)) {
-  var.er = paste0(paste0(var.er,"|"),var.name[i])
-}
-
-pca = T 
-
-if (pca) {
-  
-  ### pca 
-  trainClass = train[,var.index]
-  trainClass = na.omit(trainClass)
-  trainClass = trainClass[, -c(2,5)] ## elimino var4 e dummy che sono factor 
-  trainClass.pca = prcomp(trainClass , center = T , scale. = T)  
-  plot(trainClass.pca, type = "l")
-  percVar = trainClass.pca$sd^2/sum(trainClass.pca$sd^2)
-  sum(percVar[1:11]) ## catturo 80% della variance 
-  trainClass.pca = trainClass.pca$x[,1:11]
-  
-  trainClassTrans = preProcess(trainClass, method = c("center","scale","pca") )
-  trainClass.pca.caret = predict(trainClassTrans,trainClass)
-  percVar = apply(trainClass.pca.caret,2,sd)^2/sum(apply(trainClass.pca.caret,2,sd)^2)
-  sum(percVar[1:10]) ## catturo 83% della variance
-  
-  #train
-  trainClass = train[,var.index]
-  trainClass = trainClass[, -c(2,5)]
-  trainClass.pca = predict(trainClassTrans,trainClass)
-  trainClass.pca = cbind(trainClass.pca[,1:11] , var4 = train$var4 , dummy = train$dummy)
-  train = cbind(target = train$target , trainClass.pca , targetPos = train$target_0)
-  
-  ## test 
-  var.index = var.index - 1
-  testClass = test[,var.index]
-  testClass = testClass[, -c(2,5)]
-  testClass.pca = predict(trainClassTrans,testClass)
-  testClass.pca = cbind(testClass.pca[,1:11] , var4 = test$var4 , dummy = test$dummy)
-  test = testClass.pca
-  
-  ## write train  
-  train = na.omit(train)
-  mm = model.matrix (   ~ .   , train )[,-1]
-  mm.df = as.data.frame(mm)
-  #mm.df = cbind(mm.df,targetPos = train$target_0)
-  fn = paste(base.path,"train_class_pca.csv",sep="")
-  write.csv(mm.df,quote=F,row.names=F,file=fn)
-  
-  ## write test 
-  test$id = test.tab$id
-  test = na.omit(test)
-  mm = model.matrix ( ~ .  , test )[,-1]
-  mm.df.test = as.data.frame(mm)
-  fn = paste(base.path,"test_class_pca.csv",sep="")
-  write.csv(mm.df.test,quote=F,row.names=F,file=fn)
-  
-} else {
-  var.er = "target|var11|var4|var13|var10|dummy|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|geodemVar31|var17|geodemVar37"
-  
-  ### just retain the variable higly correlated without NAs -- questi sono per la regression 
-  #var.er = "target|var13|var11|var10|dummy|var17"
-  #var.er = "target|var13|var11|var10|dummy|var17|var4|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|weatherVar190|weatherVar194"
-  
-  ## train 
-  var.idx = grep(pattern = var.er , names (train) )
-  train.old = train 
-  train = train[, var.idx]  
-  
-  ## test 
-  var.idx = grep(pattern = var.er , names (test) )
-  test = test[, var.idx]
-  
-  ## write train  
-  train = na.omit(train)
-  mm = model.matrix (  target_0 ~ .   , train )[,-1]
-  mm.df = as.data.frame(mm)
-  mm.df = cbind(mm.df,targetPos = train$target_0)
-  fn = paste(base.path,"train_class_pca.csv",sep="")
-  write.csv(mm.df,quote=F,row.names=F,file=fn)
-  
-  ## write test 
-  test$id = test.tab$id
-  test = na.omit(test)
-  mm = model.matrix ( ~ .  , test )[,-1]
-  mm.df.test = as.data.frame(mm)
-  fn = paste(base.path,"test_class.csv",sep="")
-  write.csv(mm.df.test,quote=F,row.names=F,file=fn)
-}
-
-
-
-## skewness  
-l = transfrom4Skewness(train,test)
-ttrain = l[[1]]
-mm = model.matrix ( target_0 ~ .  , ttrain )[,-1]
-mm.df = as.data.frame(mm)
-mm.df = cbind(mm.df,targetPos = ttrain$target_0)
-fn = paste(base.path,"train_nn_no_skewness.csv",sep="")
-write.csv(mm.df,quote=F,row.names=F,file=fn)
-
-ttest = l[[2]]
-mm = model.matrix ( ~ .  , ttest )[,-1]
-mm.df.test = as.data.frame(mm)
-fn = paste(base.path,"test_nn_no_skewness.csv",sep="")
-write.csv(mm.df.test,quote=F,row.names=F,file=fn)
+prepare4Classification (train,test,pca = T)
 
 
 # ### classifier basato sulle medie - 
