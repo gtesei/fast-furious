@@ -3,8 +3,10 @@
 %%%% setting enviroment 
 menv;
 
-trainFile = "train_class.csv";
-testFile = "test_class.csv";
+#trainFile = "train_class.csv"
+#testFile = "test_class.csv"
+trainFile = "train_class_pca.csv"
+testFile = "test_class_pca.csv"
 
 printf("|--> loading Xtrain, ytrain files ...\n");
 train = dlmread([curr_dir "/dataset/liberty-mutual-fire-peril/" trainFile]); 
