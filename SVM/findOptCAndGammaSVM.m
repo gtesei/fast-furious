@@ -2,60 +2,106 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
   findOptCAndGammaSVM(Xtrain, ytrain, Xval, yval, featureScaled = 0 , 
   C_vec = [2^-5 2^-3 2^-1 2^1 2^3 2^5 2^7 2^11 2^15]' , 
   g_vec = [2^-15 2^-11 2^-7 2^-3 2^-1 2^1 2^2 2^3 2^5 2^7]' ,
-  verbose = 1)
-  
-  gLen = length(C_vec)*length(g_vec);
-  
+  verbose = 1, initGrid = [] , initStart = -1)
+    
   if (! featureScaled) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,1);
     [Xval,mu,sigma] = treatContFeatures(Xval,1,1,mu,sigma);
   endif 
   
-  grid = zeros(gLen,11);
+  grid = [];
+  gLen = 0;
+  if (size(initGrid,1) == 0 | size(initGrid,2) == 0 | initStart < 0) 
+    gLen = length(C_vec)*length(g_vec);
+    grid = zeros(gLen,11);
+  else 
+    grid = initGrid;
+    gLen = size(grid,1)
+  endif 
 
   %% Finding ...
-  i = 1; 
-  for gIdx = 1:length(g_vec)
-  for CIdx = 1:length(C_vec)
+  if (size(initGrid,1) == 0 | size(initGrid,2) == 0 | initStart < 0) 
+    i = 1; 
+    for gIdx = 1:length(g_vec)
+      for CIdx = 1:length(C_vec)
 
-    C = C_vec(CIdx);
-    gamma = g_vec(gIdx);    
+	C = C_vec(CIdx);
+	gamma = g_vec(gIdx);    
 
-    if (verbose)
+	if (verbose)
   	  fprintf("|---------------------->  trying C=%f , gamma=%f ... \n" , C,gamma);
-    endif
+	endif
 
-    ## training and prediction 
-    model = svmtrain(ytrain, Xtrain, sprintf('-s 0 -t 2 -g %g -c %g',gamma,C));    	
-    [pred_train, accuracy, decision_values] = svmpredict(ytrain, Xtrain, model);
-    [pred_val, accuracy, decision_values] = svmpredict(yval, Xval, model);
+	## training and prediction 
+	model = svmtrain(ytrain, Xtrain, sprintf('-s 0 -t 2 -g %g -c %g',gamma,C));    	
+	[pred_train, accuracy, decision_values] = svmpredict(ytrain, Xtrain, model);
+	[pred_val, accuracy, decision_values] = svmpredict(yval, Xval, model);
         
-    grid(i,1) = i;
-    grid(i,2) = C;
-    grid(i,3) = gamma;
-    
-    if (verbose)      
-      printf("*** TRAIN STATS ***\n");
-    endif 
-    [F1,precision,recall,accuracy] = printClassMetrics(pred_train,ytrain,verbose);
-    grid(i,4) = recall;
-    grid(i,5) = accuracy;
-    grid(i,6) = precision;
-    grid(i,7) = F1;
-    
-    if (verbose)
-      printf("*** CV STATS ***\n");
-    endif 
-    [F1,precision,recall,accuracy] = printClassMetrics(pred_val,yval,verbose);
-    grid(i,8) = recall;
-    grid(i,9) = accuracy;
-    grid(i,10) = precision;
-    grid(i,11) = F1;
-    
-    i = i + 1;
-    dlmwrite('grid_tmp.mat',grid); 
-  endfor
-  endfor
+	grid(i,1) = i;
+	grid(i,2) = C;
+	grid(i,3) = gamma;
+	
+	if (verbose)      
+	  printf("*** TRAIN STATS ***\n");
+	endif 
+	[F1,precision,recall,accuracy] = printClassMetrics(pred_train,ytrain,verbose);
+	grid(i,4) = recall;
+	grid(i,5) = accuracy;
+	grid(i,6) = precision;
+	grid(i,7) = F1;
+	
+	if (verbose)
+	  printf("*** CV STATS ***\n");
+	endif 
+	[F1,precision,recall,accuracy] = printClassMetrics(pred_val,yval,verbose);
+	grid(i,8) = recall;
+	grid(i,9) = accuracy;
+	grid(i,10) = precision;
+	grid(i,11) = F1;
+	
+	i = i + 1;
+	dlmwrite('grid_tmp.mat',grid);
+	fflush(stdout); 
+      endfor
+    endfor
+  else
+      for i = initStart:gLen
+
+	C = grid(i,2);
+	gamma = grid(i,3);    
+
+	if (verbose)
+  	  fprintf("|---------------------->  trying C=%f , gamma=%f ... \n" , C,gamma);
+	endif
+
+	## training and prediction 
+	model = svmtrain(ytrain, Xtrain, sprintf('-s 0 -t 2 -g %g -c %g',gamma,C));    	
+	[pred_train, accuracy, decision_values] = svmpredict(ytrain, Xtrain, model);
+	[pred_val, accuracy, decision_values] = svmpredict(yval, Xval, model);
+        
+	if (verbose)      
+	  printf("*** TRAIN STATS ***\n");
+	endif 
+	[F1,precision,recall,accuracy] = printClassMetrics(pred_train,ytrain,verbose);
+	grid(i,4) = recall;
+	grid(i,5) = accuracy;
+	grid(i,6) = precision;
+	grid(i,7) = F1;
+	
+	if (verbose)
+	  printf("*** CV STATS ***\n");
+	endif 
+	[F1,precision,recall,accuracy] = printClassMetrics(pred_val,yval,verbose);
+	grid(i,8) = recall;
+	grid(i,9) = accuracy;
+	grid(i,10) = precision;
+	grid(i,11) = F1;
+	
+	i = i + 1;
+	dlmwrite('grid_tmp.mat',grid);
+	fflush(stdout); 
+      endfor
+  endif 
 
   [recall_val_opt,recall_val_opt_idx] = max(grid(:,8));
   [accuracy_val_opt,accuracy_val_opt_idx] = max(grid(:,9));

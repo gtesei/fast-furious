@@ -703,6 +703,8 @@ for (i in 1:length(var.name)) {
   var.er = paste0(paste0(var.er,"|"),var.name[i])
 }
 
+var.er = "target|var11|var4|var13|var10|dummy|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|geodemVar31|var17|geodemVar37"
+
 ### just retain the variable higly correlated without NAs -- questi sono per la regression 
 #var.er = "target|var13|var11|var10|dummy|var17"
 #var.er = "target|var13|var11|var10|dummy|var17|var4|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|weatherVar190|weatherVar194"
