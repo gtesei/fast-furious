@@ -914,40 +914,45 @@ test.bkp = test
 dim(train)
 dim(test)
 
-### preparing data for classification 
-l = prepare4Classification (train,test,pca = T)
-var.name = l[[1]]
-var.index = l[[2]]
-fn.train = l[[3]]
-fn.test = l[[4]]
-predictors.class.linear = l[[5]]
-trainTranformed = l[[6]]
-testTranformed = l[[7]] 
+prepare4Classif = F 
 
-## write train 
-write.csv(as.data.frame(model.matrix ( ~ . , na.omit(trainTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.train))
-
-## write test 
-write.csv(as.data.frame(model.matrix ( ~ . , na.omit(testTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.test))
-
-
-### preparing data for regression 
-l = prepare4Regression (train,test,pca = T)
-var.name = l[[1]]
-var.index = l[[2]]
-fn.train = l[[3]]
-fn.test = l[[4]]
-predictors.reg.linear = l[[5]]
-trainTranformed = l[[6]]
-testTranformed = l[[7]] 
-
-## write train 
-write.csv(as.data.frame(model.matrix ( ~ . , na.omit(trainTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.train))
-
-## write test 
-write.csv(as.data.frame(model.matrix ( ~ . , na.omit(testTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.test))
-
-
+if (prepare4Classif) {
+  
+  ### preparing data for classification 
+  l = prepare4Classification (train,test,pca = T)
+  var.name = l[[1]]
+  var.index = l[[2]]
+  fn.train = l[[3]]
+  fn.test = l[[4]]
+  predictors.class.linear = l[[5]]
+  trainTransformed = l[[6]]
+  testTransformed = l[[7]] 
+  
+  ## write train 
+  write.csv(as.data.frame(model.matrix ( ~ . , na.omit(trainsTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.train))
+  
+  ## write test 
+  write.csv(as.data.frame(model.matrix ( ~ . , na.omit(testTransformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.test))
+  
+} else {
+  
+  ### preparing data for regression 
+  l = prepare4Regression (train,test,pca = T)
+  var.name = l[[1]]
+  var.index = l[[2]]
+  fn.train = l[[3]]
+  fn.test = l[[4]]
+  predictors.reg.linear = l[[5]]
+  trainTransformed = l[[6]]
+  testTransformed = l[[7]] 
+  
+  ## write train 
+  write.csv(as.data.frame(model.matrix ( ~ . , na.omit(trainsTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.train))
+  
+  ## write test 
+  write.csv(as.data.frame(model.matrix ( ~ . , na.omit(testTransformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.test))
+  
+}
 
 
 
