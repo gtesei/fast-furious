@@ -640,7 +640,7 @@ getNasRows = function (myData) {
   ret
 }
 
-getVarClassification = function (predPvalues, data = train , th = 0.05) {
+getBestPredictors = function (predPvalues, data = train , th = 0.05) {
   var.name = NULL
   var.index = NULL
   
@@ -712,7 +712,7 @@ prepare4Regression = function(train,test,pca = T,trasnf4skew = F , maxPredictors
   predictors.reg.linear = getPvalueFeatures( features = train[ , - c(1,2,303)] , response = train$target )
   predictors.reg.linear = predictors.reg.linear[order(predictors.reg.linear$pValue,decreasing = F),]
   
-  l = getVarClassification(predPvalues = predictors.reg.linear , data = train , th = 0.05)
+  l = getBestPredictors(predPvalues = predictors.reg.linear , data = train , th = 0.05)
   var.name = l[[1]]
   var.index = l[[2]]
   
@@ -734,8 +734,9 @@ prepare4Regression = function(train,test,pca = T,trasnf4skew = F , maxPredictors
     trainReg.pca = prcomp(trainReg , center = T , scale. = T)  
     plot(trainReg.pca, type = "l")
     percVar = trainReg.pca$sd^2/sum(trainReg.pca$sd^2)
-    sum(percVar[1:11]) ## catturo 99% della variance 
-    trainReg.pca = trainReg.pca$x[,1:11]
+    maxPredictors = min(maxPredictors,length(percVar))
+    sum(percVar[1:maxPredictors])  
+    trainReg.pca = trainReg.pca$x[,1:maxPredictors]
     
     ## trans caret 
     trainRegTrans = NULL 
@@ -747,23 +748,22 @@ prepare4Regression = function(train,test,pca = T,trasnf4skew = F , maxPredictors
     trainReg.pca.caret = predict(trainRegTrans,trainReg)
     percVar = apply(trainReg.pca.caret,2,sd)^2/sum(apply(trainReg.pca.caret,2,sd)^2)
     maxPredictors = min(maxPredictors,length(percVar))
-    sum(percVar[1:maxPredictors]) ## catturo 83% della variance
+    sum(percVar[1:maxPredictors]) 
     
     #train (with NAs)
     trainReg = train[,var.index]
-    trainReg = trainReg[,-del.idx]
     trainRegFact = trainReg[,del.idx]
+    trainReg = trainReg[,-del.idx]
     trainReg.pca = predict(trainRegTrans,trainReg)
-    trainReg.pca = cbind(trainClass.pca[,1:maxPredictors] , trainRegFact)
-    trainTransformed = cbind(target = train$target , trainClass.pca)
+    trainTransformed = cbind(target = train$target , trainReg.pca[,1:maxPredictors] , trainRegFact)
     
     ## test 
     var.index = var.index - 1
     testReg = test[,var.index]
-    testReg = testReg[, -del.idx)]
+    testRegFact = testReg[,del.idx]
+    testReg = testReg[, -del.idx]
     testReg.pca = predict(trainRegTrans,testReg)
-    testReg.pca = cbind(testClass.pca[,1:maxPredictors] , var4 = test$var4 , dummy = test$dummy)
-    testTransformed = testClass.pca
+    testTransformed = cbind(testReg.pca[,1:maxPredictors] , testRegFact)
     
   } else {
     var.er = "target|var11|var4|var13|var10|dummy|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|geodemVar31|var17|geodemVar37"
@@ -790,7 +790,7 @@ prepare4Regression = function(train,test,pca = T,trasnf4skew = F , maxPredictors
     } 
   }
   
-  ret = list(var.name,var.index,fn.train,fn.test,predictors.class.linear,trainTransformed,testTransformed)  
+  ret = list(var.name,var.index,fn.train,fn.test,predictors.reg.linear,trainTransformed,testTransformed)  
 }
 
 prepare4Classification = function(train,test,pca = T,trasnf4skew = F) {
@@ -825,7 +825,7 @@ prepare4Classification = function(train,test,pca = T,trasnf4skew = F) {
   predictors.class.linear = getPvalueFeatures( features = train[ , - c(1,2,303)] , response = train$target_0 )
   predictors.class.linear = predictors.class.linear[order(predictors.class.linear$pValue,decreasing = F),]
   
-  l = getVarClassification(predPvalues = predictors.class.linear , data = train , th = 0.05)
+  l = getBestPredictors(predPvalues = predictors.class.linear , data = train , th = 0.05)
   var.name = l[[1]]
   var.index = l[[2]]
   
@@ -914,6 +914,7 @@ test.bkp = test
 dim(train)
 dim(test)
 
+### preparing data for classification 
 l = prepare4Classification (train,test,pca = T)
 var.name = l[[1]]
 var.index = l[[2]]
@@ -923,73 +924,28 @@ predictors.class.linear = l[[5]]
 trainTranformed = l[[6]]
 testTranformed = l[[7]] 
 
-
-## write train  
-train = na.omit(trainTranformed)
-mm = model.matrix (   ~ .   , train )[,-1]
-mm.df = as.data.frame(mm)
-fn = fn.train
-write.csv(mm.df,quote=F,row.names=F,file=fn)
+## write train 
+write.csv(as.data.frame(model.matrix ( ~ . , na.omit(trainTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.train))
 
 ## write test 
-testTranformed$id = test.tab$id
-test = na.omit(testTranformed)
-mm = model.matrix ( ~ .  , test )[,-1]
-mm.df.test = as.data.frame(mm)
-fn = fn.test
-write.csv(mm.df.test,quote=F,row.names=F,file=fn)
+write.csv(as.data.frame(model.matrix ( ~ . , na.omit(testTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.test))
 
 
-# ### classifier basato sulle medie - 
-# m1 = rep(NA,5)
-# m0 = rep(NA,5)
-# 
-# mmin = rep(NA,5) 
-# mmax = rep(NA,5) 
-# mmed = rep(NA,5) 
-# upper = rep(NA,5) 
-# lower = rep(NA,5)
-# 
-# for (i in 1:length(colnames(mm.df))) {
-#   var.idx = grep(pattern = "target" , colnames(mm.df)[i] )
-#   if (length(var.idx) == 0) {
-#     print(colnames(mm.df)[i])
-#     m1[i] = mean(mm.df[mm.df$targetPos == 1,i])
-#     m0[i] = mean(mm.df[mm.df$targetPos == 0,i])
-#     sdi = sd(mm.df[,i])
-#     
-#     mmin[i] = min(m1[i],m0[i])
-#     mmax[i] = max(m1[i],m0[i])
-#     mmed[i] = (mmin[i]+mmax[i])/2
-#     upper[i] = ifelse (m1[i]  < m0[i] , 0 , 1) 
-#     lower[i] = ifelse (upper[i] == 1 , 0 ,  1)
-#     
-#     cat("m1 == ",m1[i]," m0 == ",m0[i] , "sd == ",sdi,"\n")
-#   }
-# }
-# 
-# 
-# pred = rep(NA,5000)
-# for (j in 1:5000 ) {
-#   vots = NULL
-#   for (i in 2:6) {
-#     
-#     
-#       if(mm.df[j,i] < mmed[i]) {
-#         vots = c(vots,lower[i])
-#       } else {
-#         vots = c(vots,upper[i])
-#       }
-#     
-#   }
-#   pred[j] = median(vots)
-#   if (j %% 1000 == 0 ) print(j)
-# }
+### preparing data for regression 
+l = prepare4Regression (train,test,pca = T)
+var.name = l[[1]]
+var.index = l[[2]]
+fn.train = l[[3]]
+fn.test = l[[4]]
+predictors.reg.linear = l[[5]]
+trainTranformed = l[[6]]
+testTranformed = l[[7]] 
 
+## write train 
+write.csv(as.data.frame(model.matrix ( ~ . , na.omit(trainTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.train))
 
-
-
-  
+## write test 
+write.csv(as.data.frame(model.matrix ( ~ . , na.omit(testTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.test))
 
 
 
