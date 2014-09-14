@@ -6,6 +6,9 @@ menv;
 trainFile = "train_nn.csv";
 testFile = "test_nn.csv";
 
+#trainFile = "train_reg_pca.csv";
+#testFile = "test_reg_pca.csv";
+
 %trainFile = "train_nn_no_skewness.csv";
 %testFile = "test_nn_no_skewness.csv";
 
@@ -16,8 +19,8 @@ X_test = dlmread([curr_dir "/dataset/liberty-mutual-fire-peril/" testFile]);
 train = train(2:end,:); ## elimina le intestazioni del csv 
 X_test = X_test(2:end,:); ## elimina le intestazioni del csv
 
-#y = train(:,1); ## la prima colonna e' target mentra l'ultima e' tragetPos che va scartata ...
-y = train(:,end); ##for classification problem
+y = train(:,1); ## la prima colonna e' target mentra l'ultima e' tragetPos che va scartata ...
+#y = train(:,end); ##for classification problem
 X = train(:,2:(end-1));
 
 idTest = X_test(:,end); ## l'ultima colonna e' id
@@ -59,7 +62,7 @@ lambda_liberty = 1e11;
                                                  
 [thetaIn] = trainLinearReg(X_poly_train, ytrain, lambda_opt , 300 );
 #[theta] = trainLinearRegLiberty(X_poly_train, ytrain, lambda_liberty , 8 , _theta= [] , var11 = _Xtrain(:,43));
-[theta] = trainLinearRegLiberty(X_poly_train, ytrain, lambda_liberty , 8 , _theta= [] , var11 = _Xtrain(:,2));
+[theta] = trainLinearRegLiberty(X_poly_train, ytrain, lambda_liberty , 8 , _theta= [] , var11 = _Xtrain(:,1) , simulatedAnealing = 1);
 pred_val = predictLinearReg(X_poly_val,theta);
 pred_train =predictLinearReg(X_poly_train,theta);
 cost_val_gd1 = MSE(pred_val, yval);
@@ -67,12 +70,12 @@ cost_train_gd1 = MSE(pred_train, ytrain);
 printf("MSE on training set = %f \n",cost_train_gd1);
 printf("MSE on cross validation set = %f \n",cost_val_gd1);
                                                  
-#gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,43),pred_train);
-gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,2),pred_train);
+#gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,1),pred_train);
+gini_train = NormalizedWeightedGini(ytrain,_Xtrain(:,1),pred_train);
 printf("LR - NormalizedWeightedGini on train = %f \n", gini_train );
                                                  
 #gini_xval = NormalizedWeightedGini(yval,_Xval(:,43),pred_val);
-gini_xval = NormalizedWeightedGini(yval,_Xval(:,2),pred_val);
+gini_xval = NormalizedWeightedGini(yval,_Xval(:,1),pred_val);
 printf("LR - NormalizedWeightedGini on cv = %f \n", gini_xval );
                                                         
                                                  
@@ -136,7 +139,7 @@ lambda_liberty = 1e14;
 [thetaIn] = trainLinearReg(X_poly, y, lambda_opt , 900 );
                                                                 
 #tic(); [theta] = trainLinearRegLiberty(X_poly, y, lambda_liberty , 8 , _theta= [] , var11 = X(:,43)); toc();
-tic(); [theta] = trainLinearRegLiberty(X_poly, y, lambda_liberty , 8 , _theta= [] , var11 = X(:,2)); toc();
+tic(); [theta] = trainLinearRegLiberty(X_poly, y, lambda_liberty , 10 , _theta= [] , var11 = X(:,1) , simulatedAnealing = 1); toc();
 
 
 ## pred

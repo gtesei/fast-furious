@@ -1,4 +1,4 @@
-function [J, grad] = linearRegCostFunctionLiberty(X, y, theta, lambda , var11 )
+function [J, grad] = linearRegCostFunctionLiberty(X, y, theta, lambda , var11 , simulatedAnealing = 0)
 
 m = length(y);
 J = 0;
@@ -67,6 +67,14 @@ H2 = X * Theta2;
 
   %%%% return
 WG1 = giniVect / giniSolution;
+                               
+if (simulatedAnealing)
+  Pu = exp(   -(0.55-WG1)/0.5   );
+  U = rand(1);
+  if (Pu > U)
+    WG1 = WG1 * 1.4;
+  endif
+endif
 
 
 
@@ -93,6 +101,14 @@ WG1 = giniVect / giniSolution;
   %%%% return
 WG2= giniVect / giniSolution;
 
+if (simulatedAnealing)
+  Pu = exp(   -(0.55-WG1)/0.5   );
+  U = rand(1);
+  if (Pu > U)
+    WG1 = WG1 * 1.4;
+  endif
+endif
+
 LOSS1 = ones(n,1) - WG1;
 LOSS2 = ones(n,1) - WG2;
 
@@ -102,10 +118,7 @@ if (lambda > 0)
 
   LOSS1 = LOSS1 + (lambda/(2*m)) * diag(Theta1 * Theta1'); 
   LOSS2 = LOSS2 + (lambda/(2*m)) * diag(Theta2 * Theta2');  
-endif  
-
-numgrad = (1 / (2*e)) * (LOSS1 - LOSS2); 
-grad = numgrad(:);
+endif
 
 fflush(stdout);
 endfunction 

@@ -20,10 +20,14 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
   endif 
 
   %% Finding ...
-  if (size(initGrid,1) == 0 | size(initGrid,2) == 0 | initStart < 0) 
     i = 1; 
     for gIdx = 1:length(g_vec)
       for CIdx = 1:length(C_vec)
+
+      if (size(initGrid,1) > 0 & i < initStart)
+        i = i + 1;
+        continue;
+      endif
 
 	C = C_vec(CIdx);
 	gamma = g_vec(gIdx);    
@@ -33,7 +37,8 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
 	endif
 
 	## training and prediction 
-	model = svmtrain(ytrain, Xtrain, sprintf('-s 0 -t 2 -g %g -c %g',gamma,C));    	
+    #model = svmtrain(ytrain, Xtrain, sprintf('-s 0 -t 2 -g %g -c %g -w0 1 -w1 380',gamma,C));
+    model = svmtrain(ytrain, Xtrain, sprintf('-h 0 -s 0 -t 2 -g %g -c %g',gamma,C));
 	[pred_train, accuracy, decision_values] = svmpredict(ytrain, Xtrain, model);
 	[pred_val, accuracy, decision_values] = svmpredict(yval, Xval, model);
         
@@ -64,44 +69,7 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
 	fflush(stdout); 
       endfor
     endfor
-  else
-      for i = initStart:gLen
 
-	C = grid(i,2);
-	gamma = grid(i,3);    
-
-	if (verbose)
-  	  fprintf("|---------------------->  trying C=%f , gamma=%f ... \n" , C,gamma);
-	endif
-
-	## training and prediction 
-	model = svmtrain(ytrain, Xtrain, sprintf('-s 0 -t 2 -g %g -c %g',gamma,C));    	
-	[pred_train, accuracy, decision_values] = svmpredict(ytrain, Xtrain, model);
-	[pred_val, accuracy, decision_values] = svmpredict(yval, Xval, model);
-        
-	if (verbose)      
-	  printf("*** TRAIN STATS ***\n");
-	endif 
-	[F1,precision,recall,accuracy] = printClassMetrics(pred_train,ytrain,verbose);
-	grid(i,4) = recall;
-	grid(i,5) = accuracy;
-	grid(i,6) = precision;
-	grid(i,7) = F1;
-	
-	if (verbose)
-	  printf("*** CV STATS ***\n");
-	endif 
-	[F1,precision,recall,accuracy] = printClassMetrics(pred_val,yval,verbose);
-	grid(i,8) = recall;
-	grid(i,9) = accuracy;
-	grid(i,10) = precision;
-	grid(i,11) = F1;
-	
-	i = i + 1;
-	dlmwrite('grid_tmp.mat',grid);
-	fflush(stdout); 
-      endfor
-  endif 
 
   [recall_val_opt,recall_val_opt_idx] = max(grid(:,8));
   [accuracy_val_opt,accuracy_val_opt_idx] = max(grid(:,9));

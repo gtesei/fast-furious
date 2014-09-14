@@ -755,7 +755,7 @@ prepare4Regression = function(train,test,pca = T,trasnf4skew = F , maxPredictors
     trainRegFact = trainReg[,del.idx]
     trainReg = trainReg[,-del.idx]
     trainReg.pca = predict(trainRegTrans,trainReg)
-    trainTransformed = cbind(target = train$target , trainReg.pca[,1:maxPredictors] , trainRegFact)
+    trainTransformed = cbind(target = train$target , var11 = train$var11 , trainReg.pca[,1:maxPredictors] , trainRegFact)
     
     ## test 
     var.index = var.index - 1
@@ -763,7 +763,7 @@ prepare4Regression = function(train,test,pca = T,trasnf4skew = F , maxPredictors
     testRegFact = testReg[,del.idx]
     testReg = testReg[, -del.idx]
     testReg.pca = predict(trainRegTrans,testReg)
-    testTransformed = cbind(testReg.pca[,1:maxPredictors] , testRegFact)
+    testTransformed = cbind(var11 = test$var11 , testReg.pca[,1:maxPredictors] , testRegFact)
     
   } else {
     var.er = "target|var11|var4|var13|var10|dummy|weatherVar104|weatherVar31|weatherVar110|weatherVar98|weatherVar69|geodemVar31|var17|geodemVar37"
@@ -856,14 +856,14 @@ prepare4Classification = function(train,test,pca = T,trasnf4skew = F) {
     trainClass = trainClass[, -c(2,5)]
     trainClass.pca = predict(trainClassTrans,trainClass)
     trainClass.pca = cbind(trainClass.pca[,1:11] , var4 = train$var4 , dummy = train$dummy)
-    trainTransformed = cbind(target = train$target , trainClass.pca , targetPos = train$target_0)
+    trainTransformed = cbind(target = train$target , var11 = train$var11 , trainClass.pca , targetPos = train$target_0)
     
     ## test 
     var.index = var.index - 1
     testClass = test[,var.index]
     testClass = testClass[, -c(2,5)]
     testClass.pca = predict(trainClassTrans,testClass)
-    testClass.pca = cbind(testClass.pca[,1:11] , var4 = test$var4 , dummy = test$dummy)
+    testClass.pca = cbind(var11 = test$var11 , testClass.pca[,1:11] , var4 = test$var4 , dummy = test$dummy)
     testTransformed = testClass.pca
     
   } else {
@@ -929,7 +929,7 @@ if (prepare4Classif) {
   testTransformed = l[[7]] 
   
   ## write train 
-  write.csv(as.data.frame(model.matrix ( ~ . , na.omit(trainsTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.train))
+  write.csv(as.data.frame(model.matrix ( ~ . , na.omit(trainTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.train))
   
   ## write test 
   write.csv(as.data.frame(model.matrix ( ~ . , na.omit(testTransformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.test))
@@ -947,7 +947,7 @@ if (prepare4Classif) {
   testTransformed = l[[7]] 
   
   ## write train 
-  write.csv(as.data.frame(model.matrix ( ~ . , na.omit(trainsTranformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.train))
+  write.csv(as.data.frame(model.matrix ( ~ . , na.omit(trainTransformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.train))
   
   ## write test 
   write.csv(as.data.frame(model.matrix ( ~ . , na.omit(testTransformed) )[,-1]),quote=F,row.names=F,file=paste0(getBasePath(),fn.test))
