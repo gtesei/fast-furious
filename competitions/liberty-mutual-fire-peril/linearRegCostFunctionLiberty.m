@@ -102,10 +102,10 @@ endif
 WG2= giniVect / giniSolution;
 
 if (simulatedAnealing)
-  Pu = exp(   -(0.55-WG1)/0.5   );
+  Pu = exp(   -(0.55-WG2)/0.5   );
   U = rand(1);
   if (Pu > U)
-    WG1 = WG1 * 1.4;
+    WG2 = WG2 * 1.4;
   endif
 endif
 
@@ -119,6 +119,9 @@ if (lambda > 0)
   LOSS1 = LOSS1 + (lambda/(2*m)) * diag(Theta1 * Theta1'); 
   LOSS2 = LOSS2 + (lambda/(2*m)) * diag(Theta2 * Theta2');  
 endif
+                                        
+numgrad = (1 / (2*e)) * (LOSS1 - LOSS2);
+grad = numgrad(:);
 
 fflush(stdout);
 endfunction 

@@ -139,7 +139,7 @@ lambda_liberty = 1e14;
 [thetaIn] = trainLinearReg(X_poly, y, lambda_opt , 900 );
                                                                 
 #tic(); [theta] = trainLinearRegLiberty(X_poly, y, lambda_liberty , 8 , _theta= [] , var11 = X(:,43)); toc();
-tic(); [theta] = trainLinearRegLiberty(X_poly, y, lambda_liberty , 10 , _theta= [] , var11 = X(:,1) , simulatedAnealing = 1); toc();
+tic(); [theta] = trainLinearRegLiberty(X_poly, y, lambda_liberty , 10 , _theta= [] , var11 = X(:,43) , simulatedAnealing = 1); toc();
 
 
 ## pred

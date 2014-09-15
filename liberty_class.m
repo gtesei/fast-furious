@@ -38,8 +38,8 @@ rand_indices = randperm(m);
 ### find C,gamma SVM 
 [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precision,g_opt_precision,C_opt_F1,g_opt_F1,grid] = ...
   findOptCAndGammaSVM(Xtrain, ytrain, Xval, yval, featureScaled = 0 , 
-  C_vec = [2^-5 2^-3 2^-1 2^1 2^3 2^5 2^7 2^11 2^15]' , 
-  g_vec = [2^-15 2^-11 2^-7 2^-3 2^-1 2^1 2^2 2^3 2^5 2^7]' ,
+  C_vec = [2^5 2^7 2^11]' ,
+  g_vec = [2^5 2^7 2^11]' ,
   verbose = 1);
 
 
