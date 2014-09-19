@@ -1,0 +1,76 @@
+---
+title: "CAP_19_Intro_Feat_Sel"
+author: "Gino Tesei"
+date: "September 19, 2014"
+output: html_document
+---
+This section discusses data and/or functions from the following packages:
+AppliedPredictiveModeling, caret, klaR, leaps, MASS, pROC, rms, and stats.
+The data are contained in the AppliedPredictiveModeling package. The data
+objects consist of a data frame of predictors called predictors and a factor
+vector of class values called diagnosis (with levels impaired and control). The
+following code was used to prepare the data for analysis:
+```{r}
+library(caret)
+library(AppliedPredictiveModeling)
+data(AlzheimerDisease)
+## Manually create new dummy variables
+predictors$E2 <- predictors$E3 <- predictors$E4 <- 0
+predictors$E2[grepl("2", predictors$Genotype)] <- 1
+predictors$E3[grepl("3", predictors$Genotype)] <- 1
+predictors$E4[grepl("4", predictors$Genotype)] <- 1
+
+## Split the data using stratified sampling
+set.seed(730)
+split <- createDataPartition(diagnosis, p = .8, list = FALSE)
+## Combine into one data frame
+adData <- predictors
+adData$Class <- diagnosis
+training <- adData[ split, ]
+testing <- adData[-split, ]
+## Save a vector of predictor variable names
+predVars <- names(adData)[!(names(adData) %in% c("Class", "Genotype"))]
+
+## Compute the area under the ROC curve, sensitivity, specificity,
+## accuracy and Kappa
+fiveStats <- function(...) c(twoClassSummary(...), defaultSummary(...))
+#Create resampling data sets to use for all models
+set.seed(104)
+index <- createMultiFolds(training$Class, times = 5)
+## Create a vector of subset sizes to evaluate
+varSeq <- seq(1, length(predVars)-1, by = 2)
+
+```
+# Forward, Backward, and Stepwise Selection
+There are several R functions for this class of wrappers:
+
+* step in the stats package can be used to search for appropriate subsets for
+linear regression and generalized linear models (from the lm and glm functions, respectively). The direction argument controls the search method(e.g. “both,” “backward,” or “forward”). A more general function is the
+stepAIC function in the MASS package, which can handle additional model
+types. In either case, the AIC statistic (or its variants) is used as the
+objective function.
+
+* The fastbw function in the rms package conducts similar searches but has
+the optional but unrecommended choice of using p-values as the objective
+function.
+* The regsubsets function in the leaps package has similar functionality.
+* The klaR package contains the stepclass function than searches the predictor space for models that maximize cross-validated accuracy rates. Thefunction has built-in methods for several models, such as lda, but can be
+more broadly generalized.
+
+The caret package function train has wrappers for leaps, stepAIC, and
+stepclass, so that the entire feature selection process can be resampled and
+the risk of selection bias is reduced.
+For example, to use stepAIC with logistic regression, the function takes an
+initial model as input. To illustrate the function, a small model is used:
+
+```{r}
+initial <- glm(Class ~ tau + VEGF + E4 + IL_3, data = training,family = binomial)
+library(MASS)
+stepAIC(initial, direction = "both")
+
+```
+The function returns a glm object with the final predictor set. The other
+functions listed above use similar strategies.
+
+# Recursive Feature Elimination
+

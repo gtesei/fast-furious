@@ -24,25 +24,25 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
     for gIdx = 1:length(g_vec)
       for CIdx = 1:length(C_vec)
 
-      if (size(initGrid,1) > 0 & i < initStart)
-        i = i + 1;
-        continue;
-      endif
+        if (size(initGrid,1) > 0 & i < initStart)
+          i = i + 1;
+          continue;
+        endif
 
 	C = C_vec(CIdx);
 	gamma = g_vec(gIdx);    
 
 	if (verbose)
   	  fprintf("|---------------------->  trying C=%f , gamma=%f ... \n" , C,gamma);
-      fflush(stdout); 
+          fflush(stdout); 
 	endif
 
 	## training and prediction 
-    if (size(weights,1) > 0)
-      model = svmtrain(ytrain, Xtrain, sprintf('-s 0 -t 2 -g %g -c %g -w0 %g -w1 %g',gamma,C,weights(1),weights(2)));
-    else
-      model = svmtrain(ytrain, Xtrain, sprintf('-h 0 -s 0 -t 2 -g %g -c %g',gamma,C));
-    endif
+        if (size(weights,1) > 0)
+          model = svmtrain(ytrain, Xtrain, sprintf('-s 0 -t 2 -g %g -c %g -w0 %g -w1 %g',gamma,C,weights(1),weights(2)));
+        else
+          model = svmtrain(ytrain, Xtrain, sprintf('-h 0 -s 0 -t 2 -g %g -c %g',gamma,C));
+        endif
 
 	[pred_train, accuracy, decision_values] = svmpredict(ytrain, Xtrain, model);
 	[pred_val, accuracy, decision_values] = svmpredict(yval, Xval, model);
