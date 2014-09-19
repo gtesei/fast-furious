@@ -133,7 +133,7 @@ that require retuning at each iteration. For example, to fit support vector
 machines:
 ```{r}
 svmFuncs <- caretFuncs
-svmFuncs$summary <- fivestats
+svmFuncs$summary <- fiveStats
 ctrl <- rfeControl(method = "repeatedcv",
 repeats = 5,
 verbose = TRUE,
