@@ -73,4 +73,167 @@ The function returns a glm object with the final predictor set. The other
 functions listed above use similar strategies.
 
 # Recursive Feature Elimination
+The caret and varSelRF packages contain functions for recursive feature elimination. While the varSelRF function in the varSelRF is specific to random
+forests, the rfe function in caret is a general framework for any predictive
+model. For the latter, there are predefined functions for random forests, linear
+discriminant analysis, bagged trees, na¨ıve Bayes, generalized linear models,
+linear regression models, and logistic regression. The random forest functions
+are in a list called rfFuncs:
 
+```{r}
+## The built-in random forest functions are in rfFuncs.
+str(rfFuncs)
+```
+
+Each of these function defines a step in Algorithm 19.2:
+
+* The summary function defines how the predictions will be evaluated (Line 10
+in Algorithm 19.2).
+* The fit function allows the user to specify the model and conduct parameter tuning (Lines 19.2, 6, and 12).
+* The pred function generates predictions for new samples.
+* The rank function generates variable importance measures (Line 2).
+* The selectSize function chooses the appropriate predictor subset size
+(Line 11).
+* The selectVar function 
+
+These options can be changed. For example, to compute the expanded set of
+performance measures shown above,
+
+```{r}
+newRF <- rfFuncs
+newRF$summary <- fiveStats
+```
+To run the RFE procedure for random forests, the syntax is
+```{r}
+## The control function is similar to trainControl():
+ctrl <- rfeControl(method = "repeatedcv",
+repeats = 5,
+verbose = TRUE,
+functions = newRF,
+index = index)
+
+set.seed(721)
+rfRFE <- rfe(x = training[, predVars],
+y = training$Class,
+sizes = varSeq,
+metric = "ROC",
+rfeControl = ctrl,
+## now pass options to randomForest()
+ntree = 1000)
+rfRFE
+```
+
+The process for predicting new samples is straightforward:
+```{r}
+predict(rfRFE, head(testing))
+```
+The built-in functions predict the classes and probabilities for classification.
+There are also built-in functions to do recursive feature selection for models
+that require retuning at each iteration. For example, to fit support vector
+machines:
+```{r}
+svmFuncs <- caretFuncs
+svmFuncs$summary <- fivestats
+ctrl <- rfeControl(method = "repeatedcv",
+repeats = 5,
+verbose = TRUE,
+functions = svmFuncs,
+index = index)
+
+set.seed(721)
+svmRFE <- rfe(x = training[, predVars],
+y = training$Class,
+sizes = varSeq,
+metric = "ROC",
+rfeControl = ctrl,
+## Now options to train()
+method = "svmRadial",
+tuneLength = 12,
+preProc = c("center", "scale"),
+## Below specifies the inner resampling process
+trControl = trainControl(method = "cv",
+verboseIter = FALSE,
+classProbs = TRUE))
+svmRFE
+```
+Here we can see that the poor performance is related to the class imbalance;
+the model is biased towards high specificity since most samples are controls.
+The caret web page contains more details and examples related to rfe.
+
+# Filter Methods
+caret has a function called sbf (for Selection By Filter) that can be used to
+screen predictors for models and to estimate performance using resampling.
+Any function can be written to screen the predictors.
+For example, to compute a p-value for each predictor, depending on the
+data type, the following approach could be used:
+```{r}
+pScore <- function(x, y)
+  {
+  numX <- length(unique(x))
+  if(numX > 2)
+    {
+    ## With many values in x, compute a t-test
+    out <- t.test(x ~ y)$p.value
+    } else {
+      ## For binary predictors, test the odds ratio == 1 via
+      ## Fisher's Exact Test
+      out <- fisher.test(factor(x), y)$p.value
+      }
+  out
+  }
+
+## Apply the scores to each of the predictor columns
+scores <- apply(X = training[, predVars],MARGIN = 2,FUN = pScore, y = training$Class)
+tail(scores)
+
+```
+A function can also be designed to apply a p-value correction, such as the
+Bonferroni procedure:
+
+```{r}
+pCorrection <- function (score, x, y)
+  {
+  ## The options x and y are required by the caret package
+  ## but are not used here
+  score <- p.adjust(score, "bonferroni")
+  ## Return a logical vector to decide which predictors
+  ## to retain after the filter
+  keepers <- (score <= 0.05)
+  keepers
+  }
+tail(pCorrection(scores))
+
+```
+
+As before, caret contains a number of built-in functions for filter methods:
+linear regression, random forests, bagged trees, linear discriminant analysis,
+and na¨ıve Bayes (see ?rfSBF for more details). For example, ldaSBF has the
+following functions:
+
+```{r}
+str(ldaSBF)
+
+```
+These functions are similar to those shown for rfe. The score function computes some quantitative measure of importance (e.g., the p-values produced by the previous pScore function). The function filter takes these values (and the raw training set data) and determines which predictors pass the filter.
+For the biomarker data, the filtered LDA model was fit using
+
+```{r}
+ldaWithPvalues <- ldaSBF
+ldaWithPvalues$score <- pScore
+ldaWithPvalues$summary <- fiveStats
+ldaWithPvalues$filter <- pCorrection
+sbfCtrl <- sbfControl(method = "repeatedcv",
+repeats = 5,
+verbose = TRUE,
+functions = ldaWithPvalues,
+index = index)
+
+ldaFilter <- sbf(training[, predVars],
+training$Class,
+tol = 1.0e-12,
+sbfControl = sbfCtrl)
+ldaFilter
+
+```
+Again, the caret package web site has additional detail regarding the rfe
+and sbf functions, including features not shown here.
