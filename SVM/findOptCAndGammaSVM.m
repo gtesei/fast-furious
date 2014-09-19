@@ -2,7 +2,7 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
   findOptCAndGammaSVM(Xtrain, ytrain, Xval, yval, featureScaled = 0 , 
   C_vec = [2^-5 2^-3 2^-1 2^1 2^3 2^5 2^7 2^11 2^15]' , 
   g_vec = [2^-15 2^-11 2^-7 2^-3 2^-1 2^1 2^2 2^3 2^5 2^7]' ,
-  verbose = 1, initGrid = [] , initStart = -1)
+  verbose = 1, initGrid = [] , initStart = -1 , weights = [])
     
   if (! featureScaled) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,1);
@@ -34,11 +34,16 @@ function [C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precisio
 
 	if (verbose)
   	  fprintf("|---------------------->  trying C=%f , gamma=%f ... \n" , C,gamma);
+      fflush(stdout); 
 	endif
 
 	## training and prediction 
-    #model = svmtrain(ytrain, Xtrain, sprintf('-s 0 -t 2 -g %g -c %g -w0 1 -w1 380',gamma,C));
-    model = svmtrain(ytrain, Xtrain, sprintf('-h 0 -s 0 -t 2 -g %g -c %g',gamma,C));
+    if (size(weights,1) > 0)
+      model = svmtrain(ytrain, Xtrain, sprintf('-s 0 -t 2 -g %g -c %g -w0 %g -w1 %g',gamma,C,weights(1),weights(2)));
+    else
+      model = svmtrain(ytrain, Xtrain, sprintf('-h 0 -s 0 -t 2 -g %g -c %g',gamma,C));
+    endif
+
 	[pred_train, accuracy, decision_values] = svmpredict(ytrain, Xtrain, model);
 	[pred_val, accuracy, decision_values] = svmpredict(yval, Xval, model);
         

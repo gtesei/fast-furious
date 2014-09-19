@@ -3,10 +3,10 @@
 %%%% setting enviroment 
 menv;
 
-#trainFile = "train_class.csv"
-#testFile = "test_class.csv"
-trainFile = "train_class_pca.csv"
-testFile = "test_class_pca.csv"
+trainFile = "train_nn.csv"
+testFile = "test_nn.csv"
+#trainFile = "train_class_pca.csv"
+#testFile = "test_class_pca.csv"
 
 printf("|--> loading Xtrain, ytrain files ...\n");
 train = dlmread([curr_dir "/dataset/liberty-mutual-fire-peril/" trainFile]); 
@@ -41,6 +41,14 @@ rand_indices = randperm(m);
   C_vec = [2^5 2^7 2^11]' ,
   g_vec = [2^5 2^7 2^11]' ,
   verbose = 1);
+
+## try with weigths 
+[C_opt_recall,g_opt_recall,C_opt_accuracy,g_opt_accuracy,C_opt_precision,g_opt_precision,C_opt_F1,g_opt_F1,grid] = ...
+findOptCAndGammaSVM(Xtrain, ytrain, Xval, yval, featureScaled = 0 ,
+                    C_vec = [2^5]' ,
+                    g_vec = [2^11]' ,
+                    verbose = 1,initGrid = [] , initStart = -1 , weights = [1 385]);
+
 
 
 
