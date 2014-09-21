@@ -115,7 +115,7 @@ trainAndPredict = function( form , trainingSet , testSet , model ) {
     stop("unrecognized model.")
   }
   tm = proc.time() - ptm
-  cat("Time elapsed in loop:",tm,"\n")
+  cat("Time elapsed:",tm,"\n")
   
   pred
 }
@@ -249,7 +249,37 @@ predictAndImpute = function(data,ImputePredictors,
   data
 }
 
-
+imputeFastFurious = function(data , verbose = T , debug = F ) {
+  if (verbose) {
+    cat("building decision matrix ... \n")
+  }
+  ## building decision matrix on data 
+  DecisionMatrix = buildDecisionMatrix(data)
+  if (verbose) {
+    cat("****************** DecisionMatrix ****************** \n")
+    print(DecisionMatrix)
+  }
+  
+  ImputePredictors = findImputePredictors(DecisionMatrix,data)
+  if (verbose) {
+    cat("finding best models ... \n")
+  }
+  
+  ## finding best models ...
+  ImputePredictors = findBestImputeModel (data, ImputePredictors , 
+                                          RegModels = c("LinearReg","KNN_Reg") , ClassModels = c("SVMClass") , 
+                                          verbose = verbose , debug = debug  )
+  
+  if (verbose) {
+    cat("****************** ImputePredictors ****************** \n")
+    print(ImputePredictors)
+  }
+  
+  ## predicting and imputing 
+  data = predictAndImpute (data,ImputePredictors, verbose = verbose , debug = debug)
+  
+  list(data,ImputePredictors,DecisionMatrix)
+}
 
 ##############  Loading data sets (train, test, sample) ... 
 source(paste0(getBasePath("code") , "__BestFinalPredictorSelector_Lib.R"))
@@ -265,21 +295,13 @@ Xtrain$dummy = as.factor(Xtrain$dummy)
 Xtest$var4 = as.factor(Xtest$var4)
 Xtest$dummy = as.factor(Xtest$dummy)
 
-## building decision matrix on Xtest 
-DecisionMatrix = buildDecisionMatrix(Xtest)
-DecisionMatrix
+## imputing Xtest 
+l = imputeFastFurious (data = Xtest , verbose = T , debug = F)
+Xtest.imputed = l[[1]]
+ImputePredictors = l[[2]]
+DecisionMatrix = l[[3]]
 
-ImputePredictors = findImputePredictors(DecisionMatrix,Xtest)
-ImputePredictors
-
-## finding best models ...
-ImputePredictors = findBestImputeModel (Xtest, ImputePredictors , 
-                               RegModels = c("LinearReg","KNN_Reg") , ClassModels = c("SVMClass") , 
-                               verbose = T , debug = T  )
-
-## predicting and imputing 
-data = predictAndImpute (Xtest,ImputePredictors, verbose = T , debug = T)
-
-
+write.csv(Xtest.imputed,quote=F,row.names=F,file=paste0(getBasePath(),"Xtest_reg_imputed.csv"))
+write.csv(ImputePredictors,quote=F,row.names=F,file=paste0(getBasePath(),"Xtest_reg_imputeModel___ImputePredictors.csv"))
 
 
