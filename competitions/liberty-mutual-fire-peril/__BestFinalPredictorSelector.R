@@ -75,11 +75,11 @@ pCorrection <- function (score, x, y)
 
 getBasePath = function () {
   ret = ""
-  base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril"
+  base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
   base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
   
   if (file.exists(base.path1))  {
-    ret = paste0(base.path1,"/")
+    ret = base.path1
   } else {
     ret = base.path2
   }
@@ -334,14 +334,12 @@ getBestPredictors = function(train , response , test ,
 
 
 ##############  Loading data sets (train, test, sample) ... 
-base.path = getBasePath()
-
 train.fn = "train.csv"
 test.fn = "test.csv"
 sampleSub.fn = "sampleSubmission.csv"
 
-train.tab = fread(paste(base.path,train.fn,sep="") , header = TRUE , sep=","  )
-test.tab = fread(paste(base.path,test.fn,sep="") , header = TRUE , sep=","  )
+train.tab = fread(paste(getBasePath(),train.fn,sep="") , header = TRUE , sep=","  )
+test.tab = fread(paste(getBasePath(),test.fn,sep="") , header = TRUE , sep=","  )
 
 ## data formatting 
 train = getData4Analysis(train.tab)
@@ -376,6 +374,10 @@ describe(x = ytrain)
 describe(x = Xtrain)
 describe(x = Xtest)
 
+write.csv(ytrain,quote=F,row.names=F,file=paste0(getBasePath(),"ytrain_reg.csv"))
+write.csv(Xtrain,quote=F,row.names=F,file=paste0(getBasePath(),"Xtrain_reg.csv"))
+write.csv(Xtest,quote=F,row.names=F,file=paste0(getBasePath(),"Xtest_reg.csv"))
+
 cat("==========================> Finding best predictors for classification problem ... ")
 
 l = getBestPredictors(train[ , -c(1,2,303)] , response = train$target_0 , test , 
@@ -398,5 +400,9 @@ library(Hmisc)
 describe(x = ytrain)
 describe(x = Xtrain)
 describe(x = Xtest)
+
+write.csv(ytrain,quote=F,row.names=F,file=paste0(getBasePath(),"ytrain_class.csv"))
+write.csv(Xtrain,quote=F,row.names=F,file=paste0(getBasePath(),"Xtrain_class.csv"))
+write.csv(Xtest,quote=F,row.names=F,file=paste0(getBasePath(),"Xtest_class.csv"))
 
 
