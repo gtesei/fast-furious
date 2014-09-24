@@ -1,0 +1,79 @@
+---
+title: "CAP_20_Factor_can_affect_the_model"
+author: "Gino Tesei"
+date: "September 23, 2014"
+output: html_document
+---
+
+Computing details for training models discussed in this chapter can be found
+in the earlier sections of the book. One new computing thread presented here
+addresses the implementation of Algorithm 20.1. To illustrate this method,
+the R caret package will be referenced.
+To illustrate the implementation of the similarity algorithm, first load the
+solubility data and define the control structure for training. Here we will use
+the training structure used throughout the text for these data.
+
+```{r}
+library(caret)
+library(AppliedPredictiveModeling)
+
+data(solubility)
+
+set.seed(100)
+indx <- createFolds(solTrainY, returnTrain = TRUE)
+ctrl <- trainControl(method = "cv", index = indx)
+
+```
+
+Next, tune the desired model and compute variable importance, since the
+similarity algorithm can be made more efficient by working with the most
+important predictors. Here we tune a random forests model and create a
+subset of the training and test data using
+
+
+```{r}
+set.seed(100)
+mtryVals <- floor(seq(10, ncol(solTrainXtrans), length = 10))
+mtryGrid <- data.frame(.mtry = mtryVals)
+
+rfTune <- train(x = solTrainXtrans, y = solTrainY,
+  method = "rf",
+  tuneGrid = mtryGrid,
+  ntree = 1000,
+  importance = TRUE,
+  trControl = ctrl)
+
+  ImportanceOrder <- order(rfTune$finalModel$importance[,1],
+  decreasing = TRUE)
+  top20 <- rownames(rfTune$finalModel$importance[ImportanceOrder,])[1:20]
+  solTrainXimp <- subset(solTrainX, select = top20)
+  solTestXimp <- subset(solTestX, select = top20)
+```
+
+The subset of predictors are then permuted to create the random set.
+There are many ways to permute data in R; a simple and direct way is by
+using the apply and sample functions together. The original subset of data and
+permuted set are then combined and a new classification variable is created
+to identify each row’s membership. This defines steps 2–4 of the algorithm
+which can be implemented as follows:
+
+```{r}
+permutesolTrainXimp <- apply(solTrainXimp, 2, function(x) sample(x))
+solSimX <- rbind(solTrainXimp, permutesolTrainXimp)
+groupVals <- c("Training", "Random")
+groupY <- factor(rep(groupVals, each = nrow(solTrainX)))
+```
+
+Finally, we tune a model on the newly created classification data and use
+the model to predict the training set membership probability.
+
+```{r}
+rfSolClass <- train(x = solSimX, y = groupY,
+                    method = "rf",
+                    tuneLength = 5,
+                    ntree = 1000,
+                    control = trainControl(method = "LGOCV"))
+solTestGroupProbs <- predict(rfSolClass, solTestXimp, type = "prob")
+```
+
+
