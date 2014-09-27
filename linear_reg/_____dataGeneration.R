@@ -102,23 +102,23 @@ if (verbose) enetModel.trans
 tm = proc.time() - ptm
 perf.grid = predictAndMeasure (enetModel.trans,"Elastic Net (Trans)",trainingData.trans,solTrainY,testData.trans,solTestY,tm, grid = perf.grid , verbose )
 
-######################################################## PLS
-if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] PLS ...  \n")
+######################################################## Partial Least Squares
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] Partial Least Squares ...  \n")
 set.seed(669); ptm <- proc.time()
 plsModel <- train(Solubility ~ . , data = trainingData , method = "pls", preProc = c("center", "scale"), tuneLength = 15, trControl = controlObject)
 if (verbose) plsModel
 tm = proc.time() - ptm
 perf.grid = predictAndMeasure (plsModel,"PLS",trainingData,solTrainY,testData,solTestY,tm , grid = perf.grid , verbose )
 
-if (verbose) cat("****** [WITH TRANSFORMATIONS] PLS ...  \n")
+if (verbose) cat("****** [WITH TRANSFORMATIONS] Partial Least Squares ...  \n")
 set.seed(669); ptm <- proc.time()
 plsModel.trans <- train(Solubility ~ . , data = trainingData.trans , method = "pls", preProc = c("center", "scale"), tuneLength = 15, trControl = controlObject)
 if (verbose) plsModel.trans
 tm = proc.time() - ptm
 perf.grid = predictAndMeasure (plsModel.trans,"PLS (Trans)",trainingData.trans,solTrainY,testData.trans,solTestY,tm, grid = perf.grid , verbose )
 
-######################################################## SVM
-if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] SVM ...  \n")
+######################################################## Support Vector Machines 
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] Support Vector Machines ...  \n")
 set.seed(669); ptm <- proc.time()
 svmRModel <- train(Solubility ~ . , data = trainingData, method = "svmRadial",
                    tuneLength = 15, preProc = c("center", "scale"),  trControl = controlObject)
@@ -126,7 +126,7 @@ if (verbose) svmRModel
 tm = proc.time() - ptm
 perf.grid = predictAndMeasure (svmRModel,"SVM",trainingData,solTrainY,testData,solTestY,tm , grid = perf.grid , verbose )
 
-if (verbose) cat("****** [WITH TRANSFORMATIONS] SVM ...  \n")
+if (verbose) cat("****** [WITH TRANSFORMATIONS] Support Vector Machines ...  \n")
 set.seed(669); ptm <- proc.time()
 svmRModel.trans <- train(Solubility ~ . , data = trainingData.trans, method = "svmRadial",
                    tuneLength = 15, preProc = c("center", "scale"),  trControl = controlObject)
@@ -149,14 +149,53 @@ treebagModel.trans <- train(Solubility ~ . , data = trainingData.trans, method =
 
 if (verbose) treebagModel.trans
 tm = proc.time() - ptm
-perf.grid = predictAndMeasure (treebagModel.trans,"Bagged Tree (Trans)",trainingData.trans,solTrainY,testData.trans,solTestY,tm, grid = perf.grid , verbose )
+perf.grid = predictAndMeasure (treebagModel.trans,"Bagged Tree (Trans)",trainingData.trans,solTrainY,
+                               testData.trans,solTestY,tm, grid = perf.grid , verbose )
+
+######################################################## Cond Inf Tree
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] Cond Inf Tree ...  \n")
+set.seed(669); ptm <- proc.time()
+ctreeModel <- train(Solubility ~ . , data = trainingData , method = "ctree", tuneLength = 10, trControl = controlObject)
+
+if (verbose) ctreeModel
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (ctreeModel,"Cond Inf Tree",trainingData,solTrainY,testData,solTestY,tm , grid = perf.grid , verbose )
+
+if (verbose) cat("****** [WITH TRANSFORMATIONS] Cond Inf Tree ...  \n")
+set.seed(669); ptm <- proc.time()
+ctreeModel.trans <- train(Solubility ~ . , data = trainingData.trans , method = "ctree", tuneLength = 10, trControl = controlObject)
+
+if (verbose) ctreeModel.trans
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (ctreeModel.trans,"Cond Inf Tree (Trans)",trainingData.trans,solTrainY,
+                               testData.trans,solTestY,tm, grid = perf.grid , verbose )
+
+######################################################## CART
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] CART ...  \n")
+set.seed(669); ptm <- proc.time()
+rpartModel <- train(Solubility ~ . , data = trainingData , method = "rpart", tuneLength = 30, trControl = controlObject)
+
+if (verbose) rpartModel
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (rpartModel,"Cond Inf Tree",trainingData,solTrainY,testData,solTestY,tm , grid = perf.grid , verbose )
+
+if (verbose) cat("****** [WITH TRANSFORMATIONS] CART ...  \n")
+set.seed(669); ptm <- proc.time()
+rpartModel.trans <- train(Solubility ~ . , data = trainingData.trans , method = "rpart", tuneLength = 30, trControl = controlObject)
+
+if (verbose) rpartModel.trans
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (rpartModel.trans,"Cond Inf Tree (Trans)",trainingData.trans,solTrainY,
+                               testData.trans,solTestY,tm, grid = perf.grid , verbose )
 
 
 ###### performance plot 
 allResamples <- resamples(list("Linear Reg" = linearReg, "Linear Reg (Trans)" = linearReg.trans, 
                                "SVM" = svmRModel , "SVM (Trans)" = svmRModel.trans , 
                                "PLS" = plsModel , "PLS (Trans)" = plsModel.trans , 
-                               "Elastic Net" = enetModel , "Elastic Net (Trans)" = enetModel.trans
+                               "Elastic Net" = enetModel , "Elastic Net (Trans)" = enetModel.trans , 
+                               "Bagged Tree" = treebagModel , "Bagged Tree (Trans)" = treebagModel.trans , 
+                               "Cond Inf Tree" = ctreeModel , "Cond Inf Tree (Trans)" = ctreeModel.trans
                                ))
 parallelplot(allResamples)
 parallelplot(allResamples , metric = "Rsquared")

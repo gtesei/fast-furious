@@ -1,9 +1,9 @@
 #! /opt/local/bin/octave -qf 
 
-%%%% setting enviroment 
+%%%% making enviroment 
 menv;
 
-printf("|--> loading files ...\n");
+printf("|--> loading data ...\n");
 solTrainX = dlmread([curr_dir "/linear_reg/__solTrainX.zat"]); 
 solTestX = dlmread([curr_dir "/linear_reg/__solTestX.zat"]); 
 
@@ -28,7 +28,7 @@ perf_grid = zeros(10,5);
 
 ############################################################## Regularized Polynomial Regression 
 ## without transformations , find best p, lambda 
-printf("|--> loading data sets  without transformations ...\n");
+printf("|--> data sets  WITHOUT transformations ...\n");
 tic();
 [p_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid]  = ... 
 findOptPAndLambdaRegLin(solTrainX, solTrainY, solTestX, solTestY, ...
@@ -41,7 +41,7 @@ i = 1;
 perf_grid(i,1) = i; perf_grid(i,2) = p_opt_RMSE; perf_grid(i,3) = lambda_opt_RMSE; perf_grid(i,4) = RMSE_opt; perf_grid(i,5) = tm;
 
 ## with transformations , find best p, lambda 
-printf("|--> loading data sets  with transformations ...\n");
+printf("|--> data sets  WITH transformations ...\n");
 tic();
 [p_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid]  = ... 
 findOptPAndLambdaRegLin(solTrainXtrans, solTrainY, solTestXtrans, solTestY, ...
@@ -55,7 +55,7 @@ perf_grid(i,1) = i; perf_grid(i,2) = p_opt_RMSE; perf_grid(i,3) = lambda_opt_RMS
 
 disp(perf_grid);
 
-############################################################## SVM  
+############################################################## Neural Networks   
 ## without transformations , find best p, lambda 
 printf("|--> loading data sets  without transformations ...\n");
 tic();
