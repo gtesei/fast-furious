@@ -199,3 +199,6 @@ allResamples <- resamples(list("Linear Reg" = linearReg, "Linear Reg (Trans)" = 
                                ))
 parallelplot(allResamples)
 parallelplot(allResamples , metric = "Rsquared")
+
+## serializing bechmarks 
+write.csv(perf.grid,quote=F,row.names=F,file=paste0(getBasePath(),"/linear_reg/__benchmarks.zat"))
