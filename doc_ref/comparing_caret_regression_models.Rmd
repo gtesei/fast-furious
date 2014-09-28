@@ -1,29 +1,26 @@
-[R] Comparing caret regression models in action (... and in practice!)  
+Comparing R caret models in action ... and in practice: does model accuracy always matter more than scalability? and how much this is about models instead of implementations?  
 ========================================================
 
 Contents  
 -------------------------
 1. **Introduction**
-2. **Data sets**
-3. **Forecasting models**
-4. **Contest #1: predicting sales of Australian wine**
-5. **Contest #2: predicting Air Passengers**
-6. **Contest #3: predicting unemployment in Maine**
-7. **Contest #4: predicting supply of Australian chocolate, electricity and beer**
-8. **Contest #5: predicting complaints to a motoring organisation**
-9. **Conclusions**
-10. **References**
+2. **Data set and quick explanatory analysis**
+3. **Fitting models**
+4. **Measuring performances **
+5. **Accuracy vs scalability**
+6. **Models vs implementations** 
+6. **References**
 
 Introduction
 --------------------------------------------------------
-Here we'll compare regression models in action from __caret R__package. 
-The __solubility__ data can be obtained from the  __AppliedPredictiveModeling R__ R package.
-Models fitting on train set >10 minutes has been discared. 
-Machines: ... 
+Here we'll compare regression caret models in action from __caret R__package. 
 
-Performances measure:  __RMSE__ (Root Mean Squared Error) 
+The __solubility__ data can be obtained from the  __AppliedPredictiveModeling R__ R package. Moreover,  
+* Models fitting on train set > 15 minutes has been discared. 
+* Machines: MacBook Pro, Processor  2.4 GHz Intel Core i7, Memory  8 GB 1600 MHz DDR3
+* Accuracy measure:  __RMSE__ (Root Mean Squared Error) 
 
-Data set
+Data set & quick explanotory analysis
 --------------------------------------------------------
 Predictors from the training and test are into solTrainX , solTestX, respectively. 
 
@@ -32,573 +29,285 @@ Predictors from the training and test are into solTrainX , solTestX, respectivel
 library(caret)
 library(AppliedPredictiveModeling)
 data(solubility)
-
-doBenchemark = T 
-verbose = T 
+ls()
 ```
 
-Each column 
+Each column of the data corresponds to a predictor (i.e., chemical descriptor)
+and the rows correspond to compounds. There are 228 columns in the data.
 
-```{r,warning=F} 
-plot(decompose(sweetw.ts))
-```
-
-### Air Passengers
-The number of international passenger bookings (in thousands) per month
-on an airline (Pan Am) in the United States were obtained from the Federal
-Aviation Administration for the period 1949-1960 (Brown, 1963). The company
-used the data to predict future demand before ordering new aircraft and
-training aircrew. 
-
-```{r,warning=F} 
-data(AirPassengers)
-AP <- AirPassengers
-plot(AP, ylab = "Passengers (1000's)")
-```
-
-It follows a decomposition of trend and seasonal effects using
-a moving average method.
-
-```{r,warning=F} 
-plot(decompose(AP))
-```
-
-A summary of the values for each season can be viewed. 
-```{r,warning=F} 
-boxplot(AP ~ cycle(AP))
-```
-
-
-### Unemployment: Maine
-Unemployment rates are one of the main economic indicators used by politicians
-and other decision makers. For example, they influence policies for regional
-development and welfare provision. Here we I consider the monthly unemployment rate
-for the US state of Maine from January 1996 until August 2006.
-
-```{r,warning=F} 
-www = hurl[['maine.dat']]
-Maine.month = read.table(www,header=T)
-attach(Maine.month)
-Maine.month.ts <- ts(unemploy, start = c(1996, 1), freq = 12)
-detach(Maine.month)
-Maine.annual.ts <- aggregate(Maine.month.ts)/12
-par(mfrow=c(2,1))
-plot(Maine.month.ts, ylab = "unemployed (%)" , xlab="Time (months)")
-plot(Maine.annual.ts, ylab = "unemployed (%)" , xlab="Time (years)")
-```
-
-It follows a decomposition of trend and seasonal effects using
-a moving average method.
-
-```{r,warning=F} 
-plot(decompose(Maine.month.ts))
-```
-
-### Supply of Australian Chocolate, Electricity and Beer
-The monthly supply of electricity (millions of kWh), beer (Ml),
-and chocolate-based production (tonnes) in Australia over the period January
-1958 to December 1990 from the Australian Bureau of Statistics
-(ABS).
-
-```{r,warning=F} 
-www = hurl[['cbe.dat']]
-CBE <- read.table(www, header = T)
-attach(CBE)
-Choc.ts <- ts(choc, start = c(1958, 1), freq = 12)
-Elec.ts <- ts(elec, start = c(1958, 1), freq = 12)
-Beer.ts <- ts(beer, start = c(1958, 1), freq = 12)
-detach(CBE)
-plot(cbind(Elec.ts, Beer.ts, Choc.ts) , xlab="Time (months)" , main="Choc (tonnes), Elec (kwh), Beer (Ml)"  )
-```
-
-It follows a decomposition of **chocolate supply** in trend and seasonal effects using
-a moving average method.
-
-```{r,warning=F} 
-plot(decompose(Choc.ts))
-```
-
-
-It follows a decomposition of **electricity supply** in trend and seasonal effects using
-a moving average method.
-
-```{r,warning=F} 
-plot(decompose(Elec.ts))
-```
-
-
-It follows a decomposition of **beer supply** in trend and seasonal effects using
-a moving average method.
-
-```{r,warning=F} 
-plot(decompose(Beer.ts))
-```
-
-### Complaints to a motoring organisation
-The number of letters of complaint received each month by a motoring organisation
-over the four years 1996 to 1999 are available on the website. At the
-beginning of the year 2000, the organisation wishes to estimate the current
-level of complaints and investigate any trend in the level of complaints.
-
-```{r,warning=F} 
-www = hurl[['motororg.dat']]
-Motor.dat = read.table(www,header=T)
-attach(Motor.dat)
-Comp.ts <- ts(complaints, start = c(1996, 1), freq = 12)
-detach(Motor.dat)
-plot(Comp.ts, xlab = "Time / months", ylab = "Complaints")
-```
-
-It follows a decomposition of trend and seasonal effects using
-a moving average method.
-
-```{r,warning=F} 
-plot(decompose(Comp.ts))
-```
-
-
-
-Forecasting models 
---------------------------------------------------------
-The following forecasting models are compared: 
-* __Autoregressive models__ 
-* __Holt-Winters models__ 
-* __Linear regression models with and without seasonal features__
-* __Harmonic seasonal models__ 
-* __Seasonal Autoregressive Integrated Moving Average models (SARIMA) and log-transformed SARIMA models__ 
-
-### Autoregressive models
-The series $\{{x_{t}}\}$ is an autoregressive process of order p, abbreviated to AR(p), if
-
-
-${x_{t}}$ = ${x_{t-1}}$ ${a_{t-1}}$ + ${x_{t-2}}$ ${a_{t-2}}$ + ... + ${x_{t-p}}$ ${a_{t-p}}$ + ${w_{t}}$
-
-
-where ${w_{t}}$ is white noise. Further details in [3]. AR(p) models will be fitted to data using the R ```ar``` function.
-
-
-### Holt-Winters models
-
-The Holt-Winters method was suggested by Holt (1957) and Winters (1960), who
-were working in the School of Industrial Administration at Carnegie Institute
-of Technology, and uses exponentially weighted moving averages to update
-estimates of the seasonally adjusted mean (called the level ), slope, and seasonals. Further details in [3].
-Here are considered HW models with both additive and multiplicative seasonal components.
-HW models models will be fitted to data using the R ```HoltWinters``` function.
-
-### Linear regression models with and without seasonal features
-
-A model for a time series $\{{x_{t}}\}$ is linear if it can be expressed as
-
-${x_{t}}$ = ${a_{0}}$ + ${a_{1}}$ ${u_{1,t}}$ + ${a_{2}}$ ${u_{2,t}}$ + ... + ${a_{m}}$ ${u_{m,t}}$ + ${z_{t}}$
-
-where ${u_{i,t}}$ is the value of the i-th predictor (or explanatory) variable at time
-t (i = 1, . . . ,m; t = 1, . . . , n),  ${z_{t}}$ is the error at time t, and ${a_{0}}$, ${a_{1}}$, ..., ${a_{m}}$
-are model parameters, which can be estimated by least squares. 
-
-Linear models for time series are non-stationary when they include functions
-of time. Differencing can often transform a non-stationary series with a deterministic
-trend to a stationary series. 
-
-A seasonal indicator model for a time series $\{{x_{t}}\}$  containing ${s}$ seasons and a trend ${m_{t}}$  is given by
-
-${x_{t}}$ = ${m_{t}}$ + ${s_{t}}$ + ${z_{t}}$
-
-where ${s_{t}}$ = ${b_{i}}$  when t falls in the i-th season (t = 1, . . . , n; i = 1, . . . , s) and
-${z_{t}}$ is the residual error series, which may be autocorrelated. Further details in [3]. Linear regression models with and without seasonal features are here fitted to data and used to make predictions as follows.
-
-
-```{r,warning=F} 
-buildLinearRegSeas = function(myts){
-  Time = time(myts)
-  Seas = cycle(myts)
-  lm = lm(myts ~ Time )
-  lmSeas = lm(myts ~ 0 + Time + factor(Seas) )
-  list(lmSeas,lm)
-}
-predictLinearRegSeas = function(valts,regBoundle,freq=12) {
-  lm = regBoundle[[2]]
-  lmSeas = regBoundle[[1]]
-  
-  new.t = as.vector(time(valts))
-  
-  pred.lm = lm$coeff[1] + lm$coeff[2] * new.t
-  beta = c(rep(coef(lmSeas)[2:13] , floor (length(valts)/freq) ) , coef(lmSeas)[2:((length(valts) %% freq)+1)] )
-  pred.lmSeas = lmSeas$coeff[1]*new.t + beta 
-  
-  list(pred.lmSeas,pred.lm)
-}
-```
-
-### Harmonic seasonal models
-Seasonal effects often vary smoothly over the seasons, so that it may be more
-parameter-efficient to use a smooth function instead of separate indices.
-Sine and cosine functions can be used to build smooth variation into a
-seasonal model, e.g. a sine wave with frequency f (cycles per sampling interval),
-amplitude A. Further details in [3]. Harmonic seasonal models are here, where used, fitted to data and used to make predictions as follows.
-
-```{r,warning=F} 
-buildHarmonicModel = function(myts) {  
-  Time = time(myts)
-  terms = c("Time","I(Time^2)","COS[,1]","SIN[,1]",
-            "COS[,2]","SIN[,2]","COS[,3]","SIN[,3]",
-            "COS[,4]","SIN[,4]","COS[,5]","SIN[,5]", "COS[,6]","SIN[,6]" )
-  SIN = COS = matrix(nr = length(myts) , nc = 6)
-  for (i in 1:6) {
-    COS[,i] = cos(2*pi*i*Time)
-    SIN[,i] = sin(2*pi*i*Time)
-    }
-  Tscal = Time 
-  mod.all = lm(myts ~ Time + I(Time^2) 
-               + COS[,1] + SIN[,1] + COS[,2] + SIN[,2] 
-               + COS[,3] + SIN[,3] + COS[,4] + SIN[,4] 
-               + COS[,5] + SIN[,5] + COS[,6] + SIN[,6] )
-  tscore = coef(mod.all) / sqrt(diag(vcov(mod.all)))
-  fmla <- as.formula(paste("myts ~ " , paste(terms[abs(tscore)>2] , collapse= "+")))
-  mod = lm(fmla)
-  mod.res.ar = ar(resid(mod) , method="mle")
-  list(mod.res.ar,mod)
-} 
-
-predictHarmonicModel = function(valts , boundle){
-  mod = boundle[[2]] 
-  mod.res.ar = boundle[[1]]
-
-  Time.val = time(valts)
-  SIN = COS = matrix(nr = length(valts) , nc = 6)
-  for (i in 1:6) {
-    COS[,i] = cos(2*pi*i*Time.val)
-    SIN[,i] = sin(2*pi*i*Time.val)
-    }
-  new.t.scal = Time.val
-  res.ar = predict( mod.res.ar , n.ahead=length(valts) )
-  pred = mod$coeff[1] + mod$coeff[2] * new.t.scal +  
-    mod$coeff[3] * I(new.t.scal^2) + mod$coeff[4] * SIN[, 1] + 
-    mod$coeff[5] * SIN[, 2] + mod$coeff[6] * SIN[, 3] 
-  pred.res.ar = as.vector(pred) + as.vector(res.ar$pred)  
-  list(pred,pred.res.ar)
-}
-```
-### Seasonal Autoregressive Integrated Moving Average models (SARIMA) and log-transformed SARIMA models
-
-Differencing a series ${x_{t}}$ can remove trends, whether these trends are stochastic,
-as in a random walk, or deterministic, as in the case of a linear trend. In the case of a random walk, ${x_{t}}$ = ${x_{t-1}}$ + ${w_{t}}$, the first-order differenced series is white noise ${w_{t}}$ (i.e., ${diff(x_{t})}$ = ${x_{t}}$ − ${x_{t-1}}$ = ${w_{t}}$) and so is stationary. In contrast, if ${x_{t}}$ = ${a}$ + ${b}$${t}$ + ${w_{t}}$, a linear trend with white noise errors, then ${diff(x_{t})}$ =  ${x_{t}}$ − ${x_{t-1}}$ = ${b}$ + ${w_{t}}$-${w_{t-1}}$, which is a stationary moving average process rather than white noise. Notice that the consequence of differencing a linear
-trend with white noise is an MA(1) process, whereas subtraction of the trend would give white noise. As the differenced series needs to be aggregated (or ‘integrated’) to recover the original series, the underlying stochastic process
-is called autoregressive integrated moving average, which is abbreviated to ARIMA. The ARIMA process can be extended to include seasonal terms, giving a non-stationary seasonal ARIMA (SARIMA) process. 
-
-Many non-linear models can be transformed to linear models. For example,
-an exponential model for the series ${x_{t}}$ can be transformed by taking
-natural logarithms to obtain a linear model for the series ${y_{t}}$:
-
-${y_{t}}$ = ${log(x_{t})}$ = ${a_{o}}$ + ${a_{1}}$ ${t}$ + ${z_{t}}$ 
-
-Further details in [3]. SARIMA models and log-transformed SARIMA models are here fitted to data and used to make predictions as follows.
-
-
-```{r,warning=F} 
-get.best.arima <- function(x.ts, maxord = c(1,1,1,1,1,1))
-  {
-  best.aic <- 1e8
-  n <- length(x.ts)
-  for (p in 0:maxord[1]) 
-    
-    for(d in 0:maxord[2]) 
-      
-      for(q in 0:maxord[3])
-        
-        for (P in 0:maxord[4]) 
-          
-          for(D in 0:maxord[5]) 
-            
-            for(Q in 0:maxord[6]) {
-              
-              tryCatch({
-                fit <- arima(x.ts, order = c(p,d,q), seas = list(order = c(P,D,Q), frequency(x.ts)), method = "CSS")
-                fit.aic <- -2 * fit$loglik + (log(n) + 1) * length(fit$coef)
-                if (fit.aic < best.aic) {
-                  best.aic <- fit.aic
-                  best.fit <- fit
-                  best.model <- c(p,d,q,P,D,Q)
-              }
-              
-            } , error = function(e) {
-              
-            })
-      }
-  list(best.aic, best.fit, best.model)
-  }
-
-```
-
-
-Contest #1: predicting sales of Australian wine
---------------------------------------------------------
-Using above definitions, let's see how such forecasting models perform in predicting sales of Australian wine. 
-
-```{r,warning=F} 
-compareModels = function(contestName, ts_train,ts_val,doPlot=T,harm=F){
-  ###### models 
-  mod.ar = ar(ts_train)
-  mod.hw.mul = HoltWinters(ts_train , seasonal= "mul")
-  mod.hw.add = HoltWinters(ts_train , seasonal= "add")
-  regBoundle = buildLinearRegSeas(ts_train)
-  mod.reg = regBoundle[[1]] 
-  mod.reg.2 = regBoundle[[2]]
-  mod.arima <- get.best.arima( ts_train, maxord = c(2,2,2,2,2,2))[[2]]
-  mod.arima.log <- get.best.arima( log(ts_train), maxord = c(2,2,2,2,2,2))[[2]]
-  
-  models = c(mod.ar,mod.hw.mul,mod.hw.add,mod.reg,mod.reg.2,
-             mod.arima,mod.arima.log)
-
-if (harm) {
-  harmonicBoundle = buildHarmonicModel(ts_train)
-  mod.reg.3 = harmonicBoundle[[2]]
-  mod.reg.3.res.ar = harmonicBoundle[[1]]
-  models = c(mod.ar,mod.hw.mul,mod.hw.add,mod.reg,mod.reg.2,
-              mod.reg.3,mod.reg.3.res.ar,
-             mod.arima,mod.arima.log)
-} 
-  
-  ###### predictions 
-  pred.ar = predict( mod.ar , n.ahead=length(ts_val) )
-  pred.hw.mul = predict( mod.hw.mul , n.ahead=length(ts_val) ) 
-  pred.hw.add = predict( mod.hw.add , n.ahead=length(ts_val) ) 
-  predRegBoundle = predictLinearRegSeas(ts_val,regBoundle)
-  pred.reg = predRegBoundle[[2]]
-  pred.reg.2 = predRegBoundle[[1]]
-  pred.arima <- predict(mod.arima, n.ahead = length(ts_val))$pred
-  pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts_val))$pred)
-  
-  ####### performance  
-  perf.ar = cbind( type = c("AR") , getPerformance(as.vector(pred.ar$pred) , as.vector(ts_val)))
-  perf.hw.mul = cbind( type = c("HW.mul") , getPerformance(as.vector(pred.hw.mul) , as.vector(ts_val)))
-  perf.hw.add = cbind( type = c("HW.add") , getPerformance(as.vector(pred.hw.add) , as.vector(ts_val)))
-  perf.reg = cbind( type = c("Reg") , getPerformance(as.vector(pred.reg) , as.vector(ts_val) ))
-  perf.reg.2 = cbind( type = c("Reg.seas") , getPerformance(as.vector(pred.reg.2) , as.vector(ts_val) ))
-  perf.arima = cbind( type = c("SARIMA") ,getPerformance(as.vector(pred.arima) , as.vector(ts_val) ) )
-  perf.arima.log = cbind( type = c("SARIMA.log") ,getPerformance(as.vector(pred.arima.log) , as.vector(ts_val) ) )
-  
-  perf = rbind(
-    perf.ar , perf.hw.mul, perf.hw.add, perf.reg, perf.reg.2,  
-    perf.arima, perf.arima.log
-    )
-
-if (harm) {
-  predHarmonicBoundle = predictHarmonicModel (ts_val , harmonicBoundle)
-  pred.reg.3 = predHarmonicBoundle[[1]]
-  pred.reg.3.res.ar = predHarmonicBoundle[[2]]
-  
-  perf.reg.3 = cbind( type = c("Reg.harm") , getPerformance(as.vector(pred.reg.3) , as.vector(ts_val) ))
-  perf.reg.3.res.ar = cbind( type = c("Reg.harm.res.ar") , getPerformance(as.vector(pred.reg.3.res.ar) , as.vector(ts_val) ))
+The following code creates a concise statistical description of a sample of predictors.  
  
-  perf = rbind(
-    perf.ar , perf.hw.mul, perf.hw.add, perf.reg, perf.reg.2, 
-    perf.reg.3, perf.reg.3.res.ar, 
-    perf.arima, perf.arima.log
-    )
-}
+```{r,warning=F} 
+ps = sample(length(solTrainX),16)
+library(Hmisc)
+describe(solTrainX[,ps])
+```
+
+Scatter plots of the such predictors versus response variable (solubility). 
+
+```{r,warning=F} 
+featurePlot(x = solTrainX[,ps], y = solTrainY,
+            between = list(x = 1, y = 1),
+            type = c("g", "p", "smooth")) 
+```
+
+The “FP” columns correspond to the binary 0/1 fingerprint predictors that are associated with the presence or absence of a particular chemical structure. Alternate versions of these data that have been Box–Cox transformed are contained in the data frames __solTrainXtrans__ and __solTestXtrans__. These modified versions were used in the analyses in this and subsequent chapters.
+The solubility values for each compound are contained in numeric vectors named __solTrainY__ and __solTestY__. 
+
+Fitting models 
+--------------------------------------------------------
+Each model used repeated 10-fold cross-validation and is specified with the trainControl function. 
+
+```{r,warning=F} 
+controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10)
+```
+
+The following helping method will be used for predicting and assessing model performances. 
+
+```{r,warning=F} 
+predictAndMeasure = function(model,model.label,trainingData,ytrain,testData,ytest,tm , grid = NULL,verbose=F) {
+  pred = predict(model , trainingData) 
+  RMSE.train = RMSE(obs = ytrain , pred = pred)
   
-if (doPlot) {
-  ts_all = ts( c(as.vector(ts_train),as.vector(ts_val)) , start=start(ts_train) , frequency=frequency(ts_train) )
-  ts.plot(ts_all, 
-          pred.ar$pred , 
-          pred.hw.mul , 
-          pred.hw.add , 
-          ts(pred.reg , start=start(ts_val) , frequency=frequency(ts_all)), 
-          col=1:5 , lty=1:5 )
-  legend("topleft", c(contestName, "AR" , "HW.mul" , "HW.add" , "Reg" ), 
-         lty=1:5, col=1:5)
+  pred = predict(model , testData) 
+  RMSE.test = RMSE(obs = ytest , pred = pred)
   
-  if (! harm) {
-    ts.plot(ts_all , 
-            ts(pred.reg.2 , start=start(ts_val) , frequency=frequency(ts_all)) , 
-            ts(pred.arima , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            ts(pred.arima.log , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            col=1:4 , lty=1:4 )
-    legend("topleft", c(contestName,"Reg.seas" , "SARIMA" , "SARIMA.log"), 
-           lty=1:4, col=1:4)
-    } else {
-      ts.plot(ts_all , 
-            ts(pred.reg.2 , start=start(ts_val) , frequency=frequency(ts_all)) , 
-            ts(pred.reg.3 , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            ts(pred.reg.3.res.ar , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            ts(pred.arima , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            ts(pred.arima.log , start=start(ts_val) , frequency=frequency(ts_all)) ,
-            col=1:6 , lty=1:6 )
-      legend("topleft", c(contestName,"Reg.seas" ,  "Reg.harm" , "Reg.harm.seas.ar" , "SARIMA" , "SARIMA.log"), 
-           lty=1:6, col=1:6)
-    }
+  if (verbose) cat("****** RMSE(train) =",RMSE.train," -  RMSE(test) =",RMSE.test,"  --  Time elapsed(sec.):",tm[[3]], "...  \n")
+  
+  perf.grid = NULL
+  if (is.null(grid)) { 
+    perf.grid = data.frame(predictor = c(model.label) , RMSE.train = c(RMSE.train) , RMSE.test = c(RMSE.test) , time = c(tm[[3]]))
+  } else {
+    .grid = data.frame(predictor = c(model.label) , RMSE.train = c(RMSE.train) , RMSE.test = c(RMSE.test) , time = c(tm[[3]]))
+    perf.grid = rbind(grid, .grid)
   }
-
-  list(perf[order(perf$MAE) , ] , models[order(perf$MAE)])
+  
+  perf.grid
 }
-
-####### the contest 
-data = splitTrainXvat(sweetw.ts , 0.7)
-ts.train = data[[1]]
-ts.val = data[[2]]
-comparisons = compareModels("Sales of Australian wine", ts.train,ts.val,doPlot=T,harm=T)
-comparisons[1]
 ```
 
-__The Winner is__:
-```{r echo=FALSE,warning=F} 
-as.character(comparisons[[1]][1,1])
+The following code creates model objects. 
+
+```{r,warning=F} 
+verbose = F 
+trainingData = solTrainX
+trainingData$Solubility = solTrainY
+
+testData = solTestX
+#testData$Solubility = solTestY
+
+trainingData.trans = solTrainXtrans
+trainingData.trans$Solubility = solTrainY
+
+testData.trans = solTestXtrans
+#testData$Solubility = solTestY
+
+######################################################## linear regression 
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] linear regression ...  \n")
+set.seed(669); ptm <- proc.time()
+linearReg <- train(Solubility ~  . , data = trainingData, method = "lm", trControl = controlObject) 
+if (verbose) linearReg
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (linearReg,"Linear Reg",trainingData,solTrainY,testData,solTestY,tm , grid = NULL , verbose)
+
+if (verbose) cat("****** [WITH TRANSFORMATIONS] linear regression ...  \n")
+set.seed(669); ptm <- proc.time()
+linearReg.trans <- train(Solubility ~  . , data = trainingData.trans, method = "lm", trControl = controlObject) 
+if (verbose) linearReg.trans
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (linearReg.trans,"Linear Reg (Trans)",trainingData.trans,solTrainY,testData.trans,solTestY,tm, grid = perf.grid)
+
+######################################################## Elastic Net
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] Elastic Net ...  \n")
+set.seed(669); ptm <- proc.time()
+enetGrid <- expand.grid(.lambda = c(0, .001, .01, .1), .fraction = seq(0.05, 1, length = 20))
+enetModel <- train(Solubility ~ . , data = trainingData , method = "enet", preProc = c("center", "scale"), tuneGrid = enetGrid, trControl = controlObject)
+if (verbose) enetModel
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (enetModel,"Elastic Net",trainingData,solTrainY,testData,solTestY,tm , grid = perf.grid , verbose )
+
+if (verbose) cat("****** [WITH TRANSFORMATIONS] Elastic Net ...  \n")
+set.seed(669); ptm <- proc.time()
+enetModel.trans <- train(Solubility ~ . , data = trainingData.trans , method = "enet", preProc = c("center", "scale"), tuneGrid = enetGrid, trControl = controlObject)
+if (verbose) enetModel.trans
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (enetModel.trans,"Elastic Net (Trans)",trainingData.trans,solTrainY,testData.trans,solTestY,tm, grid = perf.grid , verbose )
+
+######################################################## Partial Least Squares
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] Partial Least Squares ...  \n")
+set.seed(669); ptm <- proc.time()
+plsModel <- train(Solubility ~ . , data = trainingData , method = "pls", preProc = c("center", "scale"), tuneLength = 15, trControl = controlObject)
+if (verbose) plsModel
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (plsModel,"PLS",trainingData,solTrainY,testData,solTestY,tm , grid = perf.grid , verbose )
+
+if (verbose) cat("****** [WITH TRANSFORMATIONS] Partial Least Squares ...  \n")
+set.seed(669); ptm <- proc.time()
+plsModel.trans <- train(Solubility ~ . , data = trainingData.trans , method = "pls", preProc = c("center", "scale"), tuneLength = 15, trControl = controlObject)
+if (verbose) plsModel.trans
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (plsModel.trans,"PLS (Trans)",trainingData.trans,solTrainY,testData.trans,solTestY,tm, grid = perf.grid , verbose )
+
+######################################################## Support Vector Machines 
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] Support Vector Machines ...  \n")
+set.seed(669); ptm <- proc.time()
+svmRModel <- train(Solubility ~ . , data = trainingData, method = "svmRadial",
+                   tuneLength = 15, preProc = c("center", "scale"),  trControl = controlObject)
+if (verbose) svmRModel
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (svmRModel,"SVM",trainingData,solTrainY,testData,solTestY,tm , grid = perf.grid , verbose )
+
+if (verbose) cat("****** [WITH TRANSFORMATIONS] Support Vector Machines ...  \n")
+set.seed(669); ptm <- proc.time()
+svmRModel.trans <- train(Solubility ~ . , data = trainingData.trans, method = "svmRadial",
+                   tuneLength = 15, preProc = c("center", "scale"),  trControl = controlObject)
+if (verbose) svmRModel.trans
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (svmRModel.trans,"SVM (Trans)",trainingData.trans,solTrainY,testData.trans,solTestY,tm, grid = perf.grid , verbose )
+
+######################################################## Bagged Tree
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] Bagged Tree ...  \n")
+set.seed(669); ptm <- proc.time()
+treebagModel <- train(Solubility ~ . , data = trainingData, method = "treebag", trControl = controlObject)
+
+if (verbose) treebagModel
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (treebagModel,"Bagged Tree",trainingData,solTrainY,testData,solTestY,tm , grid = perf.grid , verbose )
+
+if (verbose) cat("****** [WITH TRANSFORMATIONS] Bagged Tree ...  \n")
+set.seed(669); ptm <- proc.time()
+treebagModel.trans <- train(Solubility ~ . , data = trainingData.trans, method = "treebag", trControl = controlObject)
+
+if (verbose) treebagModel.trans
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (treebagModel.trans,"Bagged Tree (Trans)",trainingData.trans,solTrainY,
+                               testData.trans,solTestY,tm, grid = perf.grid , verbose )
+
+######################################################## Cond Inf Tree
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] Cond Inf Tree ...  \n")
+set.seed(669); ptm <- proc.time()
+ctreeModel <- train(Solubility ~ . , data = trainingData , method = "ctree", tuneLength = 10, trControl = controlObject)
+
+if (verbose) ctreeModel
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (ctreeModel,"Cond Inf Tree",trainingData,solTrainY,testData,solTestY,tm , grid = perf.grid , verbose )
+
+if (verbose) cat("****** [WITH TRANSFORMATIONS] Cond Inf Tree ...  \n")
+set.seed(669); ptm <- proc.time()
+ctreeModel.trans <- train(Solubility ~ . , data = trainingData.trans , method = "ctree", tuneLength = 10, trControl = controlObject)
+
+if (verbose) ctreeModel.trans
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (ctreeModel.trans,"Cond Inf Tree (Trans)",trainingData.trans,solTrainY,
+                               testData.trans,solTestY,tm, grid = perf.grid , verbose )
+
+######################################################## CART
+if (verbose) cat("****** [WITHOUT TRANSFORMATIONS] CART ...  \n")
+set.seed(669); ptm <- proc.time()
+rpartModel <- train(Solubility ~ . , data = trainingData , method = "rpart", tuneLength = 30, trControl = controlObject)
+
+if (verbose) rpartModel
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (rpartModel,"CART",trainingData,solTrainY,testData,solTestY,tm , grid = perf.grid , verbose )
+
+if (verbose) cat("****** [WITH TRANSFORMATIONS] CART ...  \n")
+set.seed(669); ptm <- proc.time()
+rpartModel.trans <- train(Solubility ~ . , data = trainingData.trans , method = "rpart", tuneLength = 30, trControl = controlObject)
+
+if (verbose) rpartModel.trans
+tm = proc.time() - ptm
+perf.grid = predictAndMeasure (rpartModel.trans,"CART (Trans)",trainingData.trans,solTrainY,
+                               testData.trans,solTestY,tm, grid = perf.grid , verbose )
 ```
 
-Partial autocorrelations of residuals of SARIMA.log (the winner model) is almost white noise. It has one (marginally) significant value at lag 0 and another (marginally) significant value at lag 0.8. On the other hand, SARIMA has only one (marginally) significant value at lag 1.4. 
-
-```{r warning=F} 
-mod.arima.log <- get.best.arima( log(ts.train), maxord = c(2,2,2,2,2,2))[[2]]
-mod.arima <- get.best.arima( ts.train, maxord = c(2,2,2,2,2,2))[[2]]
-
-pacf( mod.arima.log$res )
-pacf( mod.arima$res )
-```
-
-The point here is how much these componets are significant, as they are just above the statistical threshold. Hence, let's try to fit the residual series of SARIMA.log with an AR(8).   
-
-```{r warning=F} 
-pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts.val))$pred)
-pred.arima <- predict(mod.arima, n.ahead = length(ts.val))$pred
-
-res.ar <- ar(mod.arima.log$res, order = 8 ,  method = "mle")
-pred.res.ar <- predict(res.ar, n.ahead = length(ts.val))$pred
-
-pred.arima.log.new <- as.vector(pred.arima.log) + as.vector(pred.res.ar)
-
-ts_all = 
-  ts( c(as.vector(ts.train),as.vector(ts.val)) , start=start(ts.train) , frequency=frequency(ts.train))
-ts.plot(ts_all, 
-            ts(pred.arima , start=start(ts.val) , frequency=12) ,
-            ts(pred.arima.log , start=start(ts.val) , frequency=12) ,
-            ts(pred.arima.log.new , start=start(ts.val) , frequency=12) ,
-            col=1:4 , lty=1:4 )
-    legend("topleft", c("Sales of Australian wine","SARIMA" , "SARIMA.log" , "SARIMA.log.new"), 
-           lty=1:4, col=1:4)
-
-perf.sarima.log.new = getPerformance(pred.arima.log.new , ts.val)
-perf.sarima.log.new
-```
-
-Performances of SARIMA.log.new are equal to the ones of SARIMA.log confirming that the latter provides a pretty good fit to data (being simpler than the former). 
-
-
-Contest #2: predicting Air Passengers
+Measuring performances   
 --------------------------------------------------------
-Using above definitions, let's see how such forecasting models perform in predicting Air Passengers.
+The same cross-validation folds were used for each model. The following figure shows
+parallel-coordinate plots for the resampling results across the models. Each
+line corresponds to a common cross-validation holdout. 
 
 ```{r,warning=F} 
-data = splitTrainXvat(AP , 0.7)
-ts.train = data[[1]]
-ts.val = data[[2]]
-comparisons = compareModels("Air Passengers",ts.train,ts.val,doPlot=T)
-comparisons[1]
+allResamples <- resamples(list("Linear Reg" = linearReg, "Linear Reg (Trans)" = linearReg.trans, 
+                               "SVM" = svmRModel , "SVM (Trans)" = svmRModel.trans , 
+                               "PLS" = plsModel , "PLS (Trans)" = plsModel.trans , 
+                               "Elastic Net" = enetModel , "Elastic Net (Trans)" = enetModel.trans , 
+                               "Bagged Tree" = treebagModel , "Bagged Tree (Trans)" = treebagModel.trans , 
+                               "Cond Inf Tree" = ctreeModel , "Cond Inf Tree (Trans)" = ctreeModel.trans , 
+                               "CART" = rpartModel , "CART (Trans)" = rpartModel.trans
+                               ))
+parallelplot(allResamples)
+parallelplot(allResamples , metric = "Rsquared")
 ```
 
-__The Winner is__:
-```{r echo=FALSE,warning=F} 
-as.character(comparisons[[1]][1,1])
+From this, the top performing models are Support Vector Machines with and without Box–Cox transformations. 
+Linear Regression / Partial Least Squares / Elastic Net with and without Box–Cox transformations are middle performing. 
+Bagged trees / Conditional  Inference Tree / CART showed modest results.   
+
+SVMs with Box–Cox transformations performs on test set as 0.60797 RMSE while without Box–Cox transformations as 0.61259. 
+
+```{r,warning=F} 
+perf.grid[order(perf.grid$RMSE.test, decreasing=F),]
 ```
 
+The plot of the observed values against the predicted values can help us to understand how well the model fits. The scatter plot of residuals against the fitted values help us to detect potential heteroscedasticity problems (= when the error variance is not constant over all the observations, the error is said to be _heteroscedastic_  ).  
 
+__SVMs__ 
 
-Contest #3: predicting unemployment in Maine
+```{r,warning=F} 
+predicted.SVM.trans = predict(svmRModel.trans , solTestXtrans) 
+residualValues.SVM <- solTestY - predicted.SVM.trans
+summary(residualValues.SVM)
+sd(residualValues.SVM)
+
+# Observed values versus predicted values
+axisRange <- extendrange(c(solTestY, predicted.SVM.trans))
+plot(solTestY, predicted.SVM.trans, ylim = axisRange, xlim = axisRange)
+abline(0, 1, col = "darkgrey", lty = 2)
+
+# Predicted values versus residuals
+plot(predicted.SVM.trans, residualValues.SVM, ylab = "residual")
+abline(h = 0, col = "darkgrey", lty = 2)
+```
+
+__Linear Regression__
+
+```{r,warning=F} 
+predicted.lin_reg.trans = predict(linearReg.trans, solTestXtrans) 
+residualValues.reg_lin <- solTestY - predicted.lin_reg.trans
+summary(residualValues.reg_lin)
+sd(residualValues.reg_lin)
+
+# Observed values versus predicted values
+axisRange <- extendrange(c(solTestY, predicted.lin_reg.trans))
+plot(solTestY, predicted.lin_reg.trans, ylim = axisRange, xlim = axisRange)
+abline(0, 1, col = "darkgrey", lty = 2)
+
+# Predicted values versus residuals
+plot(predicted.lin_reg.trans, residualValues.reg_lin, ylab = "residual")
+abline(h = 0, col = "darkgrey", lty = 2)
+```
+
+Accuracy vs scalability   
 --------------------------------------------------------
-Using above definitions, let's see how such forecasting models perform in predicting unemployment in Maine. 
+New application scenarios are arising where model scalability matters more than model accuracy. 
+
+For instance, __on-line learning__ applications. Let's take a shipping service website where user comes, specifies origin and destination, you offer to ship their package for some asking price, and users sometimes choose to use your shipping service (y = 1) , sometimes not (y = 0). Features x captures properties of user, of origin/destination and asking price. We want to learn p(y = 1 | x) to optimize price. 
+
+As a conseguence, new kinds of algorithms has been becoming populare such as __stochastic gradient descent__, __mini-batch gradient descent__, __map-reduce batch gradient descent__.   
+
+Here I focused only on the time a model needs to fit on training set as a proxy of scalability. Clearly, the more the time a model needs to fit, the lower the throughput on a cluster node of my architecture. Also memory and CPU consumption should be assessed. 
+
+Caming back to our models, SVMs needs more than 7 minutes to fit on training data set while PLS with Box–Cox transformations needs only 13 secs performing 0.7199966 RMSE on test set. The fastest model in fitting training data is Linear Regression with Box–Cox transformations (10.83 secs).   
 
 ```{r,warning=F} 
-data = splitTrainXvat(Maine.month.ts , 0.7)
-ts.train = data[[1]]
-ts.val = data[[2]]
-comparisons = compareModels("% unemployment",ts.train,ts.val,doPlot=T)
-comparisons[1]
+perf.grid[order(perf.grid$time, decreasing=F),]
 ```
 
-__The Winner is__:
-```{r echo=FALSE,warning=F} 
-as.character(comparisons[[1]][1,1])
-```
-
-Contest #4: predicting supply of Australian chocolate, electricity and beer
+Models vs implementations 
 --------------------------------------------------------
-Using above definitions, let's see how such forecasting models perform in predicting supply of Australian chocolate, electricity and beer. 
+The problem as exposed in the previous section is a zero-sum game. As for bias and variance, it seems there's a clear trade-off between accuracy and scalability. On the other hand, continuing the metaphor, as for machine learning problems I need to check that there's no additional noises in addition to bias, variance and irreducible errors, so here we need to check that such a loss of scalability for top performer models is intrisically bound to the problem and not to the implementation.       
 
-### Australian chocolate
-```{r,warning=F} 
-data = splitTrainXvat(Choc.ts , 0.7)
-ts.train = data[[1]]
-ts.val = data[[2]]
-comparisons = compareModels("Choc (tonnes)",ts.train,ts.val,doPlot=T)
-comparisons[1]
-```
-
-__The Winner is__:
-```{r echo=FALSE,warning=F} 
-as.character(comparisons[[1]][1,1])
-```
-
-### Australian electricity 
-```{r,warning=F} 
-data = splitTrainXvat(Elec.ts , 0.7)
-ts.train = data[[1]]
-ts.val = data[[2]]
-comparisons = compareModels("Elec (kwh)",ts.train,ts.val,doPlot=T)
-comparisons[1]
-```
-
-__The Winner is__:
-```{r echo=FALSE,warning=F} 
-as.character(comparisons[[1]][1,1])
-```
-
-### Australian beer 
-```{r,warning=F} 
-data = splitTrainXvat(Beer.ts , 0.7)
-ts.train = data[[1]]
-ts.val = data[[2]]
-comparisons = compareModels("Beer (Ml)",ts.train,ts.val,doPlot=T)
-comparisons[1]
-```
-
-__The Winner is__:
-```{r echo=FALSE,warning=F} 
-as.character(comparisons[[1]][1,1])
-```
-
-Contest #5: predicting complaints to a motoring organisation
---------------------------------------------------------
-Using above definitions, let's see how such forecasting models perform in predicting complaints to a motoring organisation. 
-
-```{r,warning=F} 
-data = splitTrainXvat(Comp.ts , 0.7)
-ts.train = data[[1]]
-ts.val = data[[2]]
-comparisons = compareModels("Complaints",ts.train,ts.val,doPlot=T)
-comparisons[1]
-```
-
-__The Winner is__:
-```{r echo=FALSE,warning=F} 
-as.character(comparisons[[1]][1,1])
-```
-
-
-Conclusions 
---------------------------------------------------------
-
-In conclusion, there's no a *one size fits all* forecasting model, though SARIMA, HW.add and AR performances appear better than other models. A brief summary of these performances follows.  
-
-Data set                           | Winner            | 2nd place        
----------------------------------- | ----------------- | -------------
-*Sales of Australian wine*         | **SARIMA.log**    | AR
-*Air Passengers*                   | **HW.add**        | HW.mul
-*Unemployment: Maine*              | **AR**            | HW.add
-*Supply of Australian Chocolate*   | **SARIMA**        | Reg.seas
-*Supply of Australian Electricity* | **SARIMA**        | HW.mul
-*Supply of Australian Beer*        | **HW.add**        | HW.mul
-*Complaints to a motoring org.*    | **AR**            | Reg
-
+For instance, let's see how to improve RMSE performances of Regressors with an __octave__ based model. Similarly, let's how it's possible to build a nu-SVR based model that improves caret SVM RMSE performance fitting on the training set in less than a minute ... *stay tuned* ...    
 
 References
 --------------------------------------------------------

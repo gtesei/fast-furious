@@ -78,7 +78,7 @@ function [p_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
     printf("*** GRID ***\n");
     fprintf('i \tp \t\tlambda \t\tRMSE(Train) \tRMSE(Val) \n');
     for i = 1:gLen
-      fprintf('%i\t%f\t%f\t%f\t%f\ \n',
+      fprintf('%i\t%f\t%f\t%f\t%f \n',
               i, grid(i,2), grid(i,3),grid(i,4),grid(i,5) );
     endfor
 
@@ -93,8 +93,8 @@ function [p_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
 	  xlabel('i')
 	  ylabel('RMSE')
 	  max_X = gLen;
-	  max_Y = max(max(max(grid(:,4) , grid(:,5)))) * 1.1;
-	  min_Y = min(min(min(grid(:,4) , grid(:,5))));
+	  max_Y = max(grid(:,5)) * 1.1;
+	  min_Y = max(grid(:,5));
 	  axis([1 max_X min_Y max_Y]);
 	  legend('Train', 'Cross Validation');
   endif 

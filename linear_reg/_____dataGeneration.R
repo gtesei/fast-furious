@@ -38,7 +38,7 @@ library(caret)
 library(AppliedPredictiveModeling)
 data(solubility)
 
-doBenchemark = T 
+doBenchemark = F 
 verbose = T 
 
 cat("****** writing on disk data sets ... ", ls()[as.vector( (grep("sol",ls())) )], " ... \n")
