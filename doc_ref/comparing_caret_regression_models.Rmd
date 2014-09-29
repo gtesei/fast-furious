@@ -6,7 +6,7 @@ Contents
 1. **Introduction**
 2. **Data set and quick explanatory analysis**
 3. **Fitting models**
-4. **Measuring performances **
+4. **Measuring performances**
 5. **Accuracy vs scalability**
 6. **Models vs implementations** 
 6. **References**

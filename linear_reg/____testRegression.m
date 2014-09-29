@@ -23,6 +23,12 @@ solTrainXtrans = solTrainXtrans(2:end,:);
 solTestY = solTestY(2:end,:);  
 solTrainY = solTrainY(2:end,:);
 
+############################################################## Normalizing naming
+Xtrain = solTrainXtrans;
+Xval = solTestXtrans;
+ytrain = solTrainY;
+yval = solTestY;
+
 ############################################################## Regularized Polynomial Regression 
 ## grid
 perf_grid = zeros(2,5);
@@ -108,7 +114,18 @@ perf_grid = zeros(1,6);
 ## without transformations
 printf("|--> Training Neural Networks ...\n");
 
+tic();
+[p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
+findOptPAndHAndLambda(Xtrain, ytrain, Xval, yval, featureScaled = 0 ,
+                      p_vec = [] ,
+                      h_vec = [1 2 3 4 5 6 7 8 9 10] ,
+                      lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10] ,
+                      verbose = 1, initGrid = [] , initStart = -1 , doPlot=1 , iter = 200);
+tm = toc();
+i = 1;
+perf_grid(i,1) = i; perf_grid(i,2) = p_opt_RMSE; perf_grid(i,3) = h_opt_RMSE; perf_grid(i,4) = lambda_opt_RMSE; perf_grid(i,5) = RMSE_opt; perf_grid(i,6) = tm;
 
+disp(perf_grid);
 
 
 
