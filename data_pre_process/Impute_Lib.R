@@ -1,28 +1,4 @@
-library(data.table)
-
-getBasePath = function (type = "data") {
-  ret = ""
-  base.path1 = ""
-  base.path2 = ""
-  
-  if(type == "data") {
-    base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/liberty-mutual-fire-peril"
-    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/liberty-mutual-fire-peril/"
-  } else if (type == "code") {
-    base.path1 = "C:/docs/ff/gitHub/fast-furious/competitions/liberty-mutual-fire-peril"
-    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/competitions/liberty-mutual-fire-peril/"
-  } else {
-    stop("unrecognized type.")
-  }
-  
-  if (file.exists(base.path1))  {
-    ret = paste0(base.path1,"/")
-  } else {
-    ret = base.path2
-  }
-  
-  ret
-} 
+library(data.table) 
 
 buildDecisionMatrix = function (data) {
   predictors.name = colnames(data)
