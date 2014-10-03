@@ -61,8 +61,8 @@ findImputePredictors = function(DecisionMatrix,data) {
       candidates = which(DecisionMatrix[i,((pnum+3):(2*pnum+2)),] == 0)
       stat.sign = which( DecisionMatrix[i,1+candidates,] < 0.05)
       predIdx = candidates[stat.sign] 
-      ImputePredictors[i,]$predictors = paste(predictors.name[predIdx] , collapse = ",")
-      ImputePredictors[i,]$predictorIndex = paste(predIdx , collapse = ",")
+      ImputePredictors[i,]$predictors = paste(predictors.name[predIdx] , collapse = "-")
+      ImputePredictors[i,]$predictorIndex = paste(predIdx , collapse = "-")
     } 
   }
   
@@ -108,6 +108,9 @@ findBestImputeModel = function(data, ImputePredictors ,
     ImputePredictors = cbind(ImputePredictors , tmp)
   }
   
+  ImputePredictors$winner = rep(NA,pnum)
+  ImputePredictors$best_perf = rep(NA,pnum)
+  
   ## sampling data 
   for (i in 1:pnum) {
     ## TODO resempling 10 volte 
@@ -116,7 +119,7 @@ findBestImputeModel = function(data, ImputePredictors ,
         cat("processing " , as.character(ImputePredictors[i,]$predictor) , " ...\n")
       }
       ImputeTestIdx = which(is.na(data[,i])) 
-      ImputePredIdx = c(i, as.numeric(unlist( strsplit( ImputePredictors[i,]$predictorIndex , "," ) ) ) )
+      ImputePredIdx = c(i, as.numeric(unlist( strsplit( ImputePredictors[i,]$predictorIndex , "-" ) ) ) )
       ImputeXTest = data[ImputeTestIdx,ImputePredIdx]
       ImputeXtrain = data[-ImputeTestIdx,ImputePredIdx]
       ImputeXtrain = na.omit(ImputeXtrain)
@@ -157,8 +160,6 @@ findBestImputeModel = function(data, ImputePredictors ,
   }
   
   ## the winner is ... 
-  ImputePredictors$winner = rep(NA,pnum)
-  ImputePredictors$best_perf = rep(NA,pnum)
   for (i in 1:pnum) {
     if (ImputePredictors[i,]$need.impute) {
       models = NULL
@@ -273,18 +274,20 @@ prepare4Octave = function(data , verbose = T , debug = F ) {
   ClassModels = c("LogisticReg","SVC")
   
   ImputePredictors = findImputePredictors(DecisionMatrix,data)
-  if (verbose) {
-    cat("finding best models ... \n")
-  }
   
   ## completing matrix 
   pnum = dim(data)[2] 
   modelNumber = max(length(RegModels),length(ClassModels))
   for (j in 1:modelNumber) {
     tmp = data.frame(x = rep(NA,pnum) , y=rep(NA,pnum))
+    tmp$x = as.character(tmp$x)
+    tmp$y = as.numeric(tmp$y)
     colnames(tmp) = c(paste0("Mod_",j) , paste0("Perf_Mod_",j))
     ImputePredictors = cbind(ImputePredictors , tmp)
   }
+  
+  ImputePredictors$winner = as.character(rep(NA,pnum))
+  ImputePredictors$best_perf = as.numeric(rep(NA,pnum))
   
   ImputePredictors
 }

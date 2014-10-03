@@ -74,6 +74,7 @@ train.fn = "train.csv"
 test.fn = "test.csv"
 sampleSub.fn = "sampleSubmission.csv"
 
+cat ("loading ",paste(getBasePath(),train.fn,sep="")," and " , paste(getBasePath(),test.fn,sep="") ,"... \n")
 train.tab = fread(paste(getBasePath(),train.fn,sep="") , header = TRUE , sep=","  )
 test.tab = fread(paste(getBasePath(),test.fn,sep="") , header = TRUE , sep=","  )
 

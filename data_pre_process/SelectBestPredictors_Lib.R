@@ -277,4 +277,55 @@ getBestPredictors = function(train , response , test ,
   list(IndexTrain,IndexTest)
 }
 
+transfrom4Skewness = function (train,test) {
+  library(e1071)
+  
+  no = which(as.numeric(lapply(train,is.factor)) == 1)
+  noT = which(as.numeric(lapply(test,is.factor)) == 1)
+  
+  skewValuesTrainBefore <- apply(train[,-no], 2, skewness)
+  cat("----> skewValues  before transformation (train) \n\n")
+  print(skewValuesTrainBefore)
+  
+  skewValuesTestBefore <- apply(test[,-noT], 2, skewness)
+  cat("----> skewValues  before transformation (test): \n")
+  print(skewValuesTestBefore)
+  
+  idx = (1:15)[-no]
+  for (i in idx) {
+    varname = colnames(train)[i]
+    cat("processing ",varname," ... \n")
+    inTest = (sum(colnames(test) == varname) == 1)
+    tr = BoxCoxTrans(train[,i])
+    print(tr)
+    if (! is.na(tr$lambda) ) {
+      cat("tranforming train ... \n")
+      newVal = predict(tr,train[,i])
+      train[,i] = newVal
+      cat("skewness after transformation (train): " , skewness(train[,i]), "  \n")
+      if (inTest) {
+        idxTest = which((colnames(test) == varname) == T )
+        cat("tranforming test ... \n")
+        newVal = predict(tr,test[,idxTest])
+        test[,idxTest] = newVal
+        cat("skewness after transformation (test): " , skewness(train[,i]), "  \n")
+      } 
+    }
+  } 
+  
+  cat("---->  skewValues  before transformation (train) \n")
+  print(skewValuesTrainBefore)
+  skewValues <- apply(train[,-no], 2, skewness)
+  cat("\n---->  skewValues  after transformation (train):  \n")
+  print(skewValues)
+  
+  cat("\n\n\n---->  skewValues  before transformation (test) \n")
+  print(skewValuesTestBefore)
+  skewValues <- apply(test[,-noT], 2, skewness)
+  cat("\n---->  skewValues  after transformation (test):  \n")
+  print(skewValues)
+  
+  list(train,test) 
+}
+
 
