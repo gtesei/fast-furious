@@ -93,13 +93,13 @@ for i = 1:size(cdss,1)
         name = cell2mat(seg_struct_names(5,1));
         sequence = getfield(seg_struct,name);
        
-        if (mode == 1)
+        if (mode == INTERICTAL_MODE)
           if (size(findstr(ds,"Dog"),1) > 0 ) 
             time_before_seizure = 7*24*60*60; %%% 1 week for interictal dogs 
           else 
             time_before_seizure = 4*60*60; %%% 4 hours for humans  
           endif 
-        elseif (mode == 2)
+        elseif (mode == PREICTAL_MODE)
           time_before_seizure = 60*60-sequence*60+60*5; %%% for preictal
         endif 
       
