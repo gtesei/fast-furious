@@ -43,13 +43,12 @@ for i = 1:size(cdss,1)
   tr_size = size(preictal_files,1)+size(interictal_files,1);
   ts_size = size(test_files,1);
   
-  Xtrain_mean_sd = zeros(tr_size,3*16);
-  Xtest_mean_sd = zeros(ts_size,3*16);
-  
-  Xtrain_quant = zeros(tr_size,7*16);
-  Xtest_quant = zeros(ts_size,7*16);
-  
-  ytrain = zeros(tr_size,2);
+  matrix_in = 0;
+  Xtrain_mean_sd = [];
+  Xtest_mean_sd = [];
+  Xtrain_quant = [];
+  Xtest_quant = [];
+  ytrain = [];
   
   train_index = 1;
   %%%%%%%%%% main loop  
@@ -80,6 +79,16 @@ for i = 1:size(cdss,1)
       
       name = cell2mat(seg_struct_names(1,1));
       data = getfield(seg_struct,name);
+      
+      %%% initializing matrices ... 
+      if (matrix_in == 0) 
+        Xtrain_mean_sd = zeros(tr_size,3*size(data,1));
+        Xtest_mean_sd = zeros(ts_size,3*size(data,1));
+        Xtrain_quant = zeros(tr_size,7*size(data,1));
+        Xtest_quant = zeros(ts_size,7*size(data,1));
+        ytrain = zeros(tr_size,2);
+        matrix_in == 1;
+      endif 
       
       name = cell2mat(seg_struct_names(2,1));
       data_length_sec = getfield(seg_struct,name);
