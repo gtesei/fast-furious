@@ -12,7 +12,8 @@ TEST_MODE = 3;
 printf("|--> generating features set ...\n");
 
 %%dss = ["Dog_1"; "Dog_2"; "Dog_3"; "Dog_4"; "Dog_5"; "Patient_1"; "Patient_2"];
-dss = ["Patient_2"; "Dog_3"; "Dog_4"; "Dog_5"];
+dss = ["Patient_1"; "Dog_1"; "Dog_2"];
+%%dss = ["Patient_2"; "Dog_3"; "Dog_4"; "Dog_5"];
 cdss = cellstr (dss);
 
 printf("|--> found %i data sets ... \n",size(cdss,1));
@@ -72,6 +73,9 @@ for i = 1:size(cdss,1)
       name_seg = cell2mat(names);
       seg_struct = getfield(seg,name_seg);
       
+      %% garbage collection .. 
+      clear seg; 
+      
       seg_struct_names = fieldnames(seg_struct);
       
       name = cell2mat(seg_struct_names(1,1));
@@ -108,12 +112,11 @@ for i = 1:size(cdss,1)
         ytrain(train_index,2) = (mode-1);
       endif 
       
-      %%% signal processing ...
-      eNum = 16;
-      if (size(findstr(ds,"Patient"),1) > 0 ) 
-        eNum = 15;
-      endif  
-      for i = 1:eNum
+      %% garbage collection .. 
+      clear seg_struct;
+      
+      %%% signal processing ... 
+      for i = 1:size(data,1)
         sign = data(i,:)';
         
         %% fm 
