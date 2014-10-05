@@ -9,7 +9,9 @@ addpath([curr_dir "/linear_reg"]);
 addpath([curr_dir "/logistic_reg"]);
 addpath([curr_dir "/neural"]);
 addpath([curr_dir "/SVM"]);
+
 addpath([curr_dir "/competitions/liberty-mutual-fire-peril"]);
+addpath([curr_dir "/competitions/seizure-prediction"]);
 
 addpath([curr_dir "/dataset/poly/"]);
 
