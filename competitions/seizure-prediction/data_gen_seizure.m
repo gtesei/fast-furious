@@ -87,7 +87,7 @@ for i = 1:size(cdss,1)
         Xtrain_quant = zeros(tr_size,7*size(data,1));
         Xtest_quant = zeros(ts_size,7*size(data,1));
         ytrain = zeros(tr_size,2);
-        matrix_in == 1;
+        matrix_in = 1;
       endif 
       
       name = cell2mat(seg_struct_names(2,1));
