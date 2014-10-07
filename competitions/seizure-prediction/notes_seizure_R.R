@@ -176,27 +176,27 @@ perf.grid = predictAndMeasure (linearReg.quant,"Linear Reg (quantiles)",Xtrain_q
                                grid = perf.grid , verbose )
 
 ######################################################## Elastic Net
-if (verbose) cat("****** [Xtrain_mean_sd] Elastic Net ...  \n")
-set.seed(669); ptm <- proc.time()
-enetGrid <- expand.grid(.lambda = c(0, .001, .01, .1), .fraction = seq(0.05, 1, length = 20))
-enetModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train , method = "enet", preProc = c("center", "scale"), 
-                   tuneGrid = enetGrid, trControl = controlObject)
-if (verbose) enetModel
-tm = proc.time() - ptm
-perf.grid = predictAndMeasure (enetModel,"Elastic Net (mean sd)",Xtrain_mean_sd.train,Xtrain_mean_sd.train$time_before_seizure,
-                               Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
-                               tm ,  ytrain.cat , ytest.cat ,    
-                               grid = perf.grid , verbose)
-
-if (verbose) cat("****** [Xtrain_quant] Elastic Net ...  \n")
-set.seed(669); ptm <- proc.time()
-enetModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train , method = "enet", preProc = c("center", "scale"), tuneGrid = enetGrid, trControl = controlObject)
-if (verbose) enetModel.quant
-tm = proc.time() - ptm
-perf.grid = predictAndMeasure (enetModel.quant,"Elastic Net (quantiles)",Xtrain_quant.train,Xtrain_quant.train$time_before_seizure,
-                               Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
-                               tm,  ytrain.cat , ytest.cat ,    
-                               grid = perf.grid , verbose)
+# if (verbose) cat("****** [Xtrain_mean_sd] Elastic Net ...  \n")
+# set.seed(669); ptm <- proc.time()
+# enetGrid <- expand.grid(.lambda = c(0, .001, .01, .1), .fraction = seq(0.05, 1, length = 20))
+# enetModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train , method = "enet", preProc = c("center", "scale"), 
+#                    tuneGrid = enetGrid, trControl = controlObject)
+# if (verbose) enetModel
+# tm = proc.time() - ptm
+# perf.grid = predictAndMeasure (enetModel,"Elastic Net (mean sd)",Xtrain_mean_sd.train,Xtrain_mean_sd.train$time_before_seizure,
+#                                Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
+#                                tm ,  ytrain.cat , ytest.cat ,    
+#                                grid = perf.grid , verbose)
+# 
+# if (verbose) cat("****** [Xtrain_quant] Elastic Net ...  \n")
+# set.seed(669); ptm <- proc.time()
+# enetModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train , method = "enet", preProc = c("center", "scale"), tuneGrid = enetGrid, trControl = controlObject)
+# if (verbose) enetModel.quant
+# tm = proc.time() - ptm
+# perf.grid = predictAndMeasure (enetModel.quant,"Elastic Net (quantiles)",Xtrain_quant.train,Xtrain_quant.train$time_before_seizure,
+#                                Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
+#                                tm,  ytrain.cat , ytest.cat ,    
+#                                grid = perf.grid , verbose)
 
 ######################################################## Partial Least Squares
 if (verbose) cat("****** [Xtrain_mean_sd] Partial Least Squares ...  \n")
@@ -266,27 +266,27 @@ perf.grid = predictAndMeasure (treebagModel.quant,"Bagged Tree (quantiles)",Xtra
                                grid = perf.grid , verbose )
 
 ######################################################## Cond Inf Tree
-if (verbose) cat("****** [Xtrain_mean_sd] Cond Inf Tree ...  \n")
-set.seed(669); ptm <- proc.time()
-ctreeModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train,  method = "ctree", tuneLength = 10, trControl = controlObject)
-
-if (verbose) ctreeModel
-tm = proc.time() - ptm
-perf.grid = predictAndMeasure (ctreeModel,"Cond Inf Tree (mean sd)",Xtrain_mean_sd.train,Xtrain_mean_sd.train$time_before_seizure,
-                               Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
-                               tm , ytrain.cat , ytest.cat ,  
-                               grid = perf.grid , verbose)
-
-if (verbose) cat("****** [Xtrain_quant] Cond Inf Tree ...  \n")
-set.seed(669); ptm <- proc.time()
-ctreeModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train ,  method = "ctree", tuneLength = 10, trControl = controlObject)
-
-if (verbose) ctreeModel.quant
-tm = proc.time() - ptm
-perf.grid = predictAndMeasure (ctreeModel.quant,"Cond Inf Tree (quantiles)",Xtrain_quant.train,Xtrain_quant.train$time_before_seizure,
-                               Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
-                               tm, ytrain.cat , ytest.cat ,  
-                               grid = perf.grid , verbose )
+# if (verbose) cat("****** [Xtrain_mean_sd] Cond Inf Tree ...  \n")
+# set.seed(669); ptm <- proc.time()
+# ctreeModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train,  method = "ctree", tuneLength = 10, trControl = controlObject)
+# 
+# if (verbose) ctreeModel
+# tm = proc.time() - ptm
+# perf.grid = predictAndMeasure (ctreeModel,"Cond Inf Tree (mean sd)",Xtrain_mean_sd.train,Xtrain_mean_sd.train$time_before_seizure,
+#                                Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
+#                                tm , ytrain.cat , ytest.cat ,  
+#                                grid = perf.grid , verbose)
+# 
+# if (verbose) cat("****** [Xtrain_quant] Cond Inf Tree ...  \n")
+# set.seed(669); ptm <- proc.time()
+# ctreeModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train ,  method = "ctree", tuneLength = 10, trControl = controlObject)
+# 
+# if (verbose) ctreeModel.quant
+# tm = proc.time() - ptm
+# perf.grid = predictAndMeasure (ctreeModel.quant,"Cond Inf Tree (quantiles)",Xtrain_quant.train,Xtrain_quant.train$time_before_seizure,
+#                                Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
+#                                tm, ytrain.cat , ytest.cat ,  
+#                                grid = perf.grid , verbose )
 
 ######################################################## CART
 if (verbose) cat("****** [Xtrain_mean_sd] CART ...  \n")
@@ -312,35 +312,35 @@ perf.grid = predictAndMeasure (rpartModel.quant,"CART (quantiles)",Xtrain_quant.
                                grid = perf.grid , verbose )
 
 ######################################################## NNET\if (verbose) 
-cat("****** [Xtrain_mean_sd] NNET ...  \n")
-set.seed(669); ptm <- proc.time()
-nnetGrid <- expand.grid(.decay = c(0.001, .01, .1), .size = seq(1, 27, by = 2), .bag = FALSE)
-nnetModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train , method = "avNNet", 
-                         tuneGrid = nnetGrid, preProc = c("center", "scale"), linout = TRUE, 
-                         trace = FALSE, maxit = 1000, trControl = controlObject)
-
-if (verbose) nnetModel
-tm = proc.time() - ptm
-perf.grid = predictAndMeasure (nnetModel,"NNET (mean sd)",Xtrain_mean_sd.train,Xtrain_mean_sd.train$time_before_seizure,
-                               Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
-                               tm , ytrain.cat , ytest.cat ,  
-                               grid = perf.grid , verbose)
-
-if (verbose) cat("****** [Xtrain_quant] NNET ...  \n")
-set.seed(669); ptm <- proc.time()
-nnetGrid <- expand.grid(.decay = c(0.001, .01, .1), .size = seq(1, 27, by = 2), .bag = FALSE)
-nnetModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train , method = "avNNet", 
-                   tuneGrid = nnetGrid, preProc = c("center", "scale"), linout = TRUE, 
-                   trace = FALSE, maxit = 1000, trControl = controlObject)
-if (verbose) nnetModel.quant
-tm = proc.time() - ptm
-perf.grid = predictAndMeasure (nnetModel.quant,"NNET (quantiles)",Xtrain_quant.train,Xtrain_quant.train$time_before_seizure,
-                               Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
-                               tm, ytrain.cat , ytest.cat ,  
-                               grid = perf.grid , verbose )
+# cat("****** [Xtrain_mean_sd] NNET ...  \n")
+# set.seed(669); ptm <- proc.time()
+# nnetGrid <- expand.grid(.decay = c(0.001, .01, .1), .size = seq(1, 27, by = 2), .bag = FALSE)
+# nnetModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train , method = "avNNet", 
+#                          tuneGrid = nnetGrid, preProc = c("center", "scale"), linout = TRUE, 
+#                          trace = FALSE, maxit = 1000, trControl = controlObject)
+# 
+# if (verbose) nnetModel
+# tm = proc.time() - ptm
+# perf.grid = predictAndMeasure (nnetModel,"NNET (mean sd)",Xtrain_mean_sd.train,Xtrain_mean_sd.train$time_before_seizure,
+#                                Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
+#                                tm , ytrain.cat , ytest.cat ,  
+#                                grid = perf.grid , verbose)
+# 
+# if (verbose) cat("****** [Xtrain_quant] NNET ...  \n")
+# set.seed(669); ptm <- proc.time()
+# nnetGrid <- expand.grid(.decay = c(0.001, .01, .1), .size = seq(1, 27, by = 2), .bag = FALSE)
+# nnetModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train , method = "avNNet", 
+#                    tuneGrid = nnetGrid, preProc = c("center", "scale"), linout = TRUE, 
+#                    trace = FALSE, maxit = 1000, trControl = controlObject)
+# if (verbose) nnetModel.quant
+# tm = proc.time() - ptm
+# perf.grid = predictAndMeasure (nnetModel.quant,"NNET (quantiles)",Xtrain_quant.train,Xtrain_quant.train$time_before_seizure,
+#                                Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
+#                                tm, ytrain.cat , ytest.cat ,  
+#                                grid = perf.grid , verbose )
 
 ######################################################## CUBIST
-cat("****** [Xtrain_mean_sd] NNET ...  \n")
+cat("****** [Xtrain_mean_sd] CUBIST ...  \n")
 set.seed(669); ptm <- proc.time()
 cubistGrid <- expand.grid(.committees = c(1, 5, 10, 50, 75, 100), .neighbors = c(0, 1, 3, 5, 7, 9))
 cbModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train ,  method = "cubist", 
@@ -353,7 +353,7 @@ perf.grid = predictAndMeasure (cbModel,"CUBIST (mean sd)",Xtrain_mean_sd.train,X
                                tm , ytrain.cat , ytest.cat ,  
                                grid = perf.grid , verbose)
 
-if (verbose) cat("****** [Xtrain_quant] NNET ...  \n")
+if (verbose) cat("****** [Xtrain_quant] CUBIST ...  \n")
 set.seed(669)
 cubistGrid <- expand.grid(.committees = c(1, 5, 10, 50, 75, 100), .neighbors = c(0, 1, 3, 5, 7, 9))
 cbModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train ,  method = "cubist", 
@@ -366,36 +366,36 @@ perf.grid = predictAndMeasure (cbModel.quant,"CUBIST (quantiles)",Xtrain_quant.t
                                grid = perf.grid , verbose )
 
 ######################################################## RF
-cat("****** [Xtrain_mean_sd] RF ...  \n")
-set.seed(669)
-rfModel <- train(CompressiveStrength ~ ., data = trainingSet, method = "rf", tuneLength = 10, ntrees = 1000, 
-                 importance = TRUE, trControl = controlObject)
-
-cat("****** [Xtrain_mean_sd] RF ...  \n")
-set.seed(669); ptm <- proc.time()
-rfModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train ,  
-                 method = "rf", tuneLength = 10, ntrees = 1000, 
-                 importance = TRUE, trControl = controlObject)
-
-if (verbose) rfModel
-tm = proc.time() - ptm
-perf.grid = predictAndMeasure (rfModel,"RF (mean sd)",Xtrain_mean_sd.train,Xtrain_mean_sd.train$time_before_seizure,
-                               Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
-                               tm , ytrain.cat , ytest.cat ,  
-                               grid = perf.grid , verbose)
-
-if (verbose) cat("****** [Xtrain_quant] NNET ...  \n")
-set.seed(669)
-cubistGrid <- expand.grid(.committees = c(1, 5, 10, 50, 75, 100), .neighbors = c(0, 1, 3, 5, 7, 9))
-rfModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train ,  
-                       method = "rf", tuneLength = 10, ntrees = 1000, 
-                       importance = TRUE, trControl = controlObject)
-if (verbose) rfModel.quant
-tm = proc.time() - ptm
-perf.grid = predictAndMeasure (rfModel.quant,"RF (quantiles)",Xtrain_quant.train,Xtrain_quant.train$time_before_seizure,
-                               Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
-                               tm, ytrain.cat , ytest.cat ,  
-                               grid = perf.grid , verbose )
+# cat("****** [Xtrain_mean_sd] RF ...  \n")
+# set.seed(669)
+# rfModel <- train(CompressiveStrength ~ ., data = trainingSet, method = "rf", tuneLength = 10, ntrees = 1000, 
+#                  importance = TRUE, trControl = controlObject)
+# 
+# cat("****** [Xtrain_mean_sd] RF ...  \n")
+# set.seed(669); ptm <- proc.time()
+# rfModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train ,  
+#                  method = "rf", tuneLength = 10, ntrees = 1000, 
+#                  importance = TRUE, trControl = controlObject)
+# 
+# if (verbose) rfModel
+# tm = proc.time() - ptm
+# perf.grid = predictAndMeasure (rfModel,"RF (mean sd)",Xtrain_mean_sd.train,Xtrain_mean_sd.train$time_before_seizure,
+#                                Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
+#                                tm , ytrain.cat , ytest.cat ,  
+#                                grid = perf.grid , verbose)
+# 
+# if (verbose) cat("****** [Xtrain_quant] NNET ...  \n")
+# set.seed(669)
+# cubistGrid <- expand.grid(.committees = c(1, 5, 10, 50, 75, 100), .neighbors = c(0, 1, 3, 5, 7, 9))
+# rfModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train ,  
+#                        method = "rf", tuneLength = 10, ntrees = 1000, 
+#                        importance = TRUE, trControl = controlObject)
+# if (verbose) rfModel.quant
+# tm = proc.time() - ptm
+# perf.grid = predictAndMeasure (rfModel.quant,"RF (quantiles)",Xtrain_quant.train,Xtrain_quant.train$time_before_seizure,
+#                                Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
+#                                tm, ytrain.cat , ytest.cat ,  
+#                                grid = perf.grid , verbose )
 
 
 ##### saving on disk 
