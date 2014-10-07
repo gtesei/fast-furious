@@ -288,7 +288,7 @@ for (ds in dss) {
   cat("************ THE WINNER IS ",model.label.winner," <<",model.id.winner,">> \n")
   
   ##### saving on disk perf.grid ...
-  write.csv(perf.grid,quote=FALSE,file=paste0(getBasePath(),"Dog_1_perf_grid_regress.csv"), row.names=FALSE)
+  write.csv(perf.grid,quote=FALSE,file=paste0(getBasePath(),paste0(ds,"_perf_grid_regress.zat")), row.names=FALSE)
   
   ##### re-train winner model on whole train set and predict on test set 
   Xtrain = Xtest = NULL
@@ -349,7 +349,7 @@ for (ds in dss) {
   ctrl <- trainControl(summaryFunction = twoClassSummary, classProbs = TRUE)
   fitter.cat <- train( cat ~ pr ,  data=train.cat , method = "glm", metric = "ROC", trControl = ctrl)
   pred.train.cat = predict(fitter.cat, train.cat ) 
-  pred.test.cat = predict(fitter.cat, data.frame(pr=pred) ) ####### <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  pred.test.cat = predict(fitter.cat, data.frame(pr=pred.test) ) ####### <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   
   acc.train = sum(ytrain.cat == pred.train.cat) / length(ytrain.cat)
   roc.train = roc.area(as.numeric(ytrain.cat == 1) , as.numeric(pred.train.cat == 1) )$A
@@ -364,4 +364,4 @@ for (ds in dss) {
 
 ## submission 
 mySub = data.frame(clip = sampleSubmission$clip , preictal = predVect)
-write.csv(mySub,quote=FALSE,file=paste0(getBasePath(),"mySub.csv"), row.names=FALSE)
+write.csv(mySub,quote=FALSE,file=paste0(getBasePath(),"mySub.zat"), row.names=FALSE)
