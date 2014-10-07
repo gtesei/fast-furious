@@ -97,6 +97,7 @@ CUBIST_QUANTILES = 12
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
 predVect = rep(-1,dim(sampleSubmission)[1])
 predVect.idx = 1
+
 ############# model selection ... 
 verbose = T
 controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10)
@@ -288,7 +289,7 @@ for (ds in dss) {
   cat("************ THE WINNER IS ",model.label.winner," <<",model.id.winner,">> \n")
   
   ##### saving on disk perf.grid ...
-  write.csv(perf.grid,quote=FALSE,file=paste0(getBasePath(),paste0(ds,"_perf_grid_regress.zat")), row.names=FALSE)
+  write.csv(perf.grid,quote=FALSE,file=paste0(getBasePath(),paste0(ds,"_perf_grid_regress.csv")), row.names=FALSE)
   
   ##### re-train winner model on whole train set and predict on test set 
   Xtrain = Xtest = NULL
