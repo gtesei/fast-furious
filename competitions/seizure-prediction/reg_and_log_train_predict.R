@@ -44,16 +44,33 @@ predictAndMeasure = function(model,model.label,model.id,trainingData,ytrain,test
   ## fitter.cat 
   train.cat = data.frame( cat = ytrain.cat , pr =  pred.train )
   test.cat = data.frame(cat = ytest.cat , pr =  pred )
-  ctrl <- trainControl(summaryFunction = twoClassSummary, classProbs = TRUE)
-  fitter.cat <- train( cat ~ pr ,  data=train.cat , method = "glm", metric = "ROC", trControl = ctrl)
-  pred.train.cat = predict(fitter.cat, train.cat ) 
-  pred.cat = predict(fitter.cat, test.cat ) 
   
-  acc.train = sum(ytrain.cat == pred.train.cat) / length(ytrain.cat)
-  acc.test = sum(ytest.cat == pred.cat) / length(ytest.cat)
-  
-  roc.train = roc.area(as.numeric(ytrain.cat == 1) , as.numeric(pred.train.cat == 1) )$A
-  roc.test = roc.area(as.numeric(ytest.cat == 1) , as.numeric(pred.cat == 1) )$A
+#   ctrl <- trainControl(summaryFunction = twoClassSummary, classProbs = TRUE)
+#   fitter.cat <- train( cat ~ pr ,  data=train.cat , method = "glm", metric = "ROC", trControl = ctrl)
+#   pred.train.cat = predict(fitter.cat, train.cat ) 
+#   pred.cat = predict(fitter.cat, test.cat ) 
+#   
+#   acc.train = sum(ytrain.cat == pred.train.cat) / length(ytrain.cat)
+#   acc.test = sum(ytest.cat == pred.cat) / length(ytest.cat)
+#   
+#   roc.train = roc.area(as.numeric(ytrain.cat == 1) , as.numeric(pred.train.cat == 1) )$A
+#   roc.test = roc.area(as.numeric(ytest.cat == 1) , as.numeric(pred.cat == 1) )$A
+
+  fitter.cat <- glm( cat ~ pr ,  data=train.cat , family = binomial)
+  pred.train.cat = predict(fitter.cat, newdata = train.cat , type = "response") 
+  pred.cat = predict(fitter.cat, newdata = test.cat , type = "response") 
+
+  rocCurve <- roc(response = ytrain.cat, predictor = as.numeric(pred.train.cat), levels = rev(levels(ytrain.cat)))
+  roc.train = as.numeric( auc(rocCurve) )
+
+  rocCurve <- roc(response = ytest.cat, predictor = as.numeric(pred.cat ), levels = rev(levels(ytest.cat)))
+  roc.test = as.numeric( auc(rocCurve) )
+
+#   acc.train = sum(    as.factor(ifelse(pred.train.cat > 0.5,1,0)) ==   ytrain.cat   ) / length(ytrain.cat)
+#   acc.test = sum(     as.factor(ifelse(pred.cat       > 0.5,1,0)) ==   ytest.cat  ) / length(ytest.cat) 
+
+  acc.train = -1
+  acc.test =  -1
   
   if (verbose) cat("** RMSE(train) =",RMSE.train," -  RMSE(test) =",RMSE.test,"  --  Time elapsed(sec.):",tm[[3]], " \n")
   if (verbose) cat("** acc.train =",acc.train," -  acc.test =",acc.test,"  \n")

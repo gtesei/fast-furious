@@ -3,6 +3,7 @@ library(caret)
 library(Hmisc)
 library(data.table)
 library(verification)
+library(pROC)
 
 getBasePath = function (type = "data" , ds="") {
   ret = ""
@@ -121,15 +122,22 @@ predictAndMeasure = function(model,model.label,trainingData,ytrain,testData,ytes
   #test.cat = data.frame(cat = ytest.cat , pr =  pred )
   test.cat = data.frame( pr =  pred )
   ctrl <- trainControl(summaryFunction = twoClassSummary, classProbs = TRUE)
-  fitter.cat <- train( cat ~ pr ,  data=train.cat , method = "glm", metric = "ROC", trControl = ctrl)
-  pred.train.cat = predict(fitter.cat, train.cat ) 
-  pred.cat = predict(fitter.cat, test.cat ) 
+  #fitter.cat <- train( cat ~ pr ,  data=train.cat , method = "glm", metric = "ROC", trControl = ctrl)
+  fitter.cat <- glm( cat ~ pr ,  data=train.cat , family = binomial)
+  pred.train.cat = predict(fitter.cat, newdata = train.cat , type = "response") 
+  pred.cat = predict(fitter.cat, newdata = test.cat , type = "response") 
   
-  acc.train = sum(ytrain.cat == pred.train.cat) / length(ytrain.cat)
+  acc.train = sum(pred.train.cat) / length(ytrain.cat)
   acc.test = sum(ytest.cat == pred.cat) / length(ytest.cat)
   
-  roc.train = roc.area(as.numeric(ytrain.cat == 1) , as.numeric(pred.train.cat == 1) )$A
-  roc.test = roc.area(as.numeric(ytest.cat == 1) , as.numeric(pred.cat == 1) )$A
+  #roc.train = roc.area(as.numeric(ytrain.cat == 1) , as.numeric(pred.train.cat == 1) )$A
+  #roc.test = roc.area(as.numeric(ytest.cat == 1) , as.numeric(pred.cat == 1) )$A
+
+  rocCurve <- roc(response = ytrain.cat, predictor = as.numeric(pred.train.cat), levels = rev(levels(ytrain.cat)))
+  roc.train = as.numeric( auc(rocCurve) )
+  
+  rocCurve <- roc(response = ytest.cat, predictor = as.numeric(pred.cat ), levels = rev(levels(ytest.cat)))
+  roc.test = as.numeric( auc(rocCurve) )
   
   ### perf.grid 
   perf.grid = NULL
