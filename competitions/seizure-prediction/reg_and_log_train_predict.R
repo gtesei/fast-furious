@@ -364,13 +364,21 @@ for (ds in dss) {
   
   ## fitter.cat 
   train.cat = data.frame( cat = ytrain.cat , pr =  pred.train )
-  ctrl <- trainControl(summaryFunction = twoClassSummary, classProbs = TRUE)
-  fitter.cat <- train( cat ~ pr ,  data=train.cat , method = "glm", metric = "ROC", trControl = ctrl)
-  pred.train.cat = predict(fitter.cat, train.cat ) 
-  pred.test.cat = predict(fitter.cat, data.frame(pr=pred.test) ) ####### <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#   ctrl <- trainControl(summaryFunction = twoClassSummary, classProbs = TRUE)
+#   fitter.cat <- train( cat ~ pr ,  data=train.cat , method = "glm", metric = "ROC", trControl = ctrl)
+#   pred.train.cat = predict(fitter.cat, train.cat ) 
+#   pred.test.cat = predict(fitter.cat, data.frame(pr=pred.test) ) ####### <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+   fitter.cat <- glm( cat ~ pr ,  data=train.cat , family = binomial)
+   pred.train.cat = predict(fitter.cat, newdata = train.cat , type = "response") 
+   pred.cat = predict(fitter.cat, newdata = test.cat , type = "response") 
   
-  acc.train = sum(ytrain.cat == pred.train.cat) / length(ytrain.cat)
-  roc.train = roc.area(as.numeric(ytrain.cat == 1) , as.numeric(pred.train.cat == 1) )$A
+#   acc.train = sum(ytrain.cat == pred.train.cat) / length(ytrain.cat)
+   acc.train = -1
+  ##roc.train = roc.area(as.numeric(ytrain.cat == 1) , as.numeric(pred.train.cat == 1) )$A
+rocCurve <- roc(response = ytrain.cat, predictor = as.numeric(pred.train.cat), levels = rev(levels(ytrain.cat)))
+roc.train = as.numeric( auc(rocCurve) )
   
   if (verbose) cat("** acc.train =",acc.train," -  roc.train =",roc.train," \n")
   if (verbose) cat("** RMSE(train) =",RMSE.train," \n")
