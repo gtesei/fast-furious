@@ -4,6 +4,7 @@ library(Hmisc)
 library(data.table)
 library(verification)
 library(pROC)
+library(kernlab)
 
 getBasePath = function (type = "data" , ds="") {
   ret = ""
@@ -81,9 +82,15 @@ tm = proc.time() - ptm
 #                                tm,  ytrain.cat , ytest.cat ,    
 #                                grid = perf.grid , verbose )
 
+##########
+set.seed(669); ptm <- proc.time()
+plsModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train , method = "pls", preProc = c("center", "scale"), 
+                  tuneLength = 15, trControl = controlObject)
+#if (verbose) plsModel
+tm = proc.time() - ptm
+##########
 
-
-model = linearReg.quant
+model = plsModel
 trainingData = Xtrain_quant.train
 ytrain = Xtrain_quant.train$time_before_seizure
 testData = Xtrain_quant.xval
@@ -110,8 +117,8 @@ fitter.cat <- glm( cat ~ pr ,  data=train.cat , family = binomial)
 pred.train.cat = predict(fitter.cat, newdata = train.cat , type = "response") 
 pred.cat = predict(fitter.cat, newdata = test.cat , type = "response") 
 
-acc.train = sum(    as.factor(ifelse(pred.train.cat > 0.5,1,0)) ==   ytrain.cat   ) / length(ytrain.cat)
-acc.test = sum(as.factor(ifelse(pred.cat > 0.5,1,0)) ==   ytest.cat  ) / length(ytest.cat)
+acc.train = sum(    factor(ifelse(pred.train.cat > 0.5,1,0), levels=levels(ytrain.cat)) ==   ytrain.cat   ) / length(ytrain.cat)
+acc.test = sum(     factor(ifelse(pred.cat > 0.5,1,0),       levels=levels(ytrain.cat)) ==   ytest.cat  ) / length(ytest.cat)
 
 #roc.train = roc.area(as.numeric(ytrain.cat == 1) , as.numeric(pred.train.cat == 1) )$A
 #roc.test = roc.area(as.numeric(ytest.cat == 1) , as.numeric(pred.cat == 1) )$A
@@ -152,10 +159,54 @@ roc.test = as.numeric( auc(rocCurve) )
 roc.test ## 0.7194444 !! 
 ci.roc(rocCurve)
 plot(rocCurve, legacy.axes = TRUE)
-
 plot(pred.cat,ytest.cat) 
 
 
+###########
+library(randomForest)
+rfModel <- randomForest(cat ~ pr ,  data=train.cat , ntree = 2000)
+library(MASS) ## for the qda() function
+qdaModel <- qda(cat ~ pr ,  data=train.cat)
+
+qdaTrainPred <- predict(qdaModel, train.cat)
+names(qdaTrainPred)
+head(qdaTrainPred$class)
+head(qdaTrainPred$posterior)
+
+qdaTestPred <- predict(qdaModel, test.cat)
+pred.train.cat  <- qdaTrainPred$posterior[,"1"]
+pred.cat <- qdaTestPred$posterior[,"1"]
+rocCurve <- roc(response = ytest.cat, predictor = as.numeric(pred.cat ), levels = rev(levels(ytest.cat)))
+roc.test = as.numeric( auc(rocCurve) )
+roc.test ## 0.7194444 !! 
+ci.roc(rocCurve)
+plot(rocCurve, legacy.axes = TRUE)
 
 
+rfTestPred <- predict(rfModel, test.cat, type = "prob")
+head(rfTestPred)
+pred.cat <- rfTestPred[,"1"]
+rocCurve <- roc(response = ytest.cat, predictor = as.numeric(pred.cat ), levels = rev(levels(ytest.cat)))
+roc.test = as.numeric( auc(rocCurve) )
+roc.test ## 0.7118056 !! 
+ci.roc(rocCurve)
+plot(rocCurve, legacy.axes = TRUE)
 
+
+ctrl <- trainControl(summaryFunction = twoClassSummary, classProbs = TRUE)
+set.seed(202)
+sigmaRangeReduced <- sigest(as.matrix( pred.train ))
+svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1],
+                                  .C = 2^(seq(-4, 4)))
+set.seed(476)
+svmRModel <- train(cat ~ pr ,  data=train.cat , 
+                     method = "svmRadial",
+                     metric = "ROC",
+                     preProc = c("center", "scale"),
+                     tuneGrid = svmRGridReduced,
+                     fit = FALSE,
+                     trControl = ctrl)
+
+pred.cat = predict(svmRModel, train.cat , type = "prob" )
+
+svmRModel
