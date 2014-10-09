@@ -43,7 +43,7 @@ predictAndMeasure = function(model,model.label,model.id,trainingData,ytrain,test
   
   ## fitter.cat 
   train.cat = data.frame( cat = ytrain.cat , pr =  pred.train )
-  test.cat = data.frame(cat = ytest.cat , pr =  pred )
+  test.cat = data.frame( pr =  pred )
   
 #   ctrl <- trainControl(summaryFunction = twoClassSummary, classProbs = TRUE)
 #   fitter.cat <- train( cat ~ pr ,  data=train.cat , method = "glm", metric = "ROC", trControl = ctrl)
@@ -361,7 +361,8 @@ for (ds in dss) {
   
   ## fitter.cat 
   train.cat = data.frame( cat = ytrain.cat , pr =  pred.train )
-
+  test.cat = data.frame( pr =  pred.test )
+  
 #   ctrl <- trainControl(summaryFunction = twoClassSummary, classProbs = TRUE)
 #   fitter.cat <- train( cat ~ pr ,  data=train.cat , method = "glm", metric = "ROC", trControl = ctrl)
 #   pred.train.cat = predict(fitter.cat, train.cat ) 
