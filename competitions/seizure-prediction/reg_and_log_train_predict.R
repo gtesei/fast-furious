@@ -370,7 +370,7 @@ for (ds in dss) {
 
    fitter.cat <- glm( cat ~ pr ,  data=train.cat , family = binomial)
    pred.train.cat = predict(fitter.cat, newdata = train.cat , type = "response") 
-   pred.cat = predict(fitter.cat, newdata = test.cat , type = "response") 
+   pred.cat = predict(fitter.cat, newdata = test.cat , type = "response") ####### <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   
 #   acc.train = sum(ytrain.cat == pred.train.cat) / length(ytrain.cat)
   acc.train = sum(    factor(ifelse(pred.train.cat > 0.5,1,0), levels=levels(ytrain.cat)) ==   ytrain.cat   ) / length(ytrain.cat)
@@ -383,7 +383,7 @@ for (ds in dss) {
   if (verbose) cat("** RMSE(train) =",RMSE.train," \n")
   
   ### update predVect 
-  predVect[predVect.idx:(predVect.idx+length(pred.test.cat)-1)] = as.numeric(pred.train.cat == 1)
+  predVect[predVect.idx:(predVect.idx+length(pred.test.cat)-1)] = as.numeric(pred.cat)
   predVect.idx = predVect.idx + length(pred.test.cat)
 }
 
