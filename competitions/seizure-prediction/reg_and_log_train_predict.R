@@ -396,7 +396,7 @@ for (ds in dss) {
   predVect[predVect.idx:(predVect.idx+length(pred.test.cat)-1)] = as.numeric(pred.test.cat)
   predVect.idx = predVect.idx + length(pred.test.cat)
   
-  if (trainPred == NULL) {
+  if (is.null(trainPred)) {
     trainPred = as.numeric(pred.train.cat)
     trainClass = ytrain[,2]
   } else {
