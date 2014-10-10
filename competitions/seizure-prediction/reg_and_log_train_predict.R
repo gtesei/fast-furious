@@ -3,6 +3,7 @@ library(caret)
 library(Hmisc)
 library(data.table)
 library(verification)
+library(pROC)
 
 getBasePath = function (type = "data" , ds="") {
   ret = ""
@@ -66,12 +67,16 @@ predictAndMeasure = function(model,model.label,model.id,trainingData,ytrain,test
   rocCurve <- roc(response = ytest.cat, predictor = as.numeric(pred.cat ), levels = rev(levels(ytest.cat)))
   roc.test = as.numeric( auc(rocCurve) )
 
+  roc.train.2 = roc.area(as.numeric(ytrain.cat == 1) , pred.train.cat )$A
+  roc.test.2 = roc.area(as.numeric(ytest.cat == 1) , pred.cat )$A
+
   acc.train = sum(    factor(ifelse(pred.train.cat > 0.5,1,0), levels=levels(ytrain.cat)) ==   ytrain.cat   ) / length(ytrain.cat)
   acc.test = sum(     factor(ifelse(pred.cat > 0.5,1,0),       levels=levels(ytrain.cat)) ==   ytest.cat  ) / length(ytest.cat)
   
   if (verbose) cat("** RMSE(train) =",RMSE.train," -  RMSE(test) =",RMSE.test,"  --  Time elapsed(sec.):",tm[[3]], " \n")
   if (verbose) cat("** acc.train =",acc.train," -  acc.test =",acc.test,"  \n")
   if (verbose) cat("** roc.train =",roc.train," -  roc.test =",roc.test,"  \n")
+  if (verbose) cat("** roc.train.2 =",roc.train.2," -  roc.test.2 =",roc.test.2,"  \n")
   
   ### perf.grid 
   perf.grid = NULL
@@ -80,12 +85,14 @@ predictAndMeasure = function(model,model.label,model.id,trainingData,ytrain,test
                            RMSE.test = c(RMSE.test) , 
                            acc.train = c(acc.train) , acc.test = c(acc.test) , 
                            roc.train = c(roc.train) , roc.test =c(roc.test),
+                           roc.train.2 = c(roc.train.2) , roc.test.2 =c(roc.test.2),
                            time = c(tm[[3]]))
   } else {
     .grid = data.frame(predictor = c(model.label) , model.id = c(model.id), RMSE.train = c(RMSE.train) , 
                        RMSE.test = c(RMSE.test) , 
                        acc.train = c(acc.train) , acc.test = c(acc.test) , 
                        roc.train = c(roc.train) , roc.test =c(roc.test),
+                       roc.train.2 = c(roc.train.2) , roc.test.2 =c(roc.test.2),
                        time = c(tm[[3]]) )
     perf.grid = rbind(grid, .grid)
   }
@@ -111,6 +118,9 @@ CUBIST_QUANTILES = 12
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
 predVect = rep(-1,dim(sampleSubmission)[1])
 predVect.idx = 1
+
+trainPred = NULL 
+trainClass = NULL
 
 ############# model selection ... 
 verbose = T
@@ -385,8 +395,35 @@ for (ds in dss) {
   ### update predVect 
   predVect[predVect.idx:(predVect.idx+length(pred.test.cat)-1)] = as.numeric(pred.test.cat)
   predVect.idx = predVect.idx + length(pred.test.cat)
+  
+  if (trainPred == NULL) {
+    trainPred = as.numeric(pred.train.cat)
+    trainClass = ytrain[,2]
+  } else {
+    trainPred = c(trainPred , as.numeric(pred.train.cat))
+    trainClass = c(trainClass , ytrain[,2] )
+  }
+
 }
 
 ## submission 
 mySub = data.frame(clip = sampleSubmission$clip , preictal = predVect)
 write.csv(mySub,quote=FALSE,file=paste0(getBasePath(),"mySub.zat"), row.names=FALSE)
+
+## Calibrating Probabilities - sigmoid 
+trainClass.cat = as.factor(trainClass)
+levels(trainClass.cat) =  c("inter-ict","pre-ict")
+train.df = data.frame(class = trainClass.cat , prob = trainPred )
+sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
+coef(summary(sigmoidalCal)) 
+sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect), type = "response")
+mySub2 = data.frame(clip = sampleSubmission$clip , preictal = sigmoidProbs)
+write.csv(mySub2,quote=FALSE,file=paste0(getBasePath(),"mySub2.zat"), row.names=FALSE)
+
+## Calibrating Probabilities - Bayes 
+library(klaR)
+BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
+BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect) )
+BayesProbs.preict <- BayesProbs$posterior[, "pre-ict"]
+mySub3 = data.frame(clip = sampleSubmission$clip , preictal = BayesProbs.preict)
+write.csv(mySub3,quote=FALSE,file=paste0(getBasePath(),"mySub3.zat"), row.names=FALSE)
