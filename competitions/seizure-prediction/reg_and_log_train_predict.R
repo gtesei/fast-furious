@@ -126,8 +126,8 @@ trainClass = NULL
 verbose = T
 controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10)
 
-dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-##dss = c("Dog_2")
+##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
+dss = c("Patient_2")
 for (ds in dss) {
   
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
@@ -307,7 +307,8 @@ for (ds in dss) {
   print(perf.grid)
   
   ##### the winner is ... 
-  perf.grid = perf.grid[order(perf.grid$roc.test, decreasing = T),] 
+  #perf.grid = perf.grid[order(perf.grid$roc.test, decreasing = T),] 
+  perf.grid = perf.grid[order(perf.grid$roc.test.2, decreasing = T),] 
   model.id.winner = perf.grid[1,]$model.id
   model.label.winner = as.character(perf.grid[1,]$predictor) 
   cat("************ THE WINNER IS ",model.label.winner," <<",model.id.winner,">> \n")
