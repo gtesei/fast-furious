@@ -143,8 +143,8 @@ trainClass = NULL
 verbose = T
 controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10)
 
-##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-dss = c("Patient_2")
+dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
+##dss = c("Patient_2")
 for (ds in dss) {
   
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
