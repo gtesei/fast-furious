@@ -35,7 +35,7 @@ getBasePath = function (type = "data" , ds="") {
 ######### models in action 
 predictAndMeasure = function(model,model.label,model.id,trainingData,ytrain,testData,ytest,tm , 
                              ytrain.cat , ytest.cat ,   
-                             grid = NULL,verbose=F, doPlot=T) {
+                             grid = NULL,verbose=F, doPlot=F) {
   pred.train = predict(model , trainingData) 
   RMSE.train = RMSE(obs = ytrain , pred = pred.train)
   
@@ -130,12 +130,21 @@ predVect.idx = 1
 trainPred = NULL 
 trainClass = NULL
 
+############# NOTES
+# (1) BoxCox trasformations has been not used because they give worse ROC performances (on Patient_2) for all models 
+#     except that for CUBIST quant that performs as 0.42 instead of 0.18
+# 
+# (2) Applied feature scaling for Linear Reg, PLS, SVM
+# 
+# (3) Removed high correlated predictors for PLS 
+############# 
+
 ############# model selection ... 
 verbose = T
 controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10)
 
-dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-##dss = c("Patient_2")
+##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
+dss = c("Patient_2")
 for (ds in dss) {
   
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
@@ -150,13 +159,37 @@ for (ds in dss) {
   ytrain = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds),"ytrain.zat",sep="") , header = F , sep=","  ))
   
   ######### making train / xval set ...
-  ### scaling: lr , PLS , SVM
+  ###PLS
+  Xtest_quant.pls = Xtrain_quant.pls = NULL 
+  Xtest_mean_sd.pls = Xtrain_mean_sd.pls = NULL 
+  
+  # rmoving high correlated predictors on Xtrain_quant
+  PredToDel = findCorrelation(cor( Xtrain_quant )) 
+  cat("PLS:: on Xtrain_quant removing ",length(PredToDel), " predictors: ",paste(colnames(Xtrain_quant) [PredToDel] , collapse=" " ) , " ... \n ")
+  Xtest_quant.pls =  Xtest_quant  [,-PredToDel]
+  Xtrain_quant.pls = Xtrain_quant [,-PredToDel]
+  
+  # rmoving high correlated predictors Xtrain_mean_sd
+  PredToDel = findCorrelation(cor( Xtrain_mean_sd )) 
+  cat("PLS:: on Xtrain_mean_sd removing ",length(PredToDel), " predictors: ",paste(colnames(Xtrain_mean_sd) [PredToDel] , collapse=" " ) , " ... \n ")
+  Xtest_mean_sd.pls =  Xtest_mean_sd  [,-PredToDel]
+  Xtrain_mean_sd.pls = Xtrain_mean_sd [,-PredToDel]
+  
+  # feature scaling 
+  scale.pls.mean_sd = preProcess(Xtrain_mean_sd.pls,method = c("center","scale"))
+  scale.pls.quant = preProcess(Xtrain_quant.pls,method = c("center","scale"))
+  
+  Xtest_mean_sd.pls = predict(scale.pls.mean_sd,Xtest_mean_sd.pls)
+  Xtrain_mean_sd.pls = predict(scale.pls.mean_sd,Xtrain_mean_sd.pls)
+  Xtest_quant.pls = predict(scale.pls.quant,Xtest_quant.pls)
+  Xtrain_quant.pls = predict(scale.pls.quant,Xtrain_quant.pls)
+
+  ### scaling: Linear Reg, PLS, SVM
   scale.mean_sd = preProcess(Xtrain_mean_sd,method = c("center","scale"))
   scale.quant = preProcess(Xtrain_quant,method = c("center","scale"))
   
   Xtrain_mean_sd.scaled = predict(scale.mean_sd,Xtrain_mean_sd)
   Xtest_mean_sd.scaled = predict(scale.mean_sd,Xtest_mean_sd)
-  
   Xtrain_quant.scaled = predict(scale.quant,Xtrain_quant)
   Xtest_quant.scaled = predict(scale.quant,Xtest_quant)
   
@@ -166,6 +199,9 @@ for (ds in dss) {
   
   Xtrain_mean_sd.scaled$time_before_seizure = ytrain[,1]
   Xtrain_quant.scaled$time_before_seizure = ytrain[,1]
+  
+  Xtrain_mean_sd.pls$time_before_seizure = ytrain[,1]
+  Xtrain_quant.pls$time_before_seizure = ytrain[,1]
   
   #### partitioning into train , xval ... 
   set.seed(975)
@@ -181,6 +217,13 @@ for (ds in dss) {
   Xtrain_quant.scaled.train <- Xtrain_quant.scaled[ forTraining,]
   Xtrain_quant.scaled.xval <- Xtrain_quant.scaled[-forTraining,]
   
+  ## PLS 
+  Xtrain_mean_sd.pls.train <- Xtrain_mean_sd.pls[ forTraining,]
+  Xtrain_mean_sd.pls.xval <- Xtrain_mean_sd.pls[-forTraining,]
+  Xtrain_quant.pls.train <- Xtrain_quant.pls[ forTraining,]
+  Xtrain_quant.pls.xval <- Xtrain_quant.pls[-forTraining,]
+  
+  ## y 
   ytrain.cat = as.factor(ytrain[forTraining,2])
   ytest.cat = as.factor(ytrain[-forTraining,2])
   
@@ -215,27 +258,27 @@ for (ds in dss) {
   ######################################################## Partial Least Squares
   if (verbose) cat("** [Xtrain_mean_sd] Partial Least Squares <<",PLS_MEAN_SD,">> ...  \n")
   set.seed(669); ptm <- proc.time()
-  plsModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.scaled.train , method = "pls", tuneLength = 15, trControl = controlObject)
+  plsModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.pls.train , method = "pls", tuneLength = 15, trControl = controlObject)
   #if (verbose) plsModel
   tm = proc.time() - ptm
   perf.grid = predictAndMeasure (plsModel,"PLS (mean sd)",PLS_MEAN_SD,
-                                 Xtrain_mean_sd.scaled.train,
-                                 Xtrain_mean_sd.scaled.train$time_before_seizure,
-                                 Xtrain_mean_sd.scaled.xval,
-                                 Xtrain_mean_sd.scaled.xval$time_before_seizure,
+                                 Xtrain_mean_sd.pls.train,
+                                 Xtrain_mean_sd.pls.train$time_before_seizure,
+                                 Xtrain_mean_sd.pls.xval,
+                                 Xtrain_mean_sd.pls.xval$time_before_seizure,
                                  tm ,  ytrain.cat , ytest.cat ,    
                                  grid = perf.grid , verbose)
   
   if (verbose) cat("** [Xtrain_quant] Partial Least Squares <<",PLS_QUANTILES,">> ...  \n")
   set.seed(669); ptm <- proc.time()
-  plsModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.scaled.train , method = "pls", tuneLength = 15, trControl = controlObject)
+  plsModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.pls.train , method = "pls", tuneLength = 15, trControl = controlObject)
   #if (verbose) plsModel.quant
   tm = proc.time() - ptm
   perf.grid = predictAndMeasure (plsModel.quant,"PLS (quantiles)",PLS_QUANTILES,
-                                 Xtrain_quant.scaled.train,
-                                 Xtrain_quant.scaled.train$time_before_seizure,
-                                 Xtrain_quant.scaled.xval,
-                                 Xtrain_quant.scaled.xval$time_before_seizure, 
+                                 Xtrain_quant.pls.train,
+                                 Xtrain_quant.pls.train$time_before_seizure,
+                                 Xtrain_quant.pls.xval,
+                                 Xtrain_quant.pls.xval$time_before_seizure, 
                                  tm,  ytrain.cat , ytest.cat ,    
                                  grid = perf.grid , verbose)
   print(perf.grid)
@@ -368,17 +411,23 @@ for (ds in dss) {
   
   ## setting Xtrain, Xtest 
   if ( ( model.id.winner %% 2 == 0) ) {
-    if (model.id.winner == LINEAR_REG_QUANTILES | model.id.winner == PLS_QUANTILES | model.id.winner == SVM_QUANTILES) {
+    if (model.id.winner == LINEAR_REG_QUANTILES | model.id.winner == SVM_QUANTILES) {
       Xtrain = Xtrain_quant.scaled
       Xtest = Xtest_quant.scaled 
+    } else if (model.id.winner == PLS_QUANTILES) {
+      Xtrain = Xtrain_quant.pls
+      Xtest = Xtest_quant.pls 
     } else {
       Xtrain = Xtrain_quant
       Xtest = Xtest_quant 
     }
   } else {
-    if (model.id.winner == LINEAR_REG_MEAN_SD | model.id.winner == PLS_MEAN_SD | model.id.winner == SVM_MEAN_SD) {
+    if (model.id.winner == LINEAR_REG_MEAN_SD | model.id.winner == SVM_MEAN_SD) {
       Xtrain = Xtrain_mean_sd.scaled
       Xtest = Xtest_mean_sd.scaled  
+    } else if (model.id.winner == PLS_MEAN_SD) {
+      Xtrain = Xtrain_mean_sd.pls
+      Xtest = Xtest_mean_sd.pls  
     } else {
       Xtrain = Xtrain_mean_sd
       Xtest = Xtest_mean_sd  
