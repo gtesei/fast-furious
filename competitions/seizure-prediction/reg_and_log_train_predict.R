@@ -35,7 +35,7 @@ getBasePath = function (type = "data" , ds="") {
 ######### models in action 
 predictAndMeasure = function(model,model.label,model.id,trainingData,ytrain,testData,ytest,tm , 
                              ytrain.cat , ytest.cat ,   
-                             grid = NULL,verbose=F) {
+                             grid = NULL,verbose=F, doPlot=T) {
   pred.train = predict(model , trainingData) 
   RMSE.train = RMSE(obs = ytrain , pred = pred.train)
   
@@ -70,6 +70,8 @@ predictAndMeasure = function(model,model.label,model.id,trainingData,ytrain,test
   roc.train.2 = roc.area(as.numeric(ytrain.cat == 1) , pred.train.cat )$A
   roc.test.2 = roc.area(as.numeric(ytest.cat == 1) , pred.cat )$A
 
+  roc.test.min = min(roc.test.2,roc.test)
+
   acc.train = sum(    factor(ifelse(pred.train.cat > 0.5,1,0), levels=levels(ytrain.cat)) ==   ytrain.cat   ) / length(ytrain.cat)
   acc.test = sum(     factor(ifelse(pred.cat > 0.5,1,0),       levels=levels(ytrain.cat)) ==   ytest.cat  ) / length(ytest.cat)
   
@@ -77,7 +79,11 @@ predictAndMeasure = function(model,model.label,model.id,trainingData,ytrain,test
   if (verbose) cat("** acc.train =",acc.train," -  acc.test =",acc.test,"  \n")
   if (verbose) cat("** roc.train =",roc.train," -  roc.test =",roc.test,"  \n")
   if (verbose) cat("** roc.train.2 =",roc.train.2," -  roc.test.2 =",roc.test.2,"  \n")
-  
+   
+  if (doPlot) {
+    plot(rocCurve, legacy.axes = TRUE , main = paste(model.label  , " - acc.test=",acc.test,"  - roc.test=" ,roc.test  
+                                                     , "roc.test2=",roc.test.2,collapse ="" )   )
+  }
   ### perf.grid 
   perf.grid = NULL
   if (is.null(grid)) { 
@@ -86,6 +92,7 @@ predictAndMeasure = function(model,model.label,model.id,trainingData,ytrain,test
                            acc.train = c(acc.train) , acc.test = c(acc.test) , 
                            roc.train = c(roc.train) , roc.test =c(roc.test),
                            roc.train.2 = c(roc.train.2) , roc.test.2 =c(roc.test.2),
+                           roc.test.min = roc.test.min , 
                            time = c(tm[[3]]))
   } else {
     .grid = data.frame(predictor = c(model.label) , model.id = c(model.id), RMSE.train = c(RMSE.train) , 
@@ -93,6 +100,7 @@ predictAndMeasure = function(model,model.label,model.id,trainingData,ytrain,test
                        acc.train = c(acc.train) , acc.test = c(acc.test) , 
                        roc.train = c(roc.train) , roc.test =c(roc.test),
                        roc.train.2 = c(roc.train.2) , roc.test.2 =c(roc.test.2),
+                       roc.test.min = roc.test.min , 
                        time = c(tm[[3]]) )
     perf.grid = rbind(grid, .grid)
   }
@@ -126,8 +134,8 @@ trainClass = NULL
 verbose = T
 controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10)
 
-##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-dss = c("Patient_2")
+dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
+##dss = c("Patient_2")
 for (ds in dss) {
   
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
@@ -141,17 +149,37 @@ for (ds in dss) {
   
   ytrain = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds),"ytrain.zat",sep="") , header = F , sep=","  ))
   
-  ######### making train / xval set ... 
+  ######### making train / xval set ...
+  ### scaling: lr , PLS , SVM
+  scale.mean_sd = preProcess(Xtrain_mean_sd,method = c("center","scale"))
+  scale.quant = preProcess(Xtrain_quant,method = c("center","scale"))
+  
+  Xtrain_mean_sd.scaled = predict(scale.mean_sd,Xtrain_mean_sd)
+  Xtest_mean_sd.scaled = predict(scale.mean_sd,Xtest_mean_sd)
+  
+  Xtrain_quant.scaled = predict(scale.quant,Xtrain_quant)
+  Xtest_quant.scaled = predict(scale.quant,Xtest_quant)
+  
+  #### y 
   Xtrain_mean_sd$time_before_seizure = ytrain[,1]
   Xtrain_quant$time_before_seizure = ytrain[,1]
   
+  Xtrain_mean_sd.scaled$time_before_seizure = ytrain[,1]
+  Xtrain_quant.scaled$time_before_seizure = ytrain[,1]
+  
+  #### partitioning into train , xval ... 
   set.seed(975)
-  forTraining <- createDataPartition(Xtrain_mean_sd$time_before_seizure, p = 3/4)[[1]]
+  forTraining <- createDataPartition(ytrain[,1], p = 3/4)[[1]]
+  
   Xtrain_mean_sd.train <- Xtrain_mean_sd[ forTraining,]
   Xtrain_mean_sd.xval <- Xtrain_mean_sd[-forTraining,]
-  
   Xtrain_quant.train <- Xtrain_quant[ forTraining,]
   Xtrain_quant.xval <- Xtrain_quant[-forTraining,]
+  
+  Xtrain_mean_sd.scaled.train <- Xtrain_mean_sd.scaled[ forTraining,]
+  Xtrain_mean_sd.scaled.xval <- Xtrain_mean_sd.scaled[-forTraining,]
+  Xtrain_quant.scaled.train <- Xtrain_quant.scaled[ forTraining,]
+  Xtrain_quant.scaled.xval <- Xtrain_quant.scaled[-forTraining,]
   
   ytrain.cat = as.factor(ytrain[forTraining,2])
   ytest.cat = as.factor(ytrain[-forTraining,2])
@@ -159,23 +187,27 @@ for (ds in dss) {
   ######################################################## linear regression 
   if (verbose) cat("** [Xtrain_mean_sd] linear regression <<",LINEAR_REG_MEAN_SD,">> ...  \n")
   set.seed(669); ptm <- proc.time()
-  linearReg <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train, method = "lm", trControl = controlObject) 
+  linearReg <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.scaled.train, method = "lm", trControl = controlObject) 
   #if (verbose) linearReg
   tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (linearReg,"Linear Reg (mean sd)",LINEAR_REG_MEAN_SD,Xtrain_mean_sd.train,
-                                 Xtrain_mean_sd.train$time_before_seizure,
-                                 Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
+  perf.grid = predictAndMeasure (linearReg,"Linear Reg (mean sd)",LINEAR_REG_MEAN_SD,
+                                 Xtrain_mean_sd.scaled.train,
+                                 Xtrain_mean_sd.scaled.train$time_before_seizure,
+                                 Xtrain_mean_sd.scaled.xval,
+                                 Xtrain_mean_sd.scaled.xval$time_before_seizure,
                                  tm ,  ytrain.cat , ytest.cat ,    
                                  grid = NULL , verbose)
   
   if (verbose) cat("** [Xtrain_quant] linear regression <<",LINEAR_REG_QUANTILES,">> ...  \n")
   set.seed(669); ptm <- proc.time()
-  linearReg.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train, method = "lm", trControl = controlObject) 
+  linearReg.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.scaled.train, method = "lm", trControl = controlObject) 
   #if (verbose) linearReg.quant
   tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (linearReg.quant,"Linear Reg (quantiles)",LINEAR_REG_QUANTILES,Xtrain_quant.train,
-                                 Xtrain_quant.train$time_before_seizure,
-                                 Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
+  perf.grid = predictAndMeasure (linearReg.quant,"Linear Reg (quantiles)",LINEAR_REG_QUANTILES,
+                                 Xtrain_quant.scaled.train,
+                                 Xtrain_quant.scaled.train$time_before_seizure,
+                                 Xtrain_quant.scaled.xval,
+                                 Xtrain_quant.scaled.xval$time_before_seizure, 
                                  tm,  ytrain.cat , ytest.cat ,    
                                  grid = perf.grid , verbose )
   print(perf.grid)
@@ -183,23 +215,27 @@ for (ds in dss) {
   ######################################################## Partial Least Squares
   if (verbose) cat("** [Xtrain_mean_sd] Partial Least Squares <<",PLS_MEAN_SD,">> ...  \n")
   set.seed(669); ptm <- proc.time()
-  plsModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train , method = "pls", preProc = c("center", "scale"), tuneLength = 15, trControl = controlObject)
+  plsModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.scaled.train , method = "pls", tuneLength = 15, trControl = controlObject)
   #if (verbose) plsModel
   tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (plsModel,"PLS (mean sd)",PLS_MEAN_SD,Xtrain_mean_sd.train,
-                                 Xtrain_mean_sd.train$time_before_seizure,
-                                 Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
+  perf.grid = predictAndMeasure (plsModel,"PLS (mean sd)",PLS_MEAN_SD,
+                                 Xtrain_mean_sd.scaled.train,
+                                 Xtrain_mean_sd.scaled.train$time_before_seizure,
+                                 Xtrain_mean_sd.scaled.xval,
+                                 Xtrain_mean_sd.scaled.xval$time_before_seizure,
                                  tm ,  ytrain.cat , ytest.cat ,    
                                  grid = perf.grid , verbose)
   
   if (verbose) cat("** [Xtrain_quant] Partial Least Squares <<",PLS_QUANTILES,">> ...  \n")
   set.seed(669); ptm <- proc.time()
-  plsModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train , method = "pls", preProc = c("center", "scale"), tuneLength = 15, trControl = controlObject)
+  plsModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.scaled.train , method = "pls", tuneLength = 15, trControl = controlObject)
   #if (verbose) plsModel.quant
   tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (plsModel.quant,"PLS (quantiles)",PLS_QUANTILES,Xtrain_quant.train,
-                                 Xtrain_quant.train$time_before_seizure,
-                                 Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
+  perf.grid = predictAndMeasure (plsModel.quant,"PLS (quantiles)",PLS_QUANTILES,
+                                 Xtrain_quant.scaled.train,
+                                 Xtrain_quant.scaled.train$time_before_seizure,
+                                 Xtrain_quant.scaled.xval,
+                                 Xtrain_quant.scaled.xval$time_before_seizure, 
                                  tm,  ytrain.cat , ytest.cat ,    
                                  grid = perf.grid , verbose)
   print(perf.grid)
@@ -207,25 +243,33 @@ for (ds in dss) {
   ######################################################## Support Vector Machines 
   if (verbose) cat("** [Xtrain_mean_sd] Support Vector Machines <<",SVM_MEAN_SD,">> ...  \n")
   set.seed(669); ptm <- proc.time()
-  svmRModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train ,  method = "svmRadial",
-                     tuneLength = 15, preProc = c("center", "scale"),  trControl = controlObject)
+  svmRModel <- train(time_before_seizure ~  . , 
+                     data = Xtrain_mean_sd.scaled.train ,  
+                     method = "svmRadial",
+                     tuneLength = 15,  trControl = controlObject)
   #if (verbose) svmRModel
   tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (svmRModel,"SVM (mean sd)",SVM_MEAN_SD,Xtrain_mean_sd.train,
-                                 Xtrain_mean_sd.train$time_before_seizure,
-                                 Xtrain_mean_sd.xval,Xtrain_mean_sd.xval$time_before_seizure,
+  perf.grid = predictAndMeasure (svmRModel,"SVM (mean sd)",SVM_MEAN_SD,
+                                 Xtrain_mean_sd.scaled.train,
+                                 Xtrain_mean_sd.scaled.train$time_before_seizure,
+                                 Xtrain_mean_sd.scaled.xval,
+                                 Xtrain_mean_sd.scaled.xval$time_before_seizure,
                                  tm ,  ytrain.cat , ytest.cat ,    
                                  grid = perf.grid , verbose)
   
   if (verbose) cat("** [Xtrain_quant] Support Vector Machines <<",SVM_QUANTILES,">> ...  \n")
   set.seed(669); ptm <- proc.time()
-  svmRModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train ,  method = "svmRadial",
-                           tuneLength = 15, preProc = c("center", "scale"),  trControl = controlObject)
+  svmRModel.quant <- train(time_before_seizure ~  . , 
+                           data = Xtrain_quant.scaled.train ,  
+                           method = "svmRadial",
+                           tuneLength = 15,  trControl = controlObject)
   #if (verbose) svmRModel.quant
   tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (svmRModel.quant,"SVM (quantiles)",SVM_QUANTILES,Xtrain_quant.train,
-                                 Xtrain_quant.train$time_before_seizure,
-                                 Xtrain_quant.xval,Xtrain_quant.xval$time_before_seizure, 
+  perf.grid = predictAndMeasure (svmRModel.quant,"SVM (quantiles)",SVM_QUANTILES,
+                                 Xtrain_quant.scaled.train,
+                                 Xtrain_quant.scaled.train$time_before_seizure,
+                                 Xtrain_quant.scaled.xval,
+                                 Xtrain_quant.scaled.xval$time_before_seizure, 
                                  tm,  ytrain.cat , ytest.cat ,    
                                  grid = perf.grid , verbose)
   print(perf.grid)
@@ -257,7 +301,8 @@ for (ds in dss) {
   ######################################################## CART
   if (verbose) cat("** [Xtrain_mean_sd] CART <<",CART_MEAN_SD,">> ...  \n")
   set.seed(669); ptm <- proc.time()
-  rpartModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train,  method = "rpart", tuneLength = 30, trControl = controlObject)
+  rpartModel <- train(time_before_seizure ~  . , data = Xtrain_mean_sd.train,  
+                      method = "rpart", tuneLength = 30, trControl = controlObject)
   #if (verbose) rpartModel
   tm = proc.time() - ptm
   perf.grid = predictAndMeasure (rpartModel,"CART (mean sd)",CART_MEAN_SD,
@@ -268,7 +313,8 @@ for (ds in dss) {
   
   if (verbose) cat("** [Xtrain_quant] CART <<",CART_QUANTILES,">> ...  \n")
   set.seed(669); ptm <- proc.time()
-  rpartModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train , method = "rpart", tuneLength = 30, trControl = controlObject)
+  rpartModel.quant <- train(time_before_seizure ~  . , data = Xtrain_quant.train , 
+                            method = "rpart", tuneLength = 30, trControl = controlObject)
   #if (verbose) rpartModel.quant
   tm = proc.time() - ptm
   perf.grid = predictAndMeasure (rpartModel.quant,"CART (quantiles)",CART_QUANTILES,Xtrain_quant.train,
@@ -322,11 +368,21 @@ for (ds in dss) {
   
   ## setting Xtrain, Xtest 
   if ( ( model.id.winner %% 2 == 0) ) {
-    Xtrain = Xtrain_quant
-    Xtest = Xtest_quant
+    if (model.id.winner == LINEAR_REG_QUANTILES | model.id.winner == PLS_QUANTILES | model.id.winner == SVM_QUANTILES) {
+      Xtrain = Xtrain_quant.scaled
+      Xtest = Xtest_quant.scaled 
+    } else {
+      Xtrain = Xtrain_quant
+      Xtest = Xtest_quant 
+    }
   } else {
-    Xtrain = Xtrain_mean_sd
-    Xtest = Xtest_mean_sd
+    if (model.id.winner == LINEAR_REG_MEAN_SD | model.id.winner == PLS_MEAN_SD | model.id.winner == SVM_MEAN_SD) {
+      Xtrain = Xtrain_mean_sd.scaled
+      Xtest = Xtest_mean_sd.scaled  
+    } else {
+      Xtrain = Xtrain_mean_sd
+      Xtest = Xtest_mean_sd  
+    }
   }
   ytrain.cat = as.factor(ytrain[,2])
   
@@ -338,13 +394,13 @@ for (ds in dss) {
   } else if (model.id.winner == PLS_MEAN_SD | model.id.winner == PLS_QUANTILES) {
     if (verbose) cat("**** fitting Partial Least Squares on Xtrain <<",model.id.winner,">> ...  \n")
     set.seed(669)
-    model <- train(time_before_seizure ~  . , data = Xtrain , method = "pls", preProc = c("center", "scale"), 
+    model <- train(time_before_seizure ~  . , data = Xtrain , method = "pls",  
                    tuneLength = 15, trControl = controlObject)
   } else if (model.id.winner == SVM_MEAN_SD | model.id.winner == SVM_QUANTILES) {
     if (verbose) cat("**** fitting Support Vector Machines on Xtrain <<",model.id.winner,">> ...  \n")
     set.seed(669)
     model <- train(time_before_seizure ~  . , data = Xtrain ,  method = "svmRadial",
-                       tuneLength = 15, preProc = c("center", "scale"),  trControl = controlObject)
+                       tuneLength = 15, trControl = controlObject)
   } else if (model.id.winner == BAGGED_TREE_MEAN_SD | model.id.winner == BAGGED_TREE_QUANTILES) {
     if (verbose) cat("***** fitting Bagged Tree on Xtrain <<",model.id.winner,">> ...  \n")
     set.seed(669)
