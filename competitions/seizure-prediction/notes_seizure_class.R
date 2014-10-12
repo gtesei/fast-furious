@@ -196,7 +196,7 @@ controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10 ,
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
 dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-##dss = c("Dog_4","Patient_2")
+##dss = c("Patient_2")
 for (ds in dss) {
   
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
@@ -988,7 +988,7 @@ for (ds in dss) {
   roc.train = as.numeric( pROC::auc(rocCurve) )
   
   roc.train.2 = roc.area(as.numeric(ytrain.cat == 'preict') , pred.prob.train )$A
-  roc.xval.min = min(roc.xval.2,roc.xval)
+  roc.xval.min = min(roc.train,roc.train.2)
   
   ## logging 
   if (verbose) cat("******************* ", model.label.winner, " <<" , model.id.winner ,  ">> \n")
@@ -1012,7 +1012,8 @@ for (ds in dss) {
 }
 
 ## submission 
-mySub = data.frame(clip = sampleSubmission$clip , preictal = predVect)
+#mySub = data.frame(clip = sampleSubmission$clip , preictal = predVect)
+mySub = data.frame(clip = sampleSubmission$clip , preictal = format(predVect  , scientific = F ))
 write.csv(mySub,quote=FALSE,file=paste0(getBasePath(),"mySub_class.zat"), row.names=FALSE)
 
 ## Calibrating Probabilities - sigmoid 
@@ -1022,7 +1023,7 @@ train.df = data.frame(class = trainClass.cat , prob = trainPred )
 sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
 coef(summary(sigmoidalCal)) 
 sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect), type = "response")
-mySub2 = data.frame(clip = sampleSubmission$clip , preictal = sigmoidProbs)
+mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
 write.csv(mySub2,quote=FALSE,file=paste0(getBasePath(),"mySub_sigmoid_calibrat_class.zat"), row.names=FALSE)
 
 ## Calibrating Probabilities - Bayes 
@@ -1030,6 +1031,6 @@ library(klaR)
 BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
 BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect) )
 BayesProbs.preict <- BayesProbs$posterior[, "preict"]
-mySub3 = data.frame(clip = sampleSubmission$clip , preictal = BayesProbs.preict)
+mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
 write.csv(mySub3,quote=FALSE,file=paste0(getBasePath(),"mySub_bayes_calibrat_class.zat"), row.names=FALSE)
 
