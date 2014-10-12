@@ -48,7 +48,7 @@ predictAndMeasure = function(model,model.label,model.id,
   pred.xval = predict(model , testData )
   
   ## accuracy 
-  acc.xval.all0 = sum(factor(rep('interict',length(ytrain.cat.xval)) , levels = levels(ytrain.cat.xval) ) == ytrain.cat.xval) / length(ytrain.cat.xval)
+  acc.xval.all0 = sum(factor(rep('interict',length(yxval)) , levels = levels(yxval) ) == yxval) / length(yxval)
   acc.train = sum(ytrain == pred.train) / length(ytrain)
   acc.xval = sum(yxval == pred.xval) / length(yxval) 
   
@@ -159,20 +159,44 @@ KNN_QUANTILES_SCALED= 46
 KNN_MEAN_SD_REDUCED = 47
 KNN_QUANTILES_REDUCED = 48
 
+CLASS_TREE_MEAN_SD = 49
+CLASS_TREE_QUANTILES = 50
+CLASS_TREE_MEAN_SD_SCALED = 51 
+CLASS_TREE_QUANTILES_SCALED= 52 
+CLASS_TREE_MEAN_SD_REDUCED = 53
+CLASS_TREE_QUANTILES_REDUCED = 54
+
+BOOSTED_TREE_MEAN_SD = 55
+BOOSTED_TREE_QUANTILES = 56
+BOOSTED_TREE_MEAN_SD_SCALED = 57 
+BOOSTED_TREE_QUANTILES_SCALED= 58 
+BOOSTED_TREE_MEAN_SD_REDUCED = 59
+BOOSTED_TREE_QUANTILES_REDUCED = 60
+
+BAGGING_TREE_MEAN_SD = 61
+BAGGING_TREE_QUANTILES = 62
+BAGGING_TREE_MEAN_SD_SCALED = 63 
+BAGGING_TREE_QUANTILES_SCALED= 64 
+BAGGING_TREE_MEAN_SD_REDUCED = 65
+BAGGING_TREE_QUANTILES_REDUCED = 66
+
 ######################################################## MAIN LOOP 
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
 predVect = rep(-1,dim(sampleSubmission)[1])
 predVect.idx = 1
 
+trainPred = NULL 
+trainClass = NULL
+
 ############# model selection ... 
 verbose = T
-doPlot = T 
+doPlot = F 
 
 controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
-##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-dss = c("Patient_2")
+dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
+##dss = c("Dog_4","Patient_2")
 for (ds in dss) {
   
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
@@ -400,49 +424,49 @@ for (ds in dss) {
   print(perf.grid) 
   
   ######################################################## Penalized Models 
-#   glmnGrid <- expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1), .lambda = seq(.01, .2, length = 40))
-#   
-#   ## 3. MEAN_SD_SCALED
-#   set.seed(476); ptm <- proc.time()
-#   model <- train( x = Xtrain_mean_sd.scaled.train , y = ytrain.cat.train, 
-#                   method = "glmnet", tuneGrid = glmnGrid, metric = "ROC", trControl = controlObject)
-#   tm = proc.time() - ptm
-#   perf.grid = predictAndMeasure (model,"Penalized Models (Mean sd scaled)",PM_MEAN_SD_SCALED,
-#                                  Xtrain_mean_sd.scaled.train, ytrain.cat.train,
-#                                  Xtrain_mean_sd.scaled.xval, ytrain.cat.xval,
-#                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
-#   
-#   ## 4. QUANTILES_SCALED
-#   set.seed(476); ptm <- proc.time()
-#   model <- train( x = Xtrain_quant.scaled.train , y = ytrain.cat.train, 
-#                   method = "glmnet", tuneGrid = glmnGrid, metric = "ROC", trControl = controlObject)
-#   tm = proc.time() - ptm
-#   perf.grid = predictAndMeasure (model,"Penalized Models (Quant scaled)",PM_QUANTILES_SCALED,
-#                                  Xtrain_quant.scaled.train, ytrain.cat.train,
-#                                  Xtrain_quant.scaled.xval, ytrain.cat.xval,
-#                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
-#   
-#   ## 5. MEAN_SD_REDUCED
-#   set.seed(476); ptm <- proc.time()
-#   model <- train( x = Xtrain_mean_sd.reduced.train , y = ytrain.cat.train , 
-#                   method = "glmnet", tuneGrid = glmnGrid, metric = "ROC", trControl = controlObject)
-#   tm = proc.time() - ptm
-#   perf.grid = predictAndMeasure (model,"Penalized Models (Mean sd reduced)",PM_MEAN_SD_REDUCED,
-#                                  Xtrain_mean_sd.reduced.train, ytrain.cat.train,
-#                                  Xtrain_mean_sd.reduced.xval, ytrain.cat.xval,
-#                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
-#   
-#   ## 6. QUANTILES_REDUCED 
-#   set.seed(476); ptm <- proc.time()
-#   model <- train( x = Xtrain_quant.reduced.train , y = ytrain.cat.train, 
-#                   method = "glmnet", tuneGrid = glmnGrid, metric = "ROC", trControl = controlObject)
-#   tm = proc.time() - ptm
-#   perf.grid = predictAndMeasure (model,"Penalized Models (Quant reduced)",PM_REG_QUANTILES_REDUCED,
-#                                  Xtrain_quant.reduced.train, ytrain.cat.train,
-#                                  Xtrain_quant.reduced.xval, ytrain.cat.xval,
-#                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
-#   
-#   print(perf.grid) 
+  glmnGrid <- expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1), .lambda = seq(.01, .2, length = 40))
+  
+  ## 3. MEAN_SD_SCALED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.scaled.train , y = ytrain.cat.train, 
+                  method = "glmnet", tuneGrid = glmnGrid, metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Penalized Models (Mean sd scaled)",PM_MEAN_SD_SCALED,
+                                 Xtrain_mean_sd.scaled.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.scaled.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  ## 4. QUANTILES_SCALED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.scaled.train , y = ytrain.cat.train, 
+                  method = "glmnet", tuneGrid = glmnGrid, metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Penalized Models (Quant scaled)",PM_QUANTILES_SCALED,
+                                 Xtrain_quant.scaled.train, ytrain.cat.train,
+                                 Xtrain_quant.scaled.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  ## 5. MEAN_SD_REDUCED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.reduced.train , y = ytrain.cat.train , 
+                  method = "glmnet", tuneGrid = glmnGrid, metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Penalized Models (Mean sd reduced)",PM_MEAN_SD_REDUCED,
+                                 Xtrain_mean_sd.reduced.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.reduced.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  ## 6. QUANTILES_REDUCED 
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.reduced.train , y = ytrain.cat.train, 
+                  method = "glmnet", tuneGrid = glmnGrid, metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Penalized Models (Quant reduced)",PM_REG_QUANTILES_REDUCED,
+                                 Xtrain_quant.reduced.train, ytrain.cat.train,
+                                 Xtrain_quant.reduced.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  print(perf.grid) 
   
   ######################################################## Nearest Shrunken Centroids 
   nscGrid <- data.frame(.threshold = 0:25)
@@ -574,13 +598,13 @@ for (ds in dss) {
 
   print(perf.grid) 
 
-  ######################################################## SVM
+  ######################################################## KNN
   ## 3. MEAN_SD_SCALED
   set.seed(476); ptm <- proc.time()
   model <- train( x = Xtrain_mean_sd.scaled.train , y = ytrain.cat.train, 
                   method = "knn", 
                   tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
-                  metric = "ROC", fit = FALSE, trControl = controlObject)
+                  metric = "ROC", trControl = controlObject)
   tm = proc.time() - ptm
   perf.grid = predictAndMeasure (model,"KNN (Mean sd scaled)",KNN_MEAN_SD_SCALED,
                                  Xtrain_mean_sd.scaled.train, ytrain.cat.train,
@@ -592,7 +616,7 @@ for (ds in dss) {
   model <- train( x = Xtrain_quant.scaled.train , y = ytrain.cat.train, 
                   method = "knn", 
                   tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
-                  metric = "ROC", fit = FALSE, trControl = controlObject)
+                  metric = "ROC",  trControl = controlObject)
   tm = proc.time() - ptm
   perf.grid = predictAndMeasure (model,"KNN (Quant scaled)",KNN_QUANTILES_SCALED,
                                  Xtrain_quant.scaled.train, ytrain.cat.train,
@@ -604,7 +628,7 @@ for (ds in dss) {
   model <- train( x = Xtrain_mean_sd.reduced.train , y = ytrain.cat.train , 
                   method = "knn", 
                   tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
-                  metric = "ROC", fit = FALSE, trControl = controlObject)
+                  metric = "ROC",  trControl = controlObject)
   tm = proc.time() - ptm
   perf.grid = predictAndMeasure (model,"KNN (Mean sd reduced)",KNN_MEAN_SD_REDUCED,
                                  Xtrain_mean_sd.reduced.train, ytrain.cat.train,
@@ -616,7 +640,7 @@ for (ds in dss) {
   model <- train( x = Xtrain_quant.reduced.train , y = ytrain.cat.train, 
                   method = "knn", 
                   tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
-                  metric = "ROC", fit = FALSE, trControl = controlObject)
+                  metric = "ROC",  trControl = controlObject)
   tm = proc.time() - ptm
   perf.grid = predictAndMeasure (model,"KNN (Quant reduced)",KNN_QUANTILES_REDUCED,
                                  Xtrain_quant.reduced.train, ytrain.cat.train,
@@ -625,25 +649,365 @@ for (ds in dss) {
   
   print(perf.grid) 
 
+  ######################################################## CLASSIFICATION TREES 
+  ## 1. MEAN_SD
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.train , y = ytrain.cat.train , 
+                  method = "rpart", tuneLength = 30, metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Class. Trees (Mean sd)",CLASS_TREE_MEAN_SD,
+                                 Xtrain_mean_sd.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid ,verbose=verbose, doPlot=doPlot)
+ 
+  ## 2. QUANTILES
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.train , y = ytrain.cat.train , 
+                  method = "rpart", tuneLength = 30, metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Class. Trees (Quant)",CLASS_TREE_QUANTILES,
+                                 Xtrain_quant.train, ytrain.cat.train,
+                                 Xtrain_quant.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+
+  ## 3. MEAN_SD_SCALED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.scaled.train , y = ytrain.cat.train, 
+                  method = "rpart", tuneLength = 30, metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Class. Trees (Mean sd scaled)",CLASS_TREE_MEAN_SD_SCALED,
+                                 Xtrain_mean_sd.scaled.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.scaled.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  ## 4. QUANTILES_SCALED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.scaled.train , y = ytrain.cat.train, 
+                  method = "rpart", tuneLength = 30, metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Class. Trees (Quant scaled)",CLASS_TREE_QUANTILES_SCALED,
+                                 Xtrain_quant.scaled.train, ytrain.cat.train,
+                                 Xtrain_quant.scaled.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+
+
+  ## 5. MEAN_SD_REDUCED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.reduced.train , y = ytrain.cat.train , 
+                  method = "rpart", tuneLength = 30, metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Class. Trees (Mean sd reduced)",CLASS_TREE_MEAN_SD_REDUCED,
+                                 Xtrain_mean_sd.reduced.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.reduced.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  ## 6. QUANTILES_REDUCED 
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.reduced.train , y = ytrain.cat.train, 
+                  method = "rpart", tuneLength = 30, metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Class. Trees (Quant reduced)",CLASS_TREE_QUANTILES_REDUCED,
+                                 Xtrain_quant.reduced.train, ytrain.cat.train,
+                                 Xtrain_quant.reduced.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+
+  print(perf.grid) 
+
+  ######################################################## BOOSTED TREES 
+  ## 1. MEAN_SD
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.train , y = ytrain.cat.train , 
+                  method = "C5.0",  metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Boosted Trees C5.0 (Mean sd)",BOOSTED_TREE_MEAN_SD,
+                                 Xtrain_mean_sd.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid ,verbose=verbose, doPlot=doPlot)
+ 
+  ## 2. QUANTILES
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.train , y = ytrain.cat.train , 
+                  method = "C5.0",  metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Boosted Trees C5.0 (Quant)",BOOSTED_TREE_QUANTILES,
+                                 Xtrain_quant.train, ytrain.cat.train,
+                                 Xtrain_quant.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+
+  ## 3. MEAN_SD_SCALED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.scaled.train , y = ytrain.cat.train, 
+                  method = "C5.0",  metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Boosted Trees C5.0 (Mean sd scaled)",BOOSTED_TREE_MEAN_SD_SCALED,
+                                 Xtrain_mean_sd.scaled.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.scaled.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  ## 4. QUANTILES_SCALED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.scaled.train , y = ytrain.cat.train, 
+                  method = "C5.0",  metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Boosted Trees C5.0 (Quant scaled)",BOOSTED_TREE_QUANTILES_SCALED,
+                                 Xtrain_quant.scaled.train, ytrain.cat.train,
+                                 Xtrain_quant.scaled.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+
+  ## 5. MEAN_SD_REDUCED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.reduced.train , y = ytrain.cat.train , 
+                  method = "C5.0",  metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Boosted Trees C5.0 (Mean sd reduced)",BOOSTED_TREE_MEAN_SD_REDUCED,
+                                 Xtrain_mean_sd.reduced.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.reduced.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  ## 6. QUANTILES_REDUCED 
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.reduced.train , y = ytrain.cat.train, 
+                  tuneGrid = expand.grid(.trials = c(1, (1:10)*10), .model = "tree", .winnow = c(TRUE, FALSE) ),
+                  method = "C5.0",  metric = "ROC", trControl = controlObject)
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Boosted Trees C5.0 (Quant reduced)",BOOSTED_TREE_QUANTILES_REDUCED,
+                                 Xtrain_quant.reduced.train, ytrain.cat.train,
+                                 Xtrain_quant.reduced.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+
+  print(perf.grid) 
+
+  ######################################################## BAGGING TREES 
+  ## 1. MEAN_SD
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.train , y = ytrain.cat.train , 
+                  method = "bag",  metric = "ROC", trControl = controlObject, B = 50 , 
+                  bagControl = bagControl(fit = plsBag$fit,
+                                          predict = plsBag$pred,
+                                          aggregate = plsBag$aggregate))
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Bagged Trees (Mean sd)",BAGGING_TREE_MEAN_SD,
+                                 Xtrain_mean_sd.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid ,verbose=verbose, doPlot=doPlot)
+  
+  ## 2. QUANTILES
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.train , y = ytrain.cat.train , 
+                  method = "bag",  metric = "ROC", trControl = controlObject, B = 50 ,  
+                  bagControl = bagControl(fit = plsBag$fit,
+                                          predict = plsBag$pred,
+                                          aggregate = plsBag$aggregate))
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Bagged Trees (Quant)",BAGGING_TREE_QUANTILES,
+                                 Xtrain_quant.train, ytrain.cat.train,
+                                 Xtrain_quant.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  ## 3. MEAN_SD_SCALED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.scaled.train , y = ytrain.cat.train, 
+                  method = "bag",  metric = "ROC", trControl = controlObject, B = 50 ,  
+                  bagControl = bagControl(fit = plsBag$fit,
+                                          predict = plsBag$pred,
+                                          aggregate = plsBag$aggregate))
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Bagged Trees (Mean sd scaled)",BAGGING_TREE_MEAN_SD_SCALED,
+                                 Xtrain_mean_sd.scaled.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.scaled.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  ## 4. QUANTILES_SCALED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.scaled.train , y = ytrain.cat.train, 
+                  method = "bag",  metric = "ROC", trControl = controlObject, B = 50 , 
+                  bagControl = bagControl(fit = plsBag$fit,
+                                          predict = plsBag$pred,
+                                          aggregate = plsBag$aggregate))
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Bagged Trees (Quant scaled)",BAGGING_TREE_QUANTILES_SCALED,
+                                 Xtrain_quant.scaled.train, ytrain.cat.train,
+                                 Xtrain_quant.scaled.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  
+  ## 5. MEAN_SD_REDUCED
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_mean_sd.reduced.train , y = ytrain.cat.train , 
+                  method = "bag",  metric = "ROC", trControl = controlObject, B = 50 ,
+                  bagControl = bagControl(fit = plsBag$fit,
+                                          predict = plsBag$pred,
+                                          aggregate = plsBag$aggregate))
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Bagged Trees (Mean sd reduced)",BAGGING_TREE_QUANTILES_REDUCED,
+                                 Xtrain_mean_sd.reduced.train, ytrain.cat.train,
+                                 Xtrain_mean_sd.reduced.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  ## 6. QUANTILES_REDUCED 
+  set.seed(476); ptm <- proc.time()
+  model <- train( x = Xtrain_quant.reduced.train , y = ytrain.cat.train, 
+                  method = "bag",  metric = "ROC", trControl = controlObject, tuneGrid = data.frame(vars = seq(1, 15, by = 2)), 
+                  bagControl = bagControl(fit = plsBag$fit,
+                                          predict = plsBag$pred,
+                                          aggregate = plsBag$aggregate))
+  tm = proc.time() - ptm
+  perf.grid = predictAndMeasure (model,"Bagged Trees (Quant reduced)",BOOSTED_TREE_QUANTILES_REDUCED,
+                                 Xtrain_quant.reduced.train, ytrain.cat.train,
+                                 Xtrain_quant.reduced.xval, ytrain.cat.xval,
+                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+  
+  print(perf.grid) 
+
+  #################################################### the winner is ... 
+  perf.grid = perf.grid[order(perf.grid$roc.test.2, perf.grid$roc.test.1 , perf.grid$acc.xval , decreasing = T),] 
+  model.id.winner = perf.grid[1,]$model.id
+  model.label.winner = as.character(perf.grid[1,]$predictor) 
+  cat("************ THE WINNER IS ",model.label.winner," <<",model.id.winner,">> \n")
+
   ##### saving on disk perf.grid ...
-  #write.csv(perf.grid,quote=FALSE,file=paste0(getBasePath(),paste0(ds,"_perf_grid_regress.csv")), row.names=FALSE)
+  write.csv(perf.grid,quote=FALSE,file=paste0(getBasePath(),paste0(ds,"_perf_grid_class.csv")), row.names=FALSE)
   
   ##### re-train winner model on whole train set and predict on test set 
   Xtrain = Xtest = NULL
   model = NULL
   
-
+  ## data set 
+  if (model.id.winner %% 6 == 0) {
+    Xtrain = Xtrain_quant.reduced
+    Xtest  = Xtest_quant.reduced
+  } else if (model.id.winner %% 6 == 1) {
+    Xtrain = Xtrain_mean_sd
+    Xtest  = Xtest_mean_sd
+  } else if (model.id.winner %% 6 == 2) {
+    Xtrain = Xtrain_quant
+    Xtest  = Xtest_quant
+  } else if (model.id.winner %% 6 == 3) {
+    Xtrain = Xtrain_mean_sd.scaled
+    Xtest  = Xtest_mean_sd.scaled
+  } else if (model.id.winner %% 6 == 4) {
+    Xtrain = Xtrain_quant.scaled
+    Xtest  = Xtest_quant.scaled
+  } else if (model.id.winner %% 6 == 5) {
+    Xtrain = Xtrain_mean_sd.reduced
+    Xtest  = Xtest_mean_sd.reduced
+  } else {
+    stop("ma che modello ha vinto (data set) !! ")
+  }
+  
+  ## model 
+  if (model.id.winner >= 1 && model.id.winner <= 6) { ## logistic reg 
+    model <- train( x = Xtrain , y = ytrain.cat , 
+                    method = "glm", metric = "ROC", trControl = controlObject)
+  } else if (model.id.winner >= 7 && model.id.winner <= 12) { ## lda 
+    model <- train( x = Xtrain , y = ytrain.cat,  
+                    method = "lda", metric = "ROC" , trControl = controlObject)
+  } else if (model.id.winner >= 13 && model.id.winner <= 18) { ## plsda 
+    model <- train( x = Xtrain , y = ytrain.cat,  
+                    method = "pls", tuneGrid = expand.grid(.ncomp = 1:10), 
+                    metric = "ROC" , trControl = controlObject)
+  } else if (model.id.winner >= 19 && model.id.winner <= 24) { ## pm 
+    glmnGrid <- expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1), .lambda = seq(.01, .2, length = 40))
+    model <- train( x = Xtrain , y = ytrain.cat,  
+                    method = "glmnet", tuneGrid = glmnGrid, 
+                    metric = "ROC", trControl = controlObject)
+  } else if (model.id.winner >= 25 && model.id.winner <= 30) { ## nsc 
+    nscGrid <- data.frame(.threshold = 0:25)
+    model <- train( x = Xtrain , y = ytrain.cat,  
+                    method = "pam", tuneGrid = nscGrid, 
+                    metric = "ROC", trControl = controlObject)
+  } else if (model.id.winner >= 31 && model.id.winner <= 36) { # neural networks 
+    nnetGrid <- expand.grid(.size = 1:10, .decay = c(0, .1, 1, 2))
+    maxSize <- max(nnetGrid$.size)
+    numWts <- 1*(maxSize * ( (dim(Xtrain)[2]) + 1) + maxSize + 1)
+    model <- train( x = Xtrain , y = ytrain.cat,  
+                    method = "nnet", metric = "ROC", 
+                    preProc = c( "spatialSign") , 
+                    tuneGrid = nnetGrid , trace = FALSE , maxit = 2000 , 
+                    MaxNWts = numWts, trControl = controlObject)
+  } else if (model.id.winner >= 37 && model.id.winner <= 42) { ## svm 
+    sigmaRangeReduced <- sigest(as.matrix(Xtrain))
+    svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1], .C = 2^(seq(-4, 4)))
+    model <- train( x = Xtrain , y = ytrain.cat,  
+                    method = "svmRadial", tuneGrid = svmRGridReduced, 
+                    metric = "ROC", fit = FALSE, trControl = controlObject)
+  } else if (model.id.winner >= 43 && model.id.winner <= 49) { ## knn 
+    model <- train( x = Xtrain , y = ytrain.cat,  
+                    method = "knn", 
+                    tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
+                    metric = "ROC",  trControl = controlObject)
+  } else if (model.id.winner >= 49 && model.id.winner <= 54) { ## class trees 
+    model <- train( x = Xtrain , y = ytrain.cat,  
+                    method = "rpart", tuneLength = 30, 
+                    metric = "ROC", trControl = controlObject)
+  } else if (model.id.winner >= 55 && model.id.winner <= 60) { ## boosted trees 
+    if (model.id.winner >= 55 && model.id.winner <= 59) {
+      ## 55 - 59 
+      model <- train( x = Xtrain , y = ytrain.cat,  
+                      method = "C5.0",  metric = "ROC", trControl = controlObject)
+    } else {
+      ## 60 - BOOSTED_TREE_QUANTILES_REDUCED 
+      model <- train( x = Xtrain , y = ytrain.cat,  
+                      tuneGrid = expand.grid(.trials = c(1, (1:10)*10), .model = "tree", .winnow = c(TRUE, FALSE) ),
+                      method = "C5.0",  metric = "ROC", trControl = controlObject)
+    }
+  } else if (model.id.winner >= 61 && model.id.winner <= 66) { ## bagging trees 
+    if (model.id.winner >= 61 && model.id.winner <= 65) {
+      ## 61 - 65 
+      model <- train( x = Xtrain , y = ytrain.cat,  
+                      method = "bag",  metric = "ROC", trControl = controlObject, B = 50 ,
+                      bagControl = bagControl(fit = plsBag$fit,
+                                              predict = plsBag$pred,
+                                              aggregate = plsBag$aggregate))
+    } else {
+      ## 66 - BAGGING_TREE_QUANTILES_REDUCED
+      model <- train( x = Xtrain , y = ytrain.cat,  
+                      method = "bag",  metric = "ROC", trControl = controlObject, 
+                      tuneGrid = data.frame(vars = seq(1, 15, by = 2)), 
+                      bagControl = bagControl(fit = plsBag$fit,
+                                              predict = plsBag$pred,
+                                              aggregate = plsBag$aggregate))
+    }
+  } else {
+    stop("ma che modello ha vinto (modello) !! ")
+  }
+  
+  ## predicting model on Xtrain and Xtest 
+  pred.prob.train = predict(model , Xtrain , type = "prob")[,'preict'] 
+  pred.train = predict(model , Xtrain )
+  
+  pred.prob.test = predict(model , Xtest , type = "prob")[,'preict'] ### <<<<<<<<<<<<----------------------------------
+  pred.test = predict(model , Xtest )
+  
+  ## accuracy 
+  acc.train.all0 = sum(factor(rep('interict',length(ytrain.cat)) , levels = levels(ytrain.cat) ) == ytrain.cat) / length(ytrain.cat)
+  acc.train = sum(ytrain.cat == pred.train) / length(ytrain.cat) 
+  
+  ## ROC 
+  rocCurve <- pROC::roc(response = ytrain.cat, predictor = pred.prob.train, levels = levels(ytrain.cat) )
+  roc.train = as.numeric( pROC::auc(rocCurve) )
+  
+  roc.train.2 = roc.area(as.numeric(ytrain.cat == 'preict') , pred.prob.train )$A
+  roc.xval.min = min(roc.xval.2,roc.xval)
+  
+  ## logging 
+  if (verbose) cat("******************* ", model.label.winner, " <<" , model.id.winner ,  ">> \n")
+  if (verbose) cat("** acc.train =",acc.train, " -  acc.train.all0 =",acc.train.all0, " \n")
+  if (verbose) cat("** roc.train =",roc.train," -  roc.train.2 =",roc.train.2,"  \n")
+  if (verbose) cat("** roc.xval.min =",roc.xval.min, " \n")
+  
   ### update predVect 
-#   predVect[predVect.idx:(predVect.idx+length(pred.test.cat)-1)] = as.numeric(pred.test.cat)
-#   predVect.idx = predVect.idx + length(pred.test.cat)
-#   
-#   if (is.null(trainPred)) {
-#     trainPred = as.numeric(pred.train.cat)
-#     trainClass = ytrain[,2]
-#   } else {
-#     trainPred = c(trainPred , as.numeric(pred.train.cat))
-#     trainClass = c(trainClass , ytrain[,2] )
-#   }
+  predVect[predVect.idx:(predVect.idx+length(pred.prob.test)-1)] = pred.prob.test
+  predVect.idx = predVect.idx + length(pred.prob.test)
+  
+  ## trainPred
+  if (is.null(trainPred)) {
+    trainPred = pred.prob.train
+    trainClass = ytrain[,2]
+  } else {
+    trainPred = c(trainPred , pred.prob.train)
+    trainClass = c(trainClass , ytrain[,2] )
+  }
   
 }
 
@@ -653,7 +1017,7 @@ write.csv(mySub,quote=FALSE,file=paste0(getBasePath(),"mySub_class.zat"), row.na
 
 ## Calibrating Probabilities - sigmoid 
 trainClass.cat = as.factor(trainClass)
-levels(trainClass.cat) =  c("inter-ict","pre-ict")
+levels(trainClass.cat) =  c("interict","preict")
 train.df = data.frame(class = trainClass.cat , prob = trainPred )
 sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
 coef(summary(sigmoidalCal)) 
@@ -665,7 +1029,7 @@ write.csv(mySub2,quote=FALSE,file=paste0(getBasePath(),"mySub_sigmoid_calibrat_c
 library(klaR)
 BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
 BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect) )
-BayesProbs.preict <- BayesProbs$posterior[, "pre-ict"]
+BayesProbs.preict <- BayesProbs$posterior[, "preict"]
 mySub3 = data.frame(clip = sampleSubmission$clip , preictal = BayesProbs.preict)
 write.csv(mySub3,quote=FALSE,file=paste0(getBasePath(),"mySub_bayes_calibrat_class.zat"), row.names=FALSE)
 
