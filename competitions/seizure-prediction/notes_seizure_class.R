@@ -860,7 +860,7 @@ for (ds in dss) {
   print(perf.grid) 
 
   #################################################### the winner is ... 
-  perf.grid = perf.grid[order(perf.grid$roc.test.2, perf.grid$roc.test.1 , perf.grid$acc.xval , decreasing = T),] 
+  perf.grid = perf.grid[order(perf.grid$roc.xval.2, perf.grid$roc.xval , perf.grid$acc.xval , decreasing = T),] 
   model.id.winner = perf.grid[1,]$model.id
   model.label.winner = as.character(perf.grid[1,]$predictor) 
   cat("************ THE WINNER IS ",model.label.winner," <<",model.id.winner,">> \n")
