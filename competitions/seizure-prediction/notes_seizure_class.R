@@ -192,11 +192,14 @@ trainClass = NULL
 verbose = T
 doPlot = F 
 
-controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10 , 
+# controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10 , 
+#                               summaryFunction = twoClassSummary , classProbs = TRUE)
+
+controlObject <- trainControl(method = "boot", number = 50 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
-dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-##dss = c("Patient_2")
+##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
+dss = c("Patient_2")
 for (ds in dss) {
   
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
@@ -253,7 +256,7 @@ for (ds in dss) {
   Xtest_quant.scaled = predict(scale.quant,Xtest_quant)
   
   #### partitioning into train , xval ... 
-  set.seed(975)
+  set.seed(429494444)
   forTraining <- createDataPartition(ytrain[,1], p = 3/4)[[1]]
   
   ## full 
