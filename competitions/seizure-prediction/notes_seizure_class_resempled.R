@@ -38,11 +38,8 @@ getBasePath = function (type = "data" , ds="") {
 split.random = function (Xtrain_mean_sd,Xtrain_quant,
              Xtrain_mean_sd.scaled,Xtrain_quant.scaled,
              Xtrain_mean_sd.reduced,Xtrain_quant.reduced,
-             ytrain.cat,verbose=F) {
+             ytrain.cat,sd,verbose=F) {
   
-  
-  ##set.seed(429494444)
-  sd = sample(1:429494444, 1)
   if (verbose) cat("** Random split - using seed =",sd, " ... \n")
   set.seed(sd)
   forTraining <- createDataPartition(ytrain[,1], p = 3/4)[[1]]
@@ -72,7 +69,7 @@ split.random = function (Xtrain_mean_sd,Xtrain_quant,
   list(Xtrain_mean_sd.train,Xtrain_mean_sd.xval,Xtrain_quant.train,Xtrain_quant.xval,
        Xtrain_mean_sd.scaled.train,Xtrain_mean_sd.scaled.xval,Xtrain_quant.scaled.train,Xtrain_quant.scaled.xval,
        Xtrain_mean_sd.reduced.train,Xtrain_mean_sd.reduced.xval,Xtrain_quant.reduced.train,Xtrain_quant.reduced.xval,
-       ytrain.cat.train,ytrain.cat.xval,sd)
+       ytrain.cat.train,ytrain.cat.xval)
 }
 
 predictAndMeasure = function(model,model.label,model.id,
@@ -317,7 +314,7 @@ for (ds in dss) {
   l = split.random(Xtrain_mean_sd,Xtrain_quant,
                Xtrain_mean_sd.scaled,Xtrain_quant.scaled,
                Xtrain_mean_sd.reduced,Xtrain_quant.reduced,
-               ytrain.cat,verbose)
+               ytrain.cat,seeds[cs],verbose)
   
   Xtrain_mean_sd.train = l[[1]] 
   Xtrain_mean_sd.xval = l[[2]]
