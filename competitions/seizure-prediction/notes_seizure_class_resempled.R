@@ -247,9 +247,9 @@ doPlot = F
 controlObject <- trainControl(method = "boot", number = 50 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
-##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-dss = c("Patient_2")
-
+dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
+##dss = c("Patient_2")
+cat("|---------------->>> data set to process: <<",dss,">> ..\n")
 
 for (ds in dss) {
   
