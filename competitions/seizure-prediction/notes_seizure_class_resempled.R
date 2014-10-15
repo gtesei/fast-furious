@@ -1082,10 +1082,10 @@ for (ds in dss) {
   validation.grid$avg = apply(validation.grid[-(1:5)] , 1 , mean)
   
   validation.grid = validation.grid[order(validation.grid$min , decreasing = T),]
+  validation.grid
 
   ##### saving on disk perf.grid ...
   write.csv(validation.grid,quote=FALSE,file=paste0(getBasePath(),paste0(ds,"_validation_grid_class.csv")), row.names=FALSE)
-
 }
 
 

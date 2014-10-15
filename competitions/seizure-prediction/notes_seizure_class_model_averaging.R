@@ -305,15 +305,22 @@ predVect_topxx = data.frame(predVect_top05 = rep(-1,dim(sampleSubmission)[1]) , 
                             predVect_top15 = rep(-1,dim(sampleSubmission)[1]) , predVect_top20 = rep(-1,dim(sampleSubmission)[1]),
                             predVect_top25 = rep(-1,dim(sampleSubmission)[1]) )
 
+predVect_topxx.train = data.frame(predVect_top05 = rep(-1,dim(sampleSubmission)[1]) , predVect_top10 = rep(-1,dim(sampleSubmission)[1]), 
+                            predVect_top15 = rep(-1,dim(sampleSubmission)[1]) , predVect_top20 = rep(-1,dim(sampleSubmission)[1]),
+                            predVect_top25 = rep(-1,dim(sampleSubmission)[1]) )
+
 ############# model selection ... 
 verbose = T
 doPlot = F 
 
-controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10 , 
+controlObject <- trainControl(method = "boot", number = 30 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
-##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-dss = c("Patient_2")
+# controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10 , 
+#                               summaryFunction = twoClassSummary , classProbs = TRUE)
+
+dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
+##dss = c("Patient_2")
 for (ds in dss) {
   
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
@@ -370,7 +377,8 @@ for (ds in dss) {
   Xtest_quant.scaled = predict(scale.quant,Xtest_quant)
   
   #### partitioning into train , xval ... 
-  set.seed(975)
+#   set.seed(975)
+  set.seed(429494444)
   forTraining <- createDataPartition(ytrain[,1], p = 3/4)[[1]]
   
   ## full 
@@ -1035,6 +1043,9 @@ for (ds in dss) {
     prob.mat = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.test)) , 
                       nrow = length(pred.prob.test) , ncol = nrow(mod.grid)  )
     
+    prob.mat.train = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.test)) , 
+                       nrow = length(pred.prob.test) , ncol = nrow(mod.grid)  )
+    
     for ( mi in 1:nrow(mod.grid) ) {
       model.id = mod.grid[mi,]$model.id
       model.label = as.character(mod.grid[mi,]$predictor) 
@@ -1073,19 +1084,26 @@ for (ds in dss) {
       pred.test.topxx = ll[[4]]
       
       prob.mat[,mi] = pred.prob.test.topxx
+      prob.mat.train[,mi] = pred.prob.train.topxx
     }
     
     #### averaging 
     prob.mat.xx = prob.mat 
+    prob.mat.train.xx = prob.mat.train
     for ( mi in 1:nrow(mod.grid) ) {
       prob.mat.xx[,mi] = prob.mat[,mi] * weigths[mi]
+      prob.mat.train.xx[,mi] = prob.mat.train[,mi] * weigths[mi]
     }
     
+    ### update predVect_topxx
     NUM = apply(prob.mat.xx,1,sum)
     DENUM = sum(weigths)
-    
-    ### update predVect_topxx
     predVect_topxx[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
+    
+    ### update predVect_topxx.train
+    NUM = apply(prob.mat.train.xx,1,sum)
+    DENUM = sum(weigths)
+    predVect_topxx.train[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
   }
   
   ### update predVects 
@@ -1130,4 +1148,22 @@ for (tp in 1:length(topxx) ) {
   label = as.character(labelAvg[tp])
   mySub = data.frame(clip = sampleSubmission$clip , preictal = format( predVect_topxx[,tp]  , scientific = F ))
   write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , ".zat" , sep=""), row.names=FALSE)
+  
+  ## Calibrating Probabilities - sigmoid - top model 
+  trainClass.cat = as.factor(predVect_topxx.train[,tp])
+  levels(trainClass.cat) =  c("interict","preict")
+  train.df = data.frame(class = trainClass.cat , prob = trainPred )
+  sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
+  coef(summary(sigmoidalCal)) 
+  sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect_topxx[,tp]), type = "response")
+  mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
+  write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,".zat",sep=""), row.names=FALSE)
+  
+  ## Calibrating Probabilities - Bayes - top model 
+  library(klaR)
+  BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
+  BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect_topxx[,tp]) )
+  BayesProbs.preict <- BayesProbs$posterior[, "preict"]
+  mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
+  write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,".zat"), row.names=FALSE)
 }
