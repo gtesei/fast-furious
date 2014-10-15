@@ -1039,13 +1039,13 @@ for (ds in dss) {
                                           predict = plsBag$pred,
                                           aggregate = plsBag$aggregate))
   tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (model,"Bagged Trees (Mean sd reduced)",BAGGING_TREE_QUANTILES_REDUCED,
+  perf.grid = predictAndMeasure (model,"Bagged Trees (Mean sd reduced)",BAGGING_TREE_MEAN_SD_REDUCED,
                                  Xtrain_mean_sd.reduced.train, ytrain.cat.train,
                                  Xtrain_mean_sd.reduced.xval, ytrain.cat.xval,
                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
   
-  validation.grid [validation.grid$model.id == BAGGING_TREE_QUANTILES_REDUCED,]$model = "Bagged Trees (Mean sd reduced)"
-  validation.grid [validation.grid$model.id == BAGGING_TREE_QUANTILES_REDUCED,(5+cs)] = perf.grid[perf.grid$model.id==BAGGING_TREE_QUANTILES_REDUCED,]$roc.xval.2
+  validation.grid [validation.grid$model.id == BAGGING_TREE_MEAN_SD_REDUCED,]$model = "Bagged Trees (Mean sd reduced)"
+  validation.grid [validation.grid$model.id == BAGGING_TREE_MEAN_SD_REDUCED,(5+cs)] = perf.grid[perf.grid$model.id==BAGGING_TREE_QUANTILES_REDUCED,]$roc.xval.2
   
   ## 6. QUANTILES_REDUCED 
   set.seed(476); ptm <- proc.time()
@@ -1055,13 +1055,13 @@ for (ds in dss) {
                                           predict = plsBag$pred,
                                           aggregate = plsBag$aggregate))
   tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (model,"Bagged Trees (Quant reduced)",BOOSTED_TREE_QUANTILES_REDUCED,
+  perf.grid = predictAndMeasure (model,"Bagged Trees (Quant reduced)",BAGGING_TREE_QUANTILES_REDUCED,
                                  Xtrain_quant.reduced.train, ytrain.cat.train,
                                  Xtrain_quant.reduced.xval, ytrain.cat.xval,
                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
   
-  validation.grid [validation.grid$model.id == BOOSTED_TREE_QUANTILES_REDUCED,]$model = "Bagged Trees (Quant reduced)"
-  validation.grid [validation.grid$model.id == BOOSTED_TREE_QUANTILES_REDUCED,(5+cs)] = perf.grid[perf.grid$model.id==BOOSTED_TREE_QUANTILES_REDUCED,]$roc.xval.2
+  validation.grid [validation.grid$model.id == BAGGING_TREE_QUANTILES_REDUCED,]$model = "Bagged Trees (Quant reduced)"
+  validation.grid [validation.grid$model.id == BAGGING_TREE_QUANTILES_REDUCED,(5+cs)] = perf.grid[perf.grid$model.id==BOOSTED_TREE_QUANTILES_REDUCED,]$roc.xval.2
   
   print(perf.grid) 
 

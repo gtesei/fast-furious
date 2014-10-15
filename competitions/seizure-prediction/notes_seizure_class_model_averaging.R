@@ -305,9 +305,9 @@ predVect_topxx = data.frame(predVect_top05 = rep(-1,dim(sampleSubmission)[1]) , 
                             predVect_top15 = rep(-1,dim(sampleSubmission)[1]) , predVect_top20 = rep(-1,dim(sampleSubmission)[1]),
                             predVect_top25 = rep(-1,dim(sampleSubmission)[1]) )
 
-predVect_topxx.train = data.frame(predVect_top05 = rep(-1,dim(sampleSubmission)[1]) , predVect_top10 = rep(-1,dim(sampleSubmission)[1]), 
-                            predVect_top15 = rep(-1,dim(sampleSubmission)[1]) , predVect_top20 = rep(-1,dim(sampleSubmission)[1]),
-                            predVect_top25 = rep(-1,dim(sampleSubmission)[1]) )
+# predVect_topxx.train = data.frame(predVect_top05 = rep(-1,dim(sampleSubmission)[1]) , predVect_top10 = rep(-1,dim(sampleSubmission)[1]), 
+#                             predVect_top15 = rep(-1,dim(sampleSubmission)[1]) , predVect_top20 = rep(-1,dim(sampleSubmission)[1]),
+#                             predVect_top25 = rep(-1,dim(sampleSubmission)[1]) )
 
 ############# model selection ... 
 verbose = T
@@ -966,7 +966,7 @@ for (ds in dss) {
                                           predict = plsBag$pred,
                                           aggregate = plsBag$aggregate))
   tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (model,"Bagged Trees (Mean sd reduced)",BAGGING_TREE_QUANTILES_REDUCED,
+  perf.grid = predictAndMeasure (model,"Bagged Trees (Mean sd reduced)",BAGGING_TREE_MEAN_SD_REDUCED,
                                  Xtrain_mean_sd.reduced.train, ytrain.cat.train,
                                  Xtrain_mean_sd.reduced.xval, ytrain.cat.xval,
                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
@@ -979,7 +979,7 @@ for (ds in dss) {
                                           predict = plsBag$pred,
                                           aggregate = plsBag$aggregate))
   tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (model,"Bagged Trees (Quant reduced)",BOOSTED_TREE_QUANTILES_REDUCED,
+  perf.grid = predictAndMeasure (model,"Bagged Trees (Quant reduced)",BAGGING_TREE_QUANTILES_REDUCED,
                                  Xtrain_quant.reduced.train, ytrain.cat.train,
                                  Xtrain_quant.reduced.xval, ytrain.cat.xval,
                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
@@ -1045,8 +1045,8 @@ for (ds in dss) {
     prob.mat = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.test)) , 
                       nrow = length(pred.prob.test) , ncol = nrow(mod.grid)  )
     
-    prob.mat.train = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.test)) , 
-                       nrow = length(pred.prob.test) , ncol = nrow(mod.grid)  )
+#     prob.mat.train = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.train)) , 
+#                        nrow = length(pred.prob.train) , ncol = nrow(mod.grid)  )
     
     for ( mi in 1:nrow(mod.grid) ) {
       model.id = mod.grid[mi,]$model.id
@@ -1086,15 +1086,15 @@ for (ds in dss) {
       pred.test.topxx = ll[[4]]
       
       prob.mat[,mi] = pred.prob.test.topxx
-      prob.mat.train[,mi] = pred.prob.train.topxx
+#       prob.mat.train[,mi] = pred.prob.train.topxx
     }
     
     #### averaging 
     prob.mat.xx = prob.mat 
-    prob.mat.train.xx = prob.mat.train
+#     prob.mat.train.xx = prob.mat.train
     for ( mi in 1:nrow(mod.grid) ) {
       prob.mat.xx[,mi] = prob.mat[,mi] * weigths[mi]
-      prob.mat.train.xx[,mi] = prob.mat.train[,mi] * weigths[mi]
+#       prob.mat.train.xx[,mi] = prob.mat.train[,mi] * weigths[mi]
     }
     
     ### update predVect_topxx
@@ -1102,10 +1102,10 @@ for (ds in dss) {
     DENUM = sum(weigths)
     predVect_topxx[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
     
-    ### update predVect_topxx.train
-    NUM = apply(prob.mat.train.xx,1,sum)
-    DENUM = sum(weigths)
-    predVect_topxx.train[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
+#     ### update predVect_topxx.train
+#     NUM = apply(prob.mat.train.xx,1,sum)
+#     DENUM = sum(weigths)
+#     predVect_topxx.train[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
   }
   
   ### update predVects 
@@ -1151,21 +1151,21 @@ for (tp in 1:length(topxx) ) {
   mySub = data.frame(clip = sampleSubmission$clip , preictal = format( predVect_topxx[,tp]  , scientific = F ))
   write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , ".zat" , sep=""), row.names=FALSE)
   
-  ## Calibrating Probabilities - sigmoid - top model 
-  trainClass.cat = as.factor(predVect_topxx.train[,tp])
-  levels(trainClass.cat) =  c("interict","preict")
-  train.df = data.frame(class = trainClass.cat , prob = trainPred )
-  sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
-  coef(summary(sigmoidalCal)) 
-  sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect_topxx[,tp]), type = "response")
-  mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
-  write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,".zat",sep=""), row.names=FALSE)
-  
-  ## Calibrating Probabilities - Bayes - top model 
-  library(klaR)
-  BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
-  BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect_topxx[,tp]) )
-  BayesProbs.preict <- BayesProbs$posterior[, "preict"]
-  mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
-  write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,".zat"), row.names=FALSE)
+#   ## Calibrating Probabilities - sigmoid - top model 
+#   trainClass.cat = as.factor(predVect_topxx.train[,tp])
+#   levels(trainClass.cat) =  c("interict","preict")
+#   train.df = data.frame(class = trainClass.cat , prob = trainPred )
+#   sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
+#   coef(summary(sigmoidalCal)) 
+#   sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect_topxx[,tp]), type = "response")
+#   mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
+#   write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,".zat",sep=""), row.names=FALSE)
+#   
+#   ## Calibrating Probabilities - Bayes - top model 
+#   library(klaR)
+#   BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
+#   BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect_topxx[,tp]) )
+#   BayesProbs.preict <- BayesProbs$posterior[, "preict"]
+#   mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
+#   write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,".zat"), row.names=FALSE)
 }
