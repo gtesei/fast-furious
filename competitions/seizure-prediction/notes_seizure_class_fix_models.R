@@ -466,10 +466,14 @@ for (ds in dss) {
     stop("ma che data set !")
   }
   
+  DENUM = rep(-1,nrow(grid))
+  for ( moo in 1:nrow(grid) ) {
+    DENUM[moo] = sum(grid[1:moo,3])
+  }
   for ( mo in 1:nrow(grid) ) {
-    w = grid[mo,3] / sum(grid[,3])
-    for (moo in (1:mo) ) {
-      cat ("mo=",mo," - moo =",moo," \n")
+    for (moo in mo:nrow(grid) ) {
+      w = grid[mo,3] / DENUM[moo]
+      cat ("mo=",mo," - moo =",moo," w = ",w,"\n")
       grid.avg[moo,(4:ncol(grid.avg))] = grid.avg[moo,(4:ncol(grid.avg))] + (grid[mo,(4:ncol(grid.avg))]  * w) 
     }
   }
