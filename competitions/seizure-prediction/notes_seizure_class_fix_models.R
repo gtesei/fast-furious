@@ -36,31 +36,31 @@ getBasePath = function (type = "data" , ds="") {
 
 
 trainAndPredict = function(model.label,model.id,
-                             Xtrain, ytrain.cat,
-                             Xtest,
-                             verbose=F) {
+                           Xtrain, ytrain.cat,
+                           Xtest,
+                           verbose=F) {
   ## model 
-  if (model.id.winner >= 1 && model.id.winner <= 6) { ## logistic reg 
+  if (model.id >= 1 && model.id <= 6) { ## logistic reg 
     model <- train( x = Xtrain , y = ytrain.cat , 
                     method = "glm", metric = "ROC", trControl = controlObject)
-  } else if (model.id.winner >= 7 && model.id.winner <= 12) { ## lda 
+  } else if (model.id >= 7 && model.id <= 12) { ## lda 
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "lda", metric = "ROC" , trControl = controlObject)
-  } else if (model.id.winner >= 13 && model.id.winner <= 18) { ## plsda 
+  } else if (model.id >= 13 && model.id <= 18) { ## plsda 
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "pls", tuneGrid = expand.grid(.ncomp = 1:10), 
                     metric = "ROC" , trControl = controlObject)
-  } else if (model.id.winner >= 19 && model.id.winner <= 24) { ## pm 
+  } else if (model.id >= 19 && model.id <= 24) { ## pm 
     glmnGrid <- expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1), .lambda = seq(.01, .2, length = 40))
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "glmnet", tuneGrid = glmnGrid, 
                     metric = "ROC", trControl = controlObject)
-  } else if (model.id.winner >= 25 && model.id.winner <= 30) { ## nsc 
+  } else if (model.id >= 25 && model.id <= 30) { ## nsc 
     nscGrid <- data.frame(.threshold = 0:25)
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "pam", tuneGrid = nscGrid, 
                     metric = "ROC", trControl = controlObject)
-  } else if (model.id.winner >= 31 && model.id.winner <= 36) { # neural networks 
+  } else if (model.id >= 31 && model.id <= 36) { # neural networks 
     nnetGrid <- expand.grid(.size = 1:10, .decay = c(0, .1, 1, 2))
     maxSize <- max(nnetGrid$.size)
     numWts <- 1*(maxSize * ( (dim(Xtrain)[2]) + 1) + maxSize + 1)
@@ -69,23 +69,23 @@ trainAndPredict = function(model.label,model.id,
                     preProc = c( "spatialSign") , 
                     tuneGrid = nnetGrid , trace = FALSE , maxit = 2000 , 
                     MaxNWts = numWts, trControl = controlObject)
-  } else if (model.id.winner >= 37 && model.id.winner <= 42) { ## svm 
+  } else if (model.id >= 37 && model.id <= 42) { ## svm 
     sigmaRangeReduced <- sigest(as.matrix(Xtrain))
     svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1], .C = 2^(seq(-4, 4)))
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "svmRadial", tuneGrid = svmRGridReduced, 
                     metric = "ROC", fit = FALSE, trControl = controlObject)
-  } else if (model.id.winner >= 43 && model.id.winner <= 49) { ## knn 
+  } else if (model.id >= 43 && model.id <= 49) { ## knn 
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "knn", 
                     tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
                     metric = "ROC",  trControl = controlObject)
-  } else if (model.id.winner >= 49 && model.id.winner <= 54) { ## class trees 
+  } else if (model.id >= 49 && model.id <= 54) { ## class trees 
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "rpart", tuneLength = 30, 
                     metric = "ROC", trControl = controlObject)
-  } else if (model.id.winner >= 55 && model.id.winner <= 60) { ## boosted trees 
-    if (model.id.winner >= 55 && model.id.winner <= 59) {
+  } else if (model.id >= 55 && model.id <= 60) { ## boosted trees 
+    if (model.id >= 55 && model.id <= 59) {
       ## 55 - 59 
       model <- train( x = Xtrain , y = ytrain.cat,  
                       method = "C5.0",  metric = "ROC", trControl = controlObject)
@@ -95,8 +95,8 @@ trainAndPredict = function(model.label,model.id,
                       tuneGrid = expand.grid(.trials = c(1, (1:10)*10), .model = "tree", .winnow = c(TRUE, FALSE) ),
                       method = "C5.0",  metric = "ROC", trControl = controlObject)
     }
-  } else if (model.id.winner >= 61 && model.id.winner <= 66) { ## bagging trees 
-    if (model.id.winner >= 61 && model.id.winner <= 65) {
+  } else if (model.id >= 61 && model.id <= 66) { ## bagging trees 
+    if (model.id >= 61 && model.id <= 65) {
       ## 61 - 65 
       model <- train( x = Xtrain , y = ytrain.cat,  
                       method = "bag",  metric = "ROC", trControl = controlObject, B = 50 ,
@@ -223,40 +223,52 @@ BAGGING_TREE_QUANTILES_REDUCED = 66
 
 ######################################################## MAIN LOOP 
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
-predVect = rep(-1,dim(sampleSubmission)[1])
-predVect.idx = 1
-
-trainPred = NULL 
-trainClass = NULL
-
- #### Model averaging 
-topxx = c(0.95 , 0.9 , 0.85 , 0.80, 0.75)
-labelAvg = list(lab1 = "top05", lab2 = "top10" , 
-                lab3 = "top15", lab4 = "top20", 
-                lab5 = "top25")
-predVect_topxx = data.frame(predVect_top05 = rep(-1,dim(sampleSubmission)[1]) , predVect_top10 = rep(-1,dim(sampleSubmission)[1]), 
-                            predVect_top15 = rep(-1,dim(sampleSubmission)[1]) , predVect_top20 = rep(-1,dim(sampleSubmission)[1]),
-                            predVect_top25 = rep(-1,dim(sampleSubmission)[1]) )
-
-# predVect_topxx.train = data.frame(predVect_top05 = rep(-1,dim(sampleSubmission)[1]) , predVect_top10 = rep(-1,dim(sampleSubmission)[1]), 
-#                             predVect_top15 = rep(-1,dim(sampleSubmission)[1]) , predVect_top20 = rep(-1,dim(sampleSubmission)[1]),
-#                             predVect_top25 = rep(-1,dim(sampleSubmission)[1]) )
-
+# predVect = rep(-1,dim(sampleSubmission)[1])
+# predVect.idx = 1
+# 
+# trainPred = NULL 
+# trainClass = NULL
 ############# general settings ... 
 verbose = T
 doPlot = F 
 
-############ models 
-
+############ models grids 
 Dog_1.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Quant scaled)" , "KNN (Mean sd scaled)") , 
                          model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_QUANTILES_SCALED , NSC_REG_QUANTILES_REDUCED) , 
-                         weigth = c(0.6 , 0.5 , 0.4)
-                         ) 
+                         weigth = c(0.6 , 0.5 , 0.4)) 
 
 Dog_2.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
                          model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
-                         weigth = c(0.7 , 0.5 , 0.4)
-                         ) 
+                         weigth = c(0.7 , 0.5 , 0.4)) 
+
+Dog_3.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
+                         model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
+                         weigth = c(0.7 , 0.5 , 0.4)) 
+
+Dog_4.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
+                         model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
+                         weigth = c(0.7 , 0.5 , 0.4)) 
+
+Dog_5.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
+                         model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
+                         weigth = c(0.7 , 0.5 , 0.4)) 
+
+Patient_1.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
+                             model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
+                             weigth = c(0.7 , 0.5 , 0.4)) 
+
+Patient_2.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
+                             model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
+                             weigth = c(0.7 , 0.5 , 0.4)) 
+
+### check 
+models.per.ds = nrow(Dog_1.model)
+if (nrow(Dog_2.model) != models.per.ds | 
+    nrow(Dog_3.model) != models.per.ds |
+    nrow(Dog_4.model) != models.per.ds |
+    nrow(Dog_5.model) != models.per.ds |
+    nrow(Patient_1.model) != models.per.ds |
+    nrow(Patient_2.model) != models.per.ds) stop("number of model per data set must be equal.")
 
 ############ 
 
@@ -270,6 +282,7 @@ dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
 ##dss = c("Patient_2")
 cat("|---------------->>> data set to process: <<",dss,">> ..\n")
 
+### completing models grids
 for (ds in dss) {
   
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
@@ -325,42 +338,11 @@ for (ds in dss) {
   Xtrain_quant.scaled = predict(scale.quant,Xtrain_quant)
   Xtest_quant.scaled = predict(scale.quant,Xtest_quant)
   
-  #### partitioning into train , xval ... 
-#   set.seed(975)
-  set.seed(429494444)
-  forTraining <- createDataPartition(ytrain[,1], p = 3/4)[[1]]
-  
-  ## full 
-  Xtrain_mean_sd.train <- Xtrain_mean_sd[ forTraining,]
-  Xtrain_mean_sd.xval <- Xtrain_mean_sd[-forTraining,]
-  Xtrain_quant.train <- Xtrain_quant[ forTraining,]
-  Xtrain_quant.xval <- Xtrain_quant[-forTraining,]
-  
-  ## scaled 
-  Xtrain_mean_sd.scaled.train <- Xtrain_mean_sd.scaled[ forTraining,]
-  Xtrain_mean_sd.scaled.xval <- Xtrain_mean_sd.scaled[-forTraining,]
-  Xtrain_quant.scaled.train <- Xtrain_quant.scaled[ forTraining,]
-  Xtrain_quant.scaled.xval <- Xtrain_quant.scaled[-forTraining,]
-  
-  ## reduced 
-  Xtrain_mean_sd.reduced.train <- Xtrain_mean_sd.reduced[ forTraining,]
-  Xtrain_mean_sd.reduced.xval <- Xtrain_mean_sd.reduced[-forTraining,]
-  Xtrain_quant.reduced.train <- Xtrain_quant.reduced[ forTraining,]
-  Xtrain_quant.reduced.xval <- Xtrain_quant.reduced[-forTraining,]
-  
-  ## y 
-  ytrain.cat.train = ytrain.cat[forTraining]
-  ytrain.cat.xval = ytrain.cat[-forTraining] 
-
-  #################################################### 
-  
-  ##### train winner models on whole train set and predict on test set 
+  ################################################################### completing grids with probabilities 
   Xtrain = Xtest = NULL
   model = NULL
   
-  ########### Model averaging  
-  if (verbose) cat("******************* Model averaging .... \n")
-  
+  ########### set grid 
   grid = NULL 
   if (ds == "Dog_1") {
     grid = Dog_1.model
@@ -379,123 +361,188 @@ for (ds in dss) {
   } else {
     stop("ma che modello ha vinto!")
   }
+  
+  if (verbose) cat("******************* Completing grids with probabilities .... \n")
+  prob.df = as.data.frame(matrix(rep(-1,(nrow(Xtest_mean_sd)*nrow(grid))), nrow=nrow(grid) , ncol = nrow(Xtest_mean_sd)))
+  colnames(prob.df) = paste0("p",(1:nrow(Xtest_mean_sd)))
+  grid = cbind(grid,prob.df)
+  
+  for (mo in 1:nrow(grid) ) {
+    model.id = grid[mo,]$model.id
+    model.label = as.character(grid[mo,]$predictor) 
     
-    
-  ################################################################### qui
-    
-  for (tp in 1:nrow(grid) ) {
-
-    if (verbose) cat("*** building model average for ", tp ," models \n")
-    
-    weigths = rep(-1,nrow(mod.grid))
-    prob.mat = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.test)) , 
-                      nrow = length(pred.prob.test) , ncol = nrow(mod.grid)  )
-    
-#     prob.mat.train = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.train)) , 
-#                        nrow = length(pred.prob.train) , ncol = nrow(mod.grid)  )
-    
-    for ( mi in 1:nrow(mod.grid) ) {
-      model.id = mod.grid[mi,]$model.id
-      model.label = as.character(mod.grid[mi,]$predictor) 
-      weigths[mi] = roc = mod.grid[mi,]$roc.xval.2
-      
-      ## data set 
-      if (model.id %% 6 == 0) {
-        Xtrain = Xtrain_quant.reduced
-        Xtest  = Xtest_quant.reduced
-      } else if (model.id %% 6 == 1) {
-        Xtrain = Xtrain_mean_sd
-        Xtest  = Xtest_mean_sd
-      } else if (model.id %% 6 == 2) {
-        Xtrain = Xtrain_quant
-        Xtest  = Xtest_quant
-      } else if (model.id %% 6 == 3) {
-        Xtrain = Xtrain_mean_sd.scaled
-        Xtest  = Xtest_mean_sd.scaled
-      } else if (model.id %% 6 == 4) {
-        Xtrain = Xtrain_quant.scaled
-        Xtest  = Xtest_quant.scaled
-      } else if (model.id %% 6 == 5) {
-        Xtrain = Xtrain_mean_sd.reduced
-        Xtest  = Xtest_mean_sd.reduced
-      } else {
-        stop("ma che modello ha vinto (data set) !! ")
-      }
-      
-      ## train and predict 
-      ll = trainAndPredict (model.label,model.id, 
-                           Xtrain, ytrain.cat, Xtest, 
-                           verbose=T)
-      pred.prob.train.topxx = ll[[1]] 
-      pred.train.topxx = ll[[2]]
-      pred.prob.test.topxx = ll[[3]]    #### <<<<<<<<<--------------------------
-      pred.test.topxx = ll[[4]]
-      
-      prob.mat[,mi] = pred.prob.test.topxx
-#       prob.mat.train[,mi] = pred.prob.train.topxx
+    ## data set 
+    if (model.id %% 6 == 0) {
+      Xtrain = Xtrain_quant.reduced
+      Xtest  = Xtest_quant.reduced
+    } else if (model.id %% 6 == 1) {
+      Xtrain = Xtrain_mean_sd
+      Xtest  = Xtest_mean_sd
+    } else if (model.id %% 6 == 2) {
+      Xtrain = Xtrain_quant
+      Xtest  = Xtest_quant
+    } else if (model.id %% 6 == 3) {
+      Xtrain = Xtrain_mean_sd.scaled
+      Xtest  = Xtest_mean_sd.scaled
+    } else if (model.id %% 6 == 4) {
+      Xtrain = Xtrain_quant.scaled
+      Xtest  = Xtest_quant.scaled
+    } else if (model.id %% 6 == 5) {
+      Xtrain = Xtrain_mean_sd.reduced
+      Xtest  = Xtest_mean_sd.reduced
+    } else {
+      stop("ma che modello ha vinto (data set) !! ")
     }
     
-    #### averaging 
-    prob.mat.xx = prob.mat 
-#     prob.mat.train.xx = prob.mat.train
-    for ( mi in 1:nrow(mod.grid) ) {
-      prob.mat.xx[,mi] = prob.mat[,mi] * weigths[mi]
-#       prob.mat.train.xx[,mi] = prob.mat.train[,mi] * weigths[mi]
+    ## train and predict 
+    ll = trainAndPredict (model.label,model.id, 
+                          Xtrain, ytrain.cat, Xtest, 
+                          verbose=T)
+    pred.prob.train = ll[[1]] 
+    pred.train = ll[[2]]
+    pred.prob.test = ll[[3]]    #### <<<<<<<<<--------------------------
+    pred.test = ll[[4]]
+    
+    grid[grid$model.id == model.id , (4:(4+length(pred.prob.test)-1))] = pred.prob.test
+    
+    ##### updating models grids 
+    if (ds == "Dog_1") {
+      Dog_1.model = grid 
+    } else if (ds == "Dog_2") {
+      Dog_2.model = grid 
+    } else if (ds == "Dog_3") {
+      Dog_3.model = grid 
+    } else if (ds == "Dog_4") {
+      Dog_4.model = grid 
+    } else if (ds == "Dog_5") {
+      Dog_5.model = grid 
+    } else if (ds == "Patient_1") {
+      Patient_1.model = grid  
+    } else if (ds == "Patient_2") {
+      Patient_2.model = grid  
+    } else {
+      stop("ma che modello ha vinto!")
     }
-    
-    ### update predVect_topxx
-    NUM = apply(prob.mat.xx,1,sum)
-    DENUM = sum(weigths)
-    predVect_topxx[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
-    
-#     ### update predVect_topxx.train
-#     NUM = apply(prob.mat.train.xx,1,sum)
-#     DENUM = sum(weigths)
-#     predVect_topxx.train[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
   }
-  
-  ### update predVects 
-  predVect[predVect.idx:(predVect.idx+length(pred.prob.test)-1)] = pred.prob.test
-  predVect.idx = predVect.idx + length(pred.prob.test)
-  
-  ## trainPred
-  if (is.null(trainPred)) {
-    trainPred = pred.prob.train
-    trainClass = ytrain[,2]
-  } else {
-    trainPred = c(trainPred , pred.prob.train)
-    trainClass = c(trainClass , ytrain[,2] )
-  }
-  if (verbose) cat("** predVect and predVect_topxx updated \n")
 }
 
-## submission - top model 
-mySub = data.frame(clip = sampleSubmission$clip , preictal = format(predVect  , scientific = F ))
-write.csv(mySub,quote=FALSE,file=paste0(getBasePath(),"mySub_class.zat"), row.names=FALSE)
+### making avg predictions 
+Dog_1.model.avg = Dog_1.model; Dog_1.model.avg[,(4:ncol(Dog_1.model.avg))] = 0 
+Dog_2.model.avg = Dog_2.model; Dog_2.model.avg[,(4:ncol(Dog_2.model.avg))] = 0 
+Dog_3.model.avg = Dog_3.model; Dog_3.model.avg[,(4:ncol(Dog_3.model.avg))] = 0 
+Dog_4.model.avg = Dog_4.model; Dog_4.model.avg[,(4:ncol(Dog_4.model.avg))] = 0 
+Dog_5.model.avg = Dog_5.model; Dog_5.model.avg[,(4:ncol(Dog_5.model.avg))] = 0 
+Patient_1.model.avg = Patient_1.model; Patient_1.model.avg[,(4:ncol(Patient_1.model.avg))] = 0 
+Patient_2.model.avg = Patient_2.model; Patient_2.model.avg[,(4:ncol(Patient_2.model.avg))] = 0 
 
-## Calibrating Probabilities - sigmoid - top model 
-trainClass.cat = as.factor(trainClass)
-levels(trainClass.cat) =  c("interict","preict")
-train.df = data.frame(class = trainClass.cat , prob = trainPred )
-sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
-coef(summary(sigmoidalCal)) 
-sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect), type = "response")
-mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
-write.csv(mySub2,quote=FALSE,file=paste0(getBasePath(),"mySub_sigmoid_calibrat_class.zat"), row.names=FALSE)
+cat("|---------------->>> making avg predictions on data sets <<",dss,">> ..\n")
+for (ds in dss) {
+  cat("|---------------->>> processing data set <<",ds,">> ..\n")
+  
+  grid = NULL 
+  grid.avg = NULL
+  if (ds == "Dog_1") {
+    grid = Dog_1.model
+    grid.avg = Dog_1.model.avg
+  } else if (ds == "Dog_2") {
+    grid = Dog_2.model
+    grid.avg = Dog_2.model.avg
+  } else if (ds == "Dog_3") {
+    grid = Dog_3.model
+    grid.avg = Dog_3.model.avg
+  } else if (ds == "Dog_4") {
+    grid = Dog_4.model
+    grid.avg = Dog_4.model.avg
+  } else if (ds == "Dog_5") {
+    grid = Dog_5.model
+    grid.avg = Dog_5.model.avg
+  } else if (ds == "Patient_1") {
+    grid = Patient_1.model
+    grid.avg = Patient_1.model.avg
+  } else if (ds == "Patient_2") {
+    grid = Patient_2.model
+    grid.avg = Patient_2.model.avg
+  } else {
+    stop("ma che data set !")
+  }
+  
+  for ( mo in 1:nrow(grid) ) {
+    w = grid[mo,3] / sum(grid[,3])
+    for (moo in (1:mo) ) {
+      cat ("mo=",mo," - moo =",moo," \n")
+      grid.avg[moo,(4:ncol(grid.avg))] = grid.avg[moo,(4:ncol(grid.avg))] + (grid[mo,(4:ncol(grid.avg))]  * w) 
+    }
+  }
+  
+  ## updating avg models predictions 
+  if (ds == "Dog_1") {
+    Dog_1.model.avg = grid.avg
+  } else if (ds == "Dog_2") {
+    Dog_2.model.avg  = grid.avg
+  } else if (ds == "Dog_3") {
+    Dog_3.model.avg  = grid.avg
+  } else if (ds == "Dog_4") {
+    Dog_4.model.avg  = grid.avg
+  } else if (ds == "Dog_5") {
+    Dog_5.model.avg  = grid.avg
+  } else if (ds == "Patient_1") {
+    Patient_1.model.avg  = grid.avg
+  } else if (ds == "Patient_2") {
+    Patient_2.model.avg = grid.avg
+  } else {
+    stop("ma che data set !")
+  }
+}
 
-## Calibrating Probabilities - Bayes - top model 
-library(klaR)
-BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
-BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect) )
-BayesProbs.preict <- BayesProbs$posterior[, "preict"]
-mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
-write.csv(mySub3,quote=FALSE,file=paste0(getBasePath(),"mySub_bayes_calibrat_class.zat"), row.names=FALSE)
+  
+#   ### update predVects 
+#   predVect[predVect.idx:(predVect.idx+length(pred.prob.test)-1)] = pred.prob.test
+#   predVect.idx = predVect.idx + length(pred.prob.test)
+#   
+#   ## trainPred
+#   if (is.null(trainPred)) {
+#     trainPred = pred.prob.train
+#     trainClass = ytrain[,2]
+#   } else {
+#     trainPred = c(trainPred , pred.prob.train)
+#     trainClass = c(trainClass , ytrain[,2] )
+#   }
+  
+###### making sub.grid 
+sub.grid = matrix(rep(-1,(nrow(sampleSubmission)*nrow(Dog_1.model))),  nrow=nrow(Dog_1.model) , ncol=  nrow(sampleSubmission)   )
+sub.grid.idx = 1
+for (ds in dss) {
+  grid = NULL 
+  if (ds == "Dog_1") {
+    grid = Dog_1.model.avg
+  } else if (ds == "Dog_2") {
+    grid = Dog_2.model.avg
+  } else if (ds == "Dog_3") {
+    grid = Dog_3.model.avg
+  } else if (ds == "Dog_4") {
+    grid = Dog_4.model
+  } else if (ds == "Dog_5") {
+    grid = Dog_5.model.avg
+  } else if (ds == "Patient_1") {
+    grid = Patient_1.model.avg
+  } else if (ds == "Patient_2") {
+    grid = Patient_2.model.avg
+  } else {
+    stop("ma che data set !")
+  }
+  
+  for ( mo in 1:nrow(grid) ) {
+    sub.grid[mo,  sub.grid.idx + (4:ncol(grid))  - 1 ]  = grid[mo,(4:ncol(grid))]
+  }
+  
+  sub.grid.idx = sub.grid.idx + (4:ncol(grid))
+}
 
 ## submission - averaged models 
-for (tp in 1:length(topxx) ) {
-  label = as.character(labelAvg[tp])
-  mySub = data.frame(clip = sampleSubmission$clip , preictal = format( predVect_topxx[,tp]  , scientific = F ))
-  write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , ".zat" , sep=""), row.names=FALSE)
+for (mo in 1:nrow(Dog_1.model) ) {
+  label = paste0("avg_",mo)
+  mySub = data.frame(clip = sampleSubmission$clip , preictal = format( sub.grid.idx[,mo]  , scientific = F ))
+  write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , "_fix_mod.zat" , sep=""), row.names=FALSE)
   
 #   ## Calibrating Probabilities - sigmoid - top model 
 #   trainClass.cat = as.factor(predVect_topxx.train[,tp])

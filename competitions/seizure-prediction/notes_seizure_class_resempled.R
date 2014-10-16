@@ -1045,7 +1045,7 @@ for (ds in dss) {
                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
   
   validation.grid [validation.grid$model.id == BAGGING_TREE_MEAN_SD_REDUCED,]$model = "Bagged Trees (Mean sd reduced)"
-  validation.grid [validation.grid$model.id == BAGGING_TREE_MEAN_SD_REDUCED,(5+cs)] = perf.grid[perf.grid$model.id==BAGGING_TREE_QUANTILES_REDUCED,]$roc.xval.2
+  validation.grid [validation.grid$model.id == BAGGING_TREE_MEAN_SD_REDUCED,(5+cs)] = perf.grid[perf.grid$model.id==BAGGING_TREE_MEAN_SD_REDUCED,]$roc.xval.2
   
   ## 6. QUANTILES_REDUCED 
   set.seed(476); ptm <- proc.time()

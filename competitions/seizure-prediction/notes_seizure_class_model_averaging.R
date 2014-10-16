@@ -380,7 +380,7 @@ for (ds in dss) {
   
   #### partitioning into train , xval ... 
 #   set.seed(975)
-  set.seed(429494444)
+  set.seed(197317683)
   forTraining <- createDataPartition(ytrain[,1], p = 3/4)[[1]]
   
   ## full 
@@ -1151,21 +1151,21 @@ for (tp in 1:length(topxx) ) {
   mySub = data.frame(clip = sampleSubmission$clip , preictal = format( predVect_topxx[,tp]  , scientific = F ))
   write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , ".zat" , sep=""), row.names=FALSE)
   
-#   ## Calibrating Probabilities - sigmoid - top model 
-#   trainClass.cat = as.factor(predVect_topxx.train[,tp])
-#   levels(trainClass.cat) =  c("interict","preict")
-#   train.df = data.frame(class = trainClass.cat , prob = trainPred )
-#   sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
-#   coef(summary(sigmoidalCal)) 
-#   sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect_topxx[,tp]), type = "response")
-#   mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
-#   write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,".zat",sep=""), row.names=FALSE)
-#   
-#   ## Calibrating Probabilities - Bayes - top model 
-#   library(klaR)
-#   BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
-#   BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect_topxx[,tp]) )
-#   BayesProbs.preict <- BayesProbs$posterior[, "preict"]
-#   mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
-#   write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,".zat"), row.names=FALSE)
+  ## Calibrating Probabilities - sigmoid - top model 
+  trainClass.cat = as.factor(trainClass)
+  levels(trainClass.cat) =  c("interict","preict")
+  train.df = data.frame(class = trainClass.cat , prob = trainPred )
+  sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
+  coef(summary(sigmoidalCal)) 
+  sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect_topxx[,tp]), type = "response")
+  mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
+  write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,".zat",sep=""), row.names=FALSE)
+  
+  ## Calibrating Probabilities - Bayes - top model 
+  library(klaR)
+  BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
+  BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect_topxx[,tp]) )
+  BayesProbs.preict <- BayesProbs$posterior[, "preict"]
+  mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
+  write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,".zat"), row.names=FALSE)
 }
