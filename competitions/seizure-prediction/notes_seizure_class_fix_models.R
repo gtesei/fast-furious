@@ -532,16 +532,16 @@ for (ds in dss) {
   }
   
   for ( mo in 1:nrow(grid) ) {
-    sub.grid[mo,  sub.grid.idx + (4:ncol(grid))  - 1 ]  = grid[mo,(4:ncol(grid))]
+    sub.grid[mo,  sub.grid.idx:(sub.grid.idx + length(4:ncol(grid))  - 1) ]  = as.matrix(grid[mo,(4:ncol(grid))])
   }
   
-  sub.grid.idx = sub.grid.idx + (4:ncol(grid))
+  sub.grid.idx = sub.grid.idx + length(4:ncol(grid))
 }
 
 ## submission - averaged models 
 for (mo in 1:nrow(Dog_1.model) ) {
   label = paste0("avg_",mo)
-  mySub = data.frame(clip = sampleSubmission$clip , preictal = format( sub.grid.idx[,mo]  , scientific = F ))
+  mySub = data.frame(clip = sampleSubmission$clip , preictal = format( sub.grid[mo,]  , scientific = F ))
   write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , "_fix_mod.zat" , sep=""), row.names=FALSE)
   
 #   ## Calibrating Probabilities - sigmoid - top model 
