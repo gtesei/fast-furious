@@ -4,9 +4,9 @@ library(data.table)
 
 submission.final.path = "C:/docs/ff/gitHub/fast-furious/dataset/seizure-prediction/sommatora_a_posteriori.zat"
 
-submissions = data.frame(path = c("C:/docs/ff/gitHub/fast-furious/dataset/seizure-prediction/mySub_bayes_calibrat_class.zat" , 
-                                  "C:/docs/ff/gitHub/fast-furious/dataset/seizure-prediction/mySub_class.zat" ) , 
-                         weigth = c(0.6 , 0.5 )) 
+submissions = data.frame(path = c("C:/docs/ff/gitHub/fast-furious/dataset/seizure-prediction/t_05.zat" , 
+                                  "C:/docs/ff/gitHub/fast-furious/dataset/seizure-prediction/t_1.zat" ) , 
+                        weigth = c(0.7 , 0.9 )) 
 
 sub.col = 2 
 

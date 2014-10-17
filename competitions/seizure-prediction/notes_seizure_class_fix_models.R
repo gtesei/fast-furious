@@ -474,7 +474,7 @@ for (ds in dss) {
     for (moo in mo:nrow(grid) ) {
       w = grid[mo,3] / DENUM[moo]
       cat ("mo=",mo," - moo =",moo," w = ",w,"\n")
-      grid.avg[moo,(4:ncol(grid.avg))] = grid.avg[moo,(4:ncol(grid.avg))] + (grid[mo,(4:ncol(grid.avg))]  * w) 
+      grid.avg[moo,(4:ncol(grid.avg))] = grid.avg[moo,(4:ncol(grid.avg))] + (grid[mo,(4:ncol(grid))]  * w) 
     }
   }
   
@@ -543,7 +543,7 @@ for (ds in dss) {
 }
 
 ## submission - averaged models 
-for (mo in 1:nrow(Dog_1.model) ) {
+for (mo in 1:nrow(sub.grid) ) {
   label = paste0("avg_",mo)
   mySub = data.frame(clip = sampleSubmission$clip , preictal = format( sub.grid[mo,]  , scientific = F ))
   write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , "_fix_mod.zat" , sep=""), row.names=FALSE)
