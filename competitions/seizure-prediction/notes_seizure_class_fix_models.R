@@ -112,16 +112,27 @@ trainAndPredict = function(model.label,model.id,
                                               predict = plsBag$pred,
                                               aggregate = plsBag$aggregate))
     }
+  } else if (model.id == 0) { ## null prediction, i.e. pred = (0,0,0,...,0)
+    model = NULL
   } else {
     stop("ma che modello ha vinto (modello) !! ")
   }
   
   ## predicting model on Xtrain and Xtest 
-  pred.prob.train = predict(model , Xtrain , type = "prob")[,'preict'] 
-  pred.train = predict(model , Xtrain )
-  
-  pred.prob.test = predict(model , Xtest , type = "prob")[,'preict'] ### <<<<<<<<<<<<----------------------------------
-  pred.test = predict(model , Xtest )
+  pred.prob.train = pred.train = pred.prob.test = pred.test = NULL
+  if (! is.null(model)) {
+    pred.prob.train = predict(model , Xtrain , type = "prob")[,'preict'] 
+    pred.train = predict(model , Xtrain )
+    
+    pred.prob.test = predict(model , Xtest , type = "prob")[,'preict'] ### <<<<<<<<<<<<----------------------------------
+    pred.test = predict(model , Xtest )
+  } else {
+    pred.prob.train = rep(0,nrow(Xtrain))
+    pred.train = rep(0,nrow(Xtrain))
+    
+    pred.prob.test = rep(0,nrow(Xtest)) ### <<<<<<<<<<<<----------------------------------
+    pred.test = rep(0,nrow(Xtest))
+  }
   
   ## accuracy 
   acc.train.all0 = sum(factor(rep('interict',length(ytrain.cat)) , levels = levels(ytrain.cat) ) == ytrain.cat) / length(ytrain.cat)
@@ -144,6 +155,8 @@ trainAndPredict = function(model.label,model.id,
 }
 
 ######################################################## CONSTANTS 
+NULL_MODEL = 0
+
 LOGISTIC_REG_MEAN_SD = 1 
 LOGISTIC_REG_QUANTILES = 2
 LOGISTIC_REG_MEAN_SD_SCALED = 3
@@ -221,45 +234,42 @@ BAGGING_TREE_QUANTILES_SCALED= 64
 BAGGING_TREE_MEAN_SD_REDUCED = 65
 BAGGING_TREE_QUANTILES_REDUCED = 66
 
-######################################################## MAIN LOOP 
+######################################################## MAIN  
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
-# predVect = rep(-1,dim(sampleSubmission)[1])
-# predVect.idx = 1
-# 
-# trainPred = NULL 
-# trainClass = NULL
+
+trainClass = NULL
 ############# general settings ... 
 verbose = T
 doPlot = F 
 
 ############ models grids 
-Dog_1.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Quant scaled)" , "KNN (Mean sd scaled)") , 
-                         model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_QUANTILES_SCALED , NSC_REG_QUANTILES_REDUCED) , 
-                         weigth = c(0.6 , 0.5 , 0.4)) 
+Dog_1.model = data.frame(model = c( "Boosted Trees C5.0 (Quant scaled)" ) , 
+                         model.id = c(BOOSTED_TREE_QUANTILES_SCALED ) , 
+                         weigth = c(0.81)) 
 
-Dog_2.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
-                         model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
-                         weigth = c(0.7 , 0.5 , 0.4)) 
+Dog_2.model = data.frame(model = c("KNN (Mean sd reduced)" ) , 
+                         model.id = c(KNN_MEAN_SD_REDUCED ) , 
+                         weigth = c(0.93)) 
 
-Dog_3.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
-                         model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
-                         weigth = c(0.7 , 0.5 , 0.4)) 
+Dog_3.model = data.frame(model = c("SVM (Quant reduced)" ) , 
+                         model.id = c(SVM_QUANTILES_REDUCED ) , 
+                         weigth = c(0.83 )) 
 
-Dog_4.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
-                         model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
-                         weigth = c(0.7 , 0.5 , 0.4)) 
+Dog_4.model = data.frame(model = c("Neural Net (Quant reduced)" ) , 
+                         model.id = c(NN_QUANTILES_REDUCED ) , 
+                         weigth = c(0.9 )) 
 
-Dog_5.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
-                         model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
-                         weigth = c(0.7 , 0.5 , 0.4)) 
+Dog_5.model = data.frame(model = c("Pen. Mod. (Quant scaled)" ) , 
+                         model.id = c(PM_QUANTILES_SCALED ) , 
+                         weigth = c(0.95 )) 
 
-Patient_1.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
-                             model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
-                             weigth = c(0.7 , 0.5 , 0.4)) 
+Patient_1.model = data.frame(model = c("Bagged Trees (Mean sd)" ) , 
+                             model.id = c(BAGGING_TREE_MEAN_SD ) , 
+                             weigth = c(0.89 )) 
 
-Patient_2.model = data.frame(model = c("SVM (Quant reduced)" , "Boosted Trees C5.0 (Mean sd reduced)" , "KNN (Mean sd reduced)") , 
-                             model.id = c(SVM_QUANTILES_REDUCED , BOOSTED_TREE_MEAN_SD_REDUCED , KNN_MEAN_SD_REDUCED) , 
-                             weigth = c(0.7 , 0.5 , 0.4)) 
+Patient_2.model = data.frame(model = c("NSC_QUANTILES_SCALED" ) , 
+                             model.id = c(NSC_QUANTILES_SCALED ) , 
+                             weigth = c(0.42 )) 
 
 ### check 
 models.per.ds = nrow(Dog_1.model)
@@ -269,6 +279,18 @@ if (nrow(Dog_2.model) != models.per.ds |
     nrow(Dog_5.model) != models.per.ds |
     nrow(Patient_1.model) != models.per.ds |
     nrow(Patient_2.model) != models.per.ds) stop("number of model per data set must be equal.")
+
+
+## train models 
+Dog_1.model.train = Dog_1.model
+Dog_2.model.train = Dog_2.model
+Dog_3.model.train = Dog_3.model
+Dog_4.model.train = Dog_4.model
+Dog_5.model.train = Dog_5.model
+Patient_1.model.train = Patient_1.model
+Patient_2.model.train = Patient_2.model
+
+if (ncol(Dog_1.model.train) > 3) stop("Dog_1.model.train has a wrong number of columns")
 
 ############ 
 
@@ -343,29 +365,44 @@ for (ds in dss) {
   model = NULL
   
   ########### set grid 
-  grid = NULL 
+  grid = grid.train = NULL 
   if (ds == "Dog_1") {
     grid = Dog_1.model
+    grid.train = Dog_1.model.train
   } else if (ds == "Dog_2") {
     grid = Dog_2.model
+    grid.train = Dog_2.model.train
   } else if (ds == "Dog_3") {
     grid = Dog_3.model
+    grid.train = Dog_3.model.train
   } else if (ds == "Dog_4") {
     grid = Dog_4.model
+    grid.train = Dog_4.model.train
   } else if (ds == "Dog_5") {
     grid = Dog_5.model
+    grid.train = Dog_5.model.train
   } else if (ds == "Patient_1") {
     grid = Patient_1.model
+    grid.train = Patient_1.model.train
   } else if (ds == "Patient_2") {
     grid = Patient_2.model
+    grid.train = Patient_2.model.train
   } else {
     stop("ma che modello ha vinto!")
   }
   
   if (verbose) cat("******************* Completing grids with probabilities .... \n")
+  ## grid 
   prob.df = as.data.frame(matrix(rep(-1,(nrow(Xtest_mean_sd)*nrow(grid))), nrow=nrow(grid) , ncol = nrow(Xtest_mean_sd)))
   colnames(prob.df) = paste0("p",(1:nrow(Xtest_mean_sd)))
+  if ( ncol(prob.df) != nrow(Xtest_mean_sd) ) stop("prob.df - test - has a wrong number of columns")
   grid = cbind(grid,prob.df)
+  
+  ## grid train
+  prob.df = as.data.frame(matrix(rep(-1,(nrow(Xtrain_mean_sd)*nrow(grid.train))), nrow=nrow(grid.train) , ncol = nrow(Xtrain_mean_sd)))
+  colnames(prob.df) = paste0("p",(1:nrow(Xtrain_mean_sd)))
+  if ( ncol(prob.df) != nrow(ytrain) ) stop("prob.df - train - has a wrong number of columns")
+  grid.train = cbind(grid.train,prob.df)
   
   for (mo in 1:nrow(grid) ) {
     model.id = grid[mo,]$model.id
@@ -403,26 +440,45 @@ for (ds in dss) {
     pred.prob.test = ll[[3]]    #### <<<<<<<<<--------------------------
     pred.test = ll[[4]]
     
+    if ( length(pred.prob.test) != nrow(Xtest) ) stop("pred.prob.test: wrong column number")
     grid[grid$model.id == model.id , (4:(4+length(pred.prob.test)-1))] = pred.prob.test
+    
+    if ( length(pred.prob.train) != nrow(Xtrain) ) stop("pred.prob.train: wrong column number")
+    grid.train[grid$model.id == model.id , (4:(4+length(pred.prob.train)-1))] = pred.prob.train
     
     ##### updating models grids 
     if (ds == "Dog_1") {
       Dog_1.model = grid 
+      Dog_1.model.train = grid.train 
     } else if (ds == "Dog_2") {
       Dog_2.model = grid 
+      Dog_2.model.train = grid.train 
     } else if (ds == "Dog_3") {
       Dog_3.model = grid 
+      Dog_3.model.train = grid.train 
     } else if (ds == "Dog_4") {
       Dog_4.model = grid 
+      Dog_4.model.train = grid.train 
     } else if (ds == "Dog_5") {
       Dog_5.model = grid 
+      Dog_5.model.train = grid.train
     } else if (ds == "Patient_1") {
       Patient_1.model = grid  
+      Patient_1.model.train = grid.train
     } else if (ds == "Patient_2") {
       Patient_2.model = grid  
+      Patient_2.model.train = grid.train
     } else {
       stop("ma che modello ha vinto!")
     }
+  }
+  
+  ## updating trainClass 
+  ## trainPred
+  if (is.null(trainClass)) {
+    trainClass = ytrain[,2]
+  } else {
+    trainClass = c(trainClass , ytrain[,2] )
   }
 }
 
@@ -435,33 +491,54 @@ Dog_5.model.avg = Dog_5.model; Dog_5.model.avg[,(4:ncol(Dog_5.model.avg))] = 0
 Patient_1.model.avg = Patient_1.model; Patient_1.model.avg[,(4:ncol(Patient_1.model.avg))] = 0 
 Patient_2.model.avg = Patient_2.model; Patient_2.model.avg[,(4:ncol(Patient_2.model.avg))] = 0 
 
+Dog_1.model.avg.train = Dog_1.model.train; Dog_1.model.avg.train[,(4:ncol(Dog_1.model.avg.train))] = 0 
+Dog_2.model.avg.train = Dog_2.model.train; Dog_2.model.avg.train[,(4:ncol(Dog_2.model.avg.train))] = 0 
+Dog_3.model.avg.train = Dog_3.model.train; Dog_3.model.avg.train[,(4:ncol(Dog_3.model.avg.train))] = 0 
+Dog_4.model.avg.train = Dog_4.model.train; Dog_4.model.avg.train[,(4:ncol(Dog_4.model.avg.train))] = 0 
+Dog_5.model.avg.train = Dog_5.model.train; Dog_5.model.avg.train[,(4:ncol(Dog_5.model.avg.train))] = 0 
+Patient_1.model.avg.train = Patient_1.model.train; Patient_1.model.avg.train[,(4:ncol(Patient_1.model.avg.train))] = 0 
+Patient_2.model.avg.train = Patient_2.model.train; Patient_2.model.avg.train[,(4:ncol(Patient_2.model.avg.train))] = 0 
+
 cat("|---------------->>> making avg predictions on data sets <<",dss,">> ..\n")
 for (ds in dss) {
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
   
-  grid = NULL 
-  grid.avg = NULL
+  grid = grid.train = grid.avg = grig.avg.train = NULL
   if (ds == "Dog_1") {
     grid = Dog_1.model
+    grid.train = Dog_1.model.train
     grid.avg = Dog_1.model.avg
+    grid.avg.train = Dog_1.model.avg.train
   } else if (ds == "Dog_2") {
     grid = Dog_2.model
+    grid.train = Dog_2.model.train
     grid.avg = Dog_2.model.avg
+    grid.avg.train = Dog_2.model.avg.train
   } else if (ds == "Dog_3") {
     grid = Dog_3.model
+    grid.train = Dog_3.model.train
     grid.avg = Dog_3.model.avg
+    grid.avg.train = Dog_3.model.avg.train
   } else if (ds == "Dog_4") {
     grid = Dog_4.model
+    grid.train = Dog_4.model.train
     grid.avg = Dog_4.model.avg
+    grid.avg.train = Dog_4.model.avg.train
   } else if (ds == "Dog_5") {
     grid = Dog_5.model
+    grid.train = Dog_5.model.train
     grid.avg = Dog_5.model.avg
+    grid.avg.train = Dog_5.model.avg.train
   } else if (ds == "Patient_1") {
     grid = Patient_1.model
+    grid.train = Patient_1.model.train
     grid.avg = Patient_1.model.avg
+    grid.avg.train = Patient_1.model.avg.train
   } else if (ds == "Patient_2") {
     grid = Patient_2.model
+    grid.train = Patient_2.model.train
     grid.avg = Patient_2.model.avg
+    grid.avg.train = Patient_2.model.avg.train
   } else {
     stop("ma che data set !")
   }
@@ -474,95 +551,125 @@ for (ds in dss) {
     for (moo in mo:nrow(grid) ) {
       w = grid[mo,3] / DENUM[moo]
       cat ("mo=",mo," - moo =",moo," w = ",w,"\n")
-      grid.avg[moo,(4:ncol(grid.avg))] = grid.avg[moo,(4:ncol(grid.avg))] + (grid[mo,(4:ncol(grid))]  * w) 
+      
+      grid.avg[moo,(4:ncol(grid.avg))] = 
+        grid.avg[moo,(4:ncol(grid.avg))] + (grid[mo,(4:ncol(grid))]  * w) 
+      
+      grid.avg.train[moo,(4:ncol(grid.avg.train))] = 
+        grid.avg.train[moo,(4:ncol(grid.avg.train))] + (grid.train[mo,(4:ncol(grid.train))]  * w) 
+      
     }
   }
   
   ## updating avg models predictions 
   if (ds == "Dog_1") {
     Dog_1.model.avg = grid.avg
+    Dog_1.model.avg.train = grid.avg.train
   } else if (ds == "Dog_2") {
     Dog_2.model.avg  = grid.avg
+    Dog_2.model.avg.train = grid.avg.train
   } else if (ds == "Dog_3") {
     Dog_3.model.avg  = grid.avg
+    Dog_3.model.avg.train = grid.avg.train
   } else if (ds == "Dog_4") {
     Dog_4.model.avg  = grid.avg
+    Dog_4.model.avg.train = grid.avg.train
   } else if (ds == "Dog_5") {
     Dog_5.model.avg  = grid.avg
+    Dog_5.model.avg.train = grid.avg.train
   } else if (ds == "Patient_1") {
     Patient_1.model.avg  = grid.avg
+    Patient_1.model.avg.train = grid.avg.train
   } else if (ds == "Patient_2") {
     Patient_2.model.avg = grid.avg
+    Patient_2.model.avg.train = grid.avg.train
   } else {
     stop("ma che data set !")
   }
 }
-
   
-#   ### update predVects 
-#   predVect[predVect.idx:(predVect.idx+length(pred.prob.test)-1)] = pred.prob.test
-#   predVect.idx = predVect.idx + length(pred.prob.test)
-#   
-#   ## trainPred
-#   if (is.null(trainPred)) {
-#     trainPred = pred.prob.train
-#     trainClass = ytrain[,2]
-#   } else {
-#     trainPred = c(trainPred , pred.prob.train)
-#     trainClass = c(trainClass , ytrain[,2] )
-#   }
-  
-###### making sub.grid 
+###### making sub.grid
 sub.grid = matrix(rep(-1,(nrow(sampleSubmission)*nrow(Dog_1.model))),  nrow=nrow(Dog_1.model) , ncol=  nrow(sampleSubmission)   )
 sub.grid.idx = 1
+
+###### making sub.grid.train 
+nrow.train =  (ncol(Dog_1.model.avg.train) -4 + 1) +
+              (ncol(Dog_2.model.avg.train) -4 + 1) +
+              (ncol(Dog_3.model.avg.train) -4 + 1) +
+              (ncol(Dog_4.model.avg.train) -4 + 1) + 
+              (ncol(Dog_5.model.avg.train) -4 + 1) + 
+              (ncol(Patient_1.model.avg.train) -4 + 1) + 
+              (ncol(Patient_2.model.avg.train) -4 + 1)
+
+if (nrow.train != length(trainClass)) stop("nrow.train has a number of columns different from trainClass")
+  
+sub.grid.train = matrix(rep(-1,(nrow.train*nrow(Dog_1.model))),  nrow=nrow(Dog_1.model) , ncol= nrow.train )
+sub.grid.idx.train = 1
+
+## filling grids ...  
 for (ds in dss) {
-  grid = NULL 
+  grid = grid.train = NULL 
   if (ds == "Dog_1") {
     grid = Dog_1.model.avg
+    grid.train = Dog_1.model.avg.train
   } else if (ds == "Dog_2") {
     grid = Dog_2.model.avg
+    grid.train = Dog_2.model.avg.train
   } else if (ds == "Dog_3") {
     grid = Dog_3.model.avg
+    grid.train = Dog_3.model.avg.train
   } else if (ds == "Dog_4") {
     grid = Dog_4.model
+    grid.train = Dog_4.model.avg.train
   } else if (ds == "Dog_5") {
     grid = Dog_5.model.avg
+    grid.train = Dog_5.model.avg.train
   } else if (ds == "Patient_1") {
     grid = Patient_1.model.avg
+    grid.train = Patient_1.model.avg.train
   } else if (ds == "Patient_2") {
     grid = Patient_2.model.avg
+    grid.train = Patient_2.model.avg.train
   } else {
     stop("ma che data set !")
   }
   
   for ( mo in 1:nrow(grid) ) {
-    sub.grid[mo,  sub.grid.idx:(sub.grid.idx + length(4:ncol(grid))  - 1) ]  = as.matrix(grid[mo,(4:ncol(grid))])
+    
+    sub.grid[mo,  sub.grid.idx:(sub.grid.idx + length(4:ncol(grid))  - 1) ]  = 
+      as.matrix(grid[mo,(4:ncol(grid))])
+    
+    sub.grid.train[mo,  sub.grid.idx.train:(sub.grid.idx.train + length(4:ncol(grid.train))  - 1) ]  = 
+      as.matrix(grid.train[mo,(4:ncol(grid.train))])
   }
   
   sub.grid.idx = sub.grid.idx + length(4:ncol(grid))
+  sub.grid.idx.train = sub.grid.idx.train + length(4:ncol(grid.train))
 }
 
 ## submission - averaged models 
 for (mo in 1:nrow(sub.grid) ) {
   label = paste0("avg_",mo)
-  mySub = data.frame(clip = sampleSubmission$clip , preictal = format( sub.grid[mo,]  , scientific = F ))
+  mySub = data.frame(clip = sampleSubmission$clip , preictal = format( sub.grid[mo,]  , scientific = F )  )
   write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , "_fix_mod.zat" , sep=""), row.names=FALSE)
   
-#   ## Calibrating Probabilities - sigmoid - top model 
-#   trainClass.cat = as.factor(predVect_topxx.train[,tp])
-#   levels(trainClass.cat) =  c("interict","preict")
-#   train.df = data.frame(class = trainClass.cat , prob = trainPred )
-#   sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
-#   coef(summary(sigmoidalCal)) 
-#   sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect_topxx[,tp]), type = "response")
-#   mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
-#   write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,".zat",sep=""), row.names=FALSE)
-#   
-#   ## Calibrating Probabilities - Bayes - top model 
-#   library(klaR)
-#   BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
-#   BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect_topxx[,tp]) )
-#   BayesProbs.preict <- BayesProbs$posterior[, "preict"]
-#   mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
-#   write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,".zat"), row.names=FALSE)
+  ## calibrating probs ... 
+  trainClass.cat = as.factor(trainClass)
+  levels(trainClass.cat) =  c("interict","preict")
+  train.df = data.frame(class = trainClass.cat , prob = format( sub.grid.train[mo,]  , scientific = F ) )
+  
+  ## Calibrating Probabilities - sigmoid - top model 
+  sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
+  #coef(summary(sigmoidalCal)) 
+  sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame( prob = format( sub.grid[mo,]  , scientific = F ) ), type = "response")
+  mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
+  write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,"_fix_mod.zat",sep=""), row.names=FALSE)
+   
+  ## Calibrating Probabilities - Bayes - top model 
+  library(klaR)
+  BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
+  BayesProbs <- predict(BayesCal, newdata = data.frame(prob = format( sub.grid[mo,]  , scientific = F )) )
+  BayesProbs.preict <- BayesProbs$posterior[, "preict"]
+  mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
+  write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,"_fix_mod.zat"), row.names=FALSE)
 }
