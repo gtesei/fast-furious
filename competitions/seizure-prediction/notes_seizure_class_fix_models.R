@@ -243,33 +243,33 @@ verbose = T
 doPlot = F 
 
 ############ models grids 
-Dog_1.model = data.frame(model = c( "Boosted Trees C5.0 (Quant scaled)" ) , 
-                         model.id = c(BOOSTED_TREE_QUANTILES_SCALED ) , 
-                         weigth = c(0.81)) 
+Dog_1.model = data.frame(model = c( "Boosted Trees C5.0 (Mean sd)" ) , 
+                         model.id = c(BOOSTED_TREE_MEAN_SD ) , 
+                         weigth = c(0.65)) 
 
-Dog_2.model = data.frame(model = c("KNN (Mean sd reduced)" ) , 
-                         model.id = c(KNN_MEAN_SD_REDUCED ) , 
-                         weigth = c(0.93)) 
+Dog_2.model = data.frame(model = c("Boosted Trees C5.0 (Mean sd)" ) , 
+                         model.id = c(BOOSTED_TREE_MEAN_SD ) , 
+                         weigth = c(0.65)) 
 
-Dog_3.model = data.frame(model = c("SVM (Quant reduced)" ) , 
-                         model.id = c(SVM_QUANTILES_REDUCED ) , 
-                         weigth = c(0.83 )) 
+Dog_3.model = data.frame(model = c("Boosted Trees C5.0 (Mean sd reduced)" ) , 
+                         model.id = c(BOOSTED_TREE_MEAN_SD_REDUCED ) , 
+                         weigth = c(0.65 )) 
 
-Dog_4.model = data.frame(model = c("Neural Net (Quant reduced)" ) , 
+Dog_4.model = data.frame(model = c("Neural Network (Quant. reduced)" ) , 
                          model.id = c(NN_QUANTILES_REDUCED ) , 
-                         weigth = c(0.9 )) 
+                         weigth = c(0.65)) 
 
 Dog_5.model = data.frame(model = c("Pen. Mod. (Quant scaled)" ) , 
                          model.id = c(PM_QUANTILES_SCALED ) , 
-                         weigth = c(0.95 )) 
+                         weigth = c(0.65 )) 
 
 Patient_1.model = data.frame(model = c("Bagged Trees (Mean sd)" ) , 
                              model.id = c(BAGGING_TREE_MEAN_SD ) , 
-                             weigth = c(0.89 )) 
+                             weigth = c(0.65 )) 
 
-Patient_2.model = data.frame(model = c("NSC_QUANTILES_SCALED" ) , 
-                             model.id = c(NSC_QUANTILES_SCALED ) , 
-                             weigth = c(0.42 )) 
+Patient_2.model = data.frame(model = c("Null Model" ) , 
+                             model.id = c(NULL_MODEL ) , 
+                             weigth = c(0.65 )) 
 
 ### check 
 models.per.ds = nrow(Dog_1.model)
@@ -406,7 +406,7 @@ for (ds in dss) {
   
   for (mo in 1:nrow(grid) ) {
     model.id = grid[mo,]$model.id
-    model.label = as.character(grid[mo,]$predictor) 
+    model.label = as.character(grid[mo,]$model) 
     
     ## data set 
     if (model.id %% 6 == 0) {
@@ -656,19 +656,19 @@ for (mo in 1:nrow(sub.grid) ) {
   ## calibrating probs ... 
   trainClass.cat = as.factor(trainClass)
   levels(trainClass.cat) =  c("interict","preict")
-  train.df = data.frame(class = trainClass.cat , prob = format( sub.grid.train[mo,]  , scientific = F ) )
+  train.df = data.frame(class = trainClass.cat , prob = as.numeric( format( sub.grid.train[mo,]  , scientific = F )) )
   
   ## Calibrating Probabilities - sigmoid - top model 
   sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
   #coef(summary(sigmoidalCal)) 
-  sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame( prob = format( sub.grid[mo,]  , scientific = F ) ), type = "response")
+  sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame( prob = as.numeric(format( sub.grid[mo,]  , scientific = F ) )), type = "response")
   mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
   write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,"_fix_mod.zat",sep=""), row.names=FALSE)
    
   ## Calibrating Probabilities - Bayes - top model 
   library(klaR)
   BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
-  BayesProbs <- predict(BayesCal, newdata = data.frame(prob = format( sub.grid[mo,]  , scientific = F )) )
+  BayesProbs <- predict(BayesCal, newdata = data.frame(prob = as.numeric(format( sub.grid[mo,]  , scientific = F ))) )
   BayesProbs.preict <- BayesProbs$posterior[, "preict"]
   mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
   write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,"_fix_mod.zat"), row.names=FALSE)
