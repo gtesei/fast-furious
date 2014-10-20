@@ -150,6 +150,10 @@ trainAndPredict = function(model.label,model.id,
   if (verbose) cat("** acc.train =",acc.train, " -  acc.train.all0 =",acc.train.all0, " \n")
   if (verbose) cat("** roc.train =",roc.train," -  roc.train.2 =",roc.train.2,"  \n")
   if (verbose) cat("** roc.xval.min =",roc.xval.min, " \n")
+  if (verbose) cat("** Train set:  %preict =", as.character(sum(pred.train == 'preict')/length(pred.train)) ,  " - %interict =" 
+                   , as.character(sum(pred.train == 'interict')/length(pred.train)) ,  " \n")
+  if (verbose) cat("** Test set:  %preict =", as.character(sum(pred.test == 'preict')/length(pred.test)) ,  " - %interict =" 
+                   , as.character(sum(pred.test == 'interict')/length(pred.test)) ,  " \n")
   
   list(pred.prob.train, pred.train, pred.prob.test, pred.test)
 }
