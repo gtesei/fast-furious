@@ -150,9 +150,11 @@ trainAndPredict = function(model.label,model.id,
   if (verbose) cat("** acc.train =",acc.train, " -  acc.train.all0 =",acc.train.all0, " \n")
   if (verbose) cat("** roc.train =",roc.train," -  roc.train.2 =",roc.train.2,"  \n")
   if (verbose) cat("** roc.xval.min =",roc.xval.min, " \n")
-  if (verbose) cat("** Train set:  %preict =", as.character(sum(pred.train == 'preict')/length(pred.train)) ,  " - %interict =" 
+  if (verbose) cat("** Train set:  true %preict =", as.character(sum(ytrain.cat == 'preict')/length(ytrain.cat)) ,  " - %interict =" 
+                   , as.character(sum(ytrain.cat == 'interict')/length(ytrain.cat)) ,  " \n")
+  if (verbose) cat("** Train set:  predicted %preict =", as.character(sum(pred.train == 'preict')/length(pred.train)) ,  " - %interict =" 
                    , as.character(sum(pred.train == 'interict')/length(pred.train)) ,  " \n")
-  if (verbose) cat("** Test set:  %preict =", as.character(sum(pred.test == 'preict')/length(pred.test)) ,  " - %interict =" 
+  if (verbose) cat("** Test set:  predicted %preict =", as.character(sum(pred.test == 'preict')/length(pred.test)) ,  " - %interict =" 
                    , as.character(sum(pred.test == 'interict')/length(pred.test)) ,  " \n")
   
   list(pred.prob.train, pred.train, pred.prob.test, pred.test)
@@ -251,15 +253,15 @@ Dog_1.model = data.frame(model = c( "Boosted Trees C5.0 (Mean sd)" ) ,
                          model.id = c(BOOSTED_TREE_MEAN_SD ) , 
                          weigth = c(0.65)) 
 
-Dog_2.model = data.frame(model = c("Boosted Trees C5.0 (Mean sd)" ) , 
-                         model.id = c(BOOSTED_TREE_MEAN_SD ) , 
+Dog_2.model = data.frame(model = c("NN_MEAN_SD_REDUCED" ) , 
+                         model.id = c(NN_MEAN_SD_REDUCED ) , 
                          weigth = c(0.65)) 
 
-Dog_3.model = data.frame(model = c("Boosted Trees C5.0 (Mean sd reduced)" ) , 
+Dog_3.model = data.frame(model = c("BOOSTED_TREE_MEAN_SD_REDUCED" ) , 
                          model.id = c(BOOSTED_TREE_MEAN_SD_REDUCED ) , 
                          weigth = c(0.65 )) 
 
-Dog_4.model = data.frame(model = c("Neural Network (Quant. reduced)" ) , 
+Dog_4.model = data.frame(model = c("NN_QUANTILES_REDUCED" ) , 
                          model.id = c(NN_QUANTILES_REDUCED ) , 
                          weigth = c(0.65)) 
 
@@ -271,8 +273,8 @@ Patient_1.model = data.frame(model = c("Bagged Trees (Mean sd)" ) ,
                              model.id = c(BAGGING_TREE_MEAN_SD ) , 
                              weigth = c(0.65 )) 
 
-Patient_2.model = data.frame(model = c("Null Model" ) , 
-                             model.id = c(NULL_MODEL ) , 
+Patient_2.model = data.frame(model = c("Bagged Trees (Mean sd)" ) , 
+                             model.id = c(BAGGING_TREE_MEAN_SD ) , 
                              weigth = c(0.65 )) 
 
 ### check 
