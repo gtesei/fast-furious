@@ -47,7 +47,6 @@ ylabel(' real part')
 xlabel(' time'),
 ylabel(' real part')
 zlabel(' imaginary part')
-rotate3d % active click-and-drag in Matlab
 
 ########  definition
 signal = 2* sin( 2* pi* 3* t + pi/ 2);
@@ -62,7 +61,7 @@ end
 
 ##################
 srate = 1000;
-t = 0: 1/ srate: 5;
+t = 0: 1/ srate: 5 - 1/ srate;
 n = length( t);
 a =[ 10 2 5 8];
 f =[ 3 1 6 12];
@@ -93,7 +92,7 @@ ylabel(' amplitude')
 
 subplot( 212)
 plot( hz, 2* abs( swaveNX( 1: length( hz))))
-set( gca,' xlim',[ 0 max( f)* 1.3]);
+set( gca,'xlim',[ 0 max( f)* 1.3]);
 xlabel(' Frequencies (Hz)'),
 ylabel(' amplitude')
 
@@ -105,7 +104,7 @@ hz = linspace( 0, nyquistfreq, floor( n/ 2) + 1);
 subplot( 211)
 plot( hz, 2* abs( signalX( 1: length( hz)))),
 hold on
-plot( hz, 2* abs( signalXF( 1: length( hz))),' r')
+plot( hz, 2* abs( signalX( 1: length( hz))),' r')
 xlabel(' Frequencies (Hz)')
 ylabel(' Amplitude')
 set( gca,'xlim',[ 0 10]);
@@ -117,9 +116,9 @@ ylabel(' Phase (radians)');
 
 
 
-#########
+#######################################################
 srate = 1000;
-t = 0: 1/ srate: 5;
+t = 0: 1/ srate: 5 - 1/ srate;
 n = length(t);
 a =[ 10 2 5 8];
 f =[ 3 1 6 12];
@@ -180,6 +179,9 @@ p1 + p2 + p3 + p4
 bar( [p1 p2 p3 p4] )
 xlabel(' Frequencies bands (Hz)'),
 ylabel(' Power')
+
+
+[p1,p2,p3,p4,p5,P] = bandPower (1000,5,swave,debug=1)
                      
 ##### find min freq t.c. che cattura 50% power segnale 
 nyquistfreq = srate/ 2;
@@ -195,16 +197,104 @@ endfor
 
 f_50
                    
-##### autocorrelazione 
-pkg load signal;
-xcorr(swave);
+                   
+[f_50] = findSpectralEdgeFrequency (1000,5,swave)
 
+######################################## autocorrelazione 
+[acor,lag] = xcorr(swave , 'coeff');
+printf("length of signal = %i , length of cross correlat = %i /n" , length(swave) , length(acor));
+
+[MC,I] = max(abs(acor));
+lagDiff = lag(I)
+timeDiff = lagDiff/1000;
+printf("max correlation (%f) for lag  = %f \n" , MC, timeDiff   );
+
+subplot(211)
+plot(lag/1000,acor)
+a3 = gca;
                 
-                                                                                                                                                                                                                                                 
-                                                                                                                                                                                                                                                 
+subplot(212)                                                                                                                                                                                      
+plot( t, swave)
+set( gca,'xlim',[ 0 5]);
+xlabel(' Time (s)'),
+ylabel(' amplitude');    
 
+[mC,Im] = min(abs(acor) == 0); 
+lagDiff = lag(Im)
+mTimeDiff = lagDiff/1000;
+printf("min correlation (%f) for lag  = %f \n" , mC, mTimeDiff   ); 
 
+[min_tau] = findMinTimeAutocorrelationZero (swave,1000)
+
+%%%%%%%%%%%%% autocorrelation function of a 28-sample exponential sequence           
+a = 0.95;
+N = 28;
+n = 0:N-1;
+lags = -(N-1):(N-1);
+x = a.^n;
+   
+plot(n,x)
+xlabel('t')
+legend('t','x');
+
+c = xcorr(x); 
+                                                                                                                                                                   
+%% Determine  $c$ analytically to check the correctness of the result
+fs = 10;
+nn = -(N-1):1/fs:(N-1);
+cc = a.^abs(nn)/(1-a^2);
+dd = (1-a.^(2*(N-abs(nn))))/(1-a^2).*a.^abs(nn);
+
+stem(lags,c);
+hold on
+plot(nn,dd)
+xlabel('Lag')
+legend('xcorr','Analytic')
+hold off
+
+%% Repeat the calculation, but now find an unbiased estimate of the autocorrelation
+cu = xcorr(x,'unbiased');
+du = dd./(N-abs(nn));
+stem(lags,cu);
+hold on
+plot(nn,du)
+xlabel('Lag')
+legend('xcorr','Analytic')
+hold off
+
+%% Repeat the calculation, but now find a biased estimate of the autocorrelation
+cb = xcorr(x,'biased');
+db = dd/N;
+stem(lags,cb);
+hold on
+plot(nn,db)
+xlabel('Lag')
+legend('xcorr','Analytic')
+hold off
+
+%% Find an estimate of the autocorrelation whose value at zero lag is unity.
+[cz,lag] = xcorr(x,'coeff');
+dz = dd/max(dd);
+stem(lags,cz);
+hold on
+plot(nn,dz)
+xlabel('Lag')
+legend('xcorr','Analytic')
+hold off
 
   
-  
+[mC,Im] = min(abs(cz) == 0); 
+lagDiff = lag(Im)
+mTimeDiff = lagDiff;
+printf("min correlation (%f) for lag  = %f \n" , mC, mTimeDiff   ); 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% statistical features 
+mu = mean(x)
+sigma = std(x)
+skw = skewness (x) 
+kurtosis (x)
+
+
+
   
