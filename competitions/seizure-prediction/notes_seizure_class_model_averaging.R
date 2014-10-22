@@ -680,33 +680,32 @@ set.seed(197317705)
   maxSize <- max(nnetGrid$.size)
 
   ## 3. MEAN_SD_SCALED
-  numWts <- 1*(maxSize * ( (dim(Xtrain_mean_sd.scaled.train)[2]) + 1) + maxSize + 1)
-  set.seed(476); ptm <- proc.time()
-  model <- train( x = Xtrain_mean_sd.scaled.train , y = ytrain.cat.train , 
-                  method = "nnet", metric = "ROC", 
-                  preProc = c( "spatialSign") , 
-                  tuneGrid = nnetGrid , trace = FALSE , maxit = 2000 , MaxNWts = numWts, 
-                  trControl = controlObject)
-  tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (model,"Neural Networks (Mean sd scaled)",NN_MEAN_SD_SCALED,
-                                 Xtrain_mean_sd.scaled.train, ytrain.cat.train,
-                                 Xtrain_mean_sd.scaled.xval, ytrain.cat.xval,
-                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
+#   numWts <- 1*(maxSize * ( (dim(Xtrain_mean_sd.scaled.train)[2]) + 1) + maxSize + 1)
+#   set.seed(476); ptm <- proc.time()
+#   model <- train( x = Xtrain_mean_sd.scaled.train , y = ytrain.cat.train , 
+#                   method = "nnet", metric = "ROC", 
+#                   preProc = c( "spatialSign") , 
+#                   tuneGrid = nnetGrid , trace = FALSE , maxit = 2000 , MaxNWts = numWts, 
+#                   trControl = controlObject)
+#   tm = proc.time() - ptm
+#   perf.grid = predictAndMeasure (model,"Neural Networks (Mean sd scaled)",NN_MEAN_SD_SCALED,
+#                                  Xtrain_mean_sd.scaled.train, ytrain.cat.train,
+#                                  Xtrain_mean_sd.scaled.xval, ytrain.cat.xval,
+#                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
   
   ## 4. QUANTILES_SCALED
-  numWts <- 1*(maxSize * ( (dim(Xtrain_quant.scaled.train)[2]) + 1) + maxSize + 1)
-  set.seed(476); ptm <- proc.time()
-  model <- train( x = Xtrain_quant.scaled.train , y = ytrain.cat.train, 
-                  method = "nnet", metric = "ROC", 
-                  preProc = c("spatialSign") , 
-                  tuneGrid = nnetGrid , trace = FALSE , maxit = 2000 , MaxNWts = numWts, 
-                  trControl = controlObject)
-  tm = proc.time() - ptm
-  perf.grid = predictAndMeasure (model,"Neural Networks (Quant scaled)",NN_QUANTILES_SCALED,
-                                 Xtrain_quant.scaled.train, ytrain.cat.train,
-                                 Xtrain_quant.scaled.xval, ytrain.cat.xval,
-                                 tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
-
+#   numWts <- 1*(maxSize * ( (dim(Xtrain_quant.scaled.train)[2]) + 1) + maxSize + 1)
+#   set.seed(476); ptm <- proc.time()
+#   model <- train( x = Xtrain_quant.scaled.train , y = ytrain.cat.train, 
+#                   method = "nnet", metric = "ROC", 
+#                   preProc = c("spatialSign") , 
+#                   tuneGrid = nnetGrid , trace = FALSE , maxit = 2000 , MaxNWts = numWts, 
+#                   trControl = controlObject)
+#   tm = proc.time() - ptm
+#   perf.grid = predictAndMeasure (model,"Neural Networks (Quant scaled)",NN_QUANTILES_SCALED,
+#                                  Xtrain_quant.scaled.train, ytrain.cat.train,
+#                                  Xtrain_quant.scaled.xval, ytrain.cat.xval,
+#                                  tm, grid = perf.grid,verbose=verbose, doPlot=doPlot)
 
 
   ## 5. MEAN_SD_REDUCED
