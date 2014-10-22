@@ -1,4 +1,4 @@
-function [p1,p2,p3,p4,p5,P] = statisticalMomentPowerSpectrum (fs,T,x) 
+function [m1,m2,m3,m4] = statisticalMomentPowerSpectrum (fs,T,x) 
   % fs = Sample frequency (Hz)
   % T = secs sample
   % x = signa
@@ -16,7 +16,7 @@ function [p1,p2,p3,p4,p5,P] = statisticalMomentPowerSpectrum (fs,T,x)
   
   m1 = (1/P)*2*sum(swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail)).* (1:hzIdxTail));
   m2 = (1/P)*2*sum(swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail)).* ((1:hzIdxTail).*(1:hzIdxTail)) );
-  m2 = (1/P)*2*sum(swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail)).* (1:hzIdxTail).*(1:hzIdxTail).*(1:hzIdxTail)  );
+  m3 = (1/P)*2*sum(swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail)).* (1:hzIdxTail).*(1:hzIdxTail).*(1:hzIdxTail)  );
   m4 = (1/P)*2*sum(swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail)).* (1:hzIdxTail).*(1:hzIdxTail).*(1:hzIdxTail).*(1:hzIdxTail)  );
   
 endfunction

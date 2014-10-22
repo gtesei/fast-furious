@@ -182,6 +182,8 @@ ylabel(' Power')
 
 
 [p1,p2,p3,p4,p5,P] = bandPower (1000,5,swave,debug=1)
+
+[m1,m2,m3,m4] = statisticalMomentPowerSpectrum (1000,5,swave) 
                      
 ##### find min freq t.c. che cattura 50% power segnale 
 nyquistfreq = srate/ 2;
