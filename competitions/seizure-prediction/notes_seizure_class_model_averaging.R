@@ -344,6 +344,21 @@ for (ds in dss) {
   levels(ytrain.cat) = c("interict","preict")
   
   ######### making train / xval set ...
+  ### removing near zero var predictors 
+  PredToDel = nearZeroVar(Xtrain_quant)
+  if (length(PredToDel) > 0) {
+    cat("removing ",length(PredToDel)," nearZeroVar predictors: ", paste(colnames(Xtrain_quant) [PredToDel] , collapse=" " ) , " ... \n ")
+    Xtest_quant  =  Xtest_quant  [,-PredToDel]
+    Xtrain_quant =  Xtrain_quant [,-PredToDel]
+  }
+  
+  PredToDel = nearZeroVar(Xtrain_mean_sd)
+  if (length(PredToDel) > 0) {
+    cat("removing ",length(PredToDel)," nearZeroVar predictors: ", paste(colnames(Xtrain_mean_sd) [PredToDel] , collapse=" " ) , " ... \n ")
+    Xtest_mean_sd  =  Xtest_mean_sd  [,-PredToDel]
+    Xtrain_mean_sd =  Xtrain_mean_sd [,-PredToDel]
+  }
+  
   ### A. reduced+scaled  
   Xtest_quant.reduced = Xtrain_quant.reduced = NULL 
   Xtest_mean_sd.reduced = Xtrain_mean_sd.reduced = NULL 
