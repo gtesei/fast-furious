@@ -276,6 +276,20 @@ for (ds in dss) {
   levels(ytrain.cat) = c("interict","preict")
   
   ######### making train / xval set ...
+  ### removing predictors that make ill-conditioned square matrix
+  PredToDel = trim.matrix( cov( Xtrain_quant ) )
+  if (length(PredToDel$numbers.discarded) > 0) {
+    cat("removing ",length(PredToDel$numbers.discarded)," predictors that make ill-conditioned square matrix: ", paste(colnames(Xtrain_quant) [PredToDel$numbers.discarded] , collapse=" " ) , " ... \n ")
+    Xtest_quant  =  Xtest_quant  [,-PredToDel$numbers.discarded]
+    Xtrain_quant =  Xtrain_quant [,-PredToDel$numbers.discarded]
+  }
+  PredToDel = trim.matrix( cov( Xtrain_mean_sd ) )
+  if (length(PredToDel$numbers.discarded) > 0) {
+    cat("removing ",length(PredToDel$numbers.discarded)," predictors that make ill-conditioned square matrix: ", paste(colnames(Xtrain_mean_sd) [PredToDel$numbers.discarded] , collapse=" " ) , " ... \n ")
+    Xtest_mean_sd  =  Xtest_mean_sd  [,-PredToDel$numbers.discarded]
+    Xtrain_mean_sd =  Xtrain_mean_sd [,-PredToDel$numbers.discarded]
+  }
+  
   ### removing near zero var predictors 
   PredToDel = nearZeroVar(Xtrain_quant)
   if (length(PredToDel) > 0) {
