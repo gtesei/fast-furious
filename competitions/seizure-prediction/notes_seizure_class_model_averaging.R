@@ -206,7 +206,7 @@ trainAndPredict = function(model.label,model.id,
   if (verbose) cat("******************* ", model.label, " <<" , model.id ,  ">> \n")
   if (verbose) cat("** acc.train =",acc.train, " -  acc.train.all0 =",acc.train.all0, " \n")
   if (verbose) cat("** roc.train =",roc.train," -  roc.train.2 =",roc.train.2,"  \n")
-  if (verbose) cat("** roc.xval.min =",roc.xval.min, " \n")
+  if (verbose) cat("** roc.train.min =",roc.xval.min, " \n")
   
   list(pred.prob.train, pred.train, pred.prob.test, pred.test)
 }
