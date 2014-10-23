@@ -13,7 +13,7 @@ printf("|--> generating features set ...\n");
 
 %%dss = ["Dog_1"; "Dog_2"; "Dog_3"; "Dog_4"; "Dog_5"; "Patient_1"; "Patient_2"];
 %%dss = ["Patient_1"; "Dog_1"; "Dog_2"];
-dss = ["Patient_2"];
+dss = ["Dog_5";"Patient_1"];
 cdss = cellstr (dss);
 
 printf("|--> found %i data sets ... \n",size(cdss,1));
@@ -26,20 +26,20 @@ for i = 1:size(cdss,1)
   printf("|--> processing %s  ...\n",ds);
   
   %% making digest directory 
-  dirname = [curr_dir "/dataset/seizure-prediction/" ds "_digestEE/"];
+  dirname = [curr_dir "/dataset/seizure-prediction/" ds "_digest/"];
   mkdir(dirname); %% if the directory exists this doesn't do nothing 
   
   %% data files 
-  %%pattern_interictal = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "/" ds "_interictal_segment*"]);
-  pattern_interictal = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "_interictal_segment*"]);
+  pattern_interictal = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "/" ds "_interictal_segment*"]);
+  %%pattern_interictal = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "_interictal_segment*"]);
   interictal_files = glob (pattern_interictal);
   
-  %%pattern_preictal = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "/" ds "_preictal_segment*"]);
-  pattern_preictal = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "_preictal_segment*"]);
+  pattern_preictal = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "/" ds "_preictal_segment*"]);
+  %%pattern_preictal = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "_preictal_segment*"]);
   preictal_files = glob (pattern_preictal);
   
-  %%pattern_test = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "/" ds "_test_segment*"]);
-  pattern_test = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "_test_segment*"]);
+  pattern_test = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "/" ds "_test_segment*"]);
+  %%pattern_test = ([curr_dir "/dataset/seizure-prediction/" ds "/" ds "_test_segment*"]);
   test_files = glob (pattern_test);
   
   %%%%%%%%%% train / test matrix 
