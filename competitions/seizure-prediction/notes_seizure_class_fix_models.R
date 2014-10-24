@@ -6,6 +6,7 @@ library(data.table)
 library(verification)
 library(pROC)
 library(kernlab)
+library(subselect)
 
 getBasePath = function (type = "data" , ds="") {
   ret = ""
@@ -251,31 +252,31 @@ doPlot = F
 ############ models grids 
 Dog_1.model = data.frame(model = c( "Boosted Trees C5.0 (Mean sd)" ) , 
                          model.id = c(BOOSTED_TREE_MEAN_SD ) , 
-                         weigth = c(0.65)) 
+                         weigth = c(0.71)) 
 
-Dog_2.model = data.frame(model = c("NN_MEAN_SD_REDUCED" ) , 
-                         model.id = c(NN_MEAN_SD_REDUCED ) , 
-                         weigth = c(0.65)) 
-
-Dog_3.model = data.frame(model = c("BOOSTED_TREE_MEAN_SD_REDUCED" ) , 
-                         model.id = c(BOOSTED_TREE_MEAN_SD_REDUCED ) , 
-                         weigth = c(0.65 )) 
-
-Dog_4.model = data.frame(model = c("NN_QUANTILES_REDUCED" ) , 
-                         model.id = c(NN_QUANTILES_REDUCED ) , 
-                         weigth = c(0.65)) 
-
-Dog_5.model = data.frame(model = c("Pen. Mod. (Quant scaled)" ) , 
+Dog_2.model = data.frame(model = c("PM_QUANTILES_SCALED" ) , 
                          model.id = c(PM_QUANTILES_SCALED ) , 
-                         weigth = c(0.65 )) 
+                         weigth = c(0.71)) 
 
-Patient_1.model = data.frame(model = c("Bagged Trees (Mean sd)" ) , 
-                             model.id = c(BAGGING_TREE_MEAN_SD ) , 
-                             weigth = c(0.65 )) 
+Dog_3.model = data.frame(model = c("Boosted Trees C5.0 (Mean sd)" ) , 
+                         model.id = c(BOOSTED_TREE_MEAN_SD ) , 
+                         weigth = c(0.71 )) 
 
-Patient_2.model = data.frame(model = c("Bagged Trees (Mean sd)" ) , 
-                             model.id = c(BAGGING_TREE_MEAN_SD ) , 
-                             weigth = c(0.65 )) 
+Dog_4.model = data.frame(model = c("BOOSTED_TREE_QUANTILES_REDUCED" ) , 
+                         model.id = c(BOOSTED_TREE_QUANTILES_REDUCED ) , 
+                         weigth = c(0.71)) 
+
+Dog_5.model = data.frame(model = c("PM_MEAN_SD_SCALED" ) , 
+                         model.id = c(PM_MEAN_SD_SCALED ) , 
+                         weigth = c(0.71 )) 
+
+Patient_1.model = data.frame(model = c("PM_MEAN_SD_SCALED" ) , 
+                             model.id = c(PM_MEAN_SD_SCALED ) , 
+                             weigth = c(0.71 )) 
+
+Patient_2.model = data.frame(model = c("SVM_MEAN_SD_SCALED" ) , 
+                             model.id = c(SVM_MEAN_SD_SCALED ) , 
+                             weigth = c(0.71 )) 
 
 ### check 
 models.per.ds = nrow(Dog_1.model)
@@ -330,6 +331,10 @@ for (ds in dss) {
   
   ytrain.cat = factor(ytrain[,2]) 
   levels(ytrain.cat) = c("interict","preict")
+  
+  ### check 
+  if ( length(grep(ds , sampleSubmission$clip)) != nrow(Xtest_mean_sd) | 
+       length(grep(ds , sampleSubmission$clip)) != nrow(Xtest_quant)   )  stop ("rows in sample submission different for test set!")
   
   ######### making train / xval set ...
   ### removing predictors that make ill-conditioned square matrix
@@ -476,6 +481,8 @@ for (ds in dss) {
     
     if ( length(pred.prob.test) != nrow(Xtest) ) stop("pred.prob.test: wrong column number")
     grid[grid$model.id == model.id , (4:(4+length(pred.prob.test)-1))] = pred.prob.test
+    
+    if ( length(grep(ds , sampleSubmission$clip)) != length(pred.prob.test) )  stop ("rows in sample submission different for grid!")
     
     if ( length(pred.prob.train) != nrow(Xtrain) ) stop("pred.prob.train: wrong column number")
     grid.train[grid$model.id == model.id , (4:(4+length(pred.prob.train)-1))] = pred.prob.train
@@ -675,6 +682,8 @@ for (ds in dss) {
     
     sub.grid.train[mo,  sub.grid.idx.train:(sub.grid.idx.train + length(4:ncol(grid.train))  - 1) ]  = 
       as.matrix(grid.train[mo,(4:ncol(grid.train))])
+    
+    if ( length(grep(ds , sampleSubmission$clip)) != length(4:ncol(grid)) )  stop ("rows in sample submission different for grid!")
   }
   
   sub.grid.idx = sub.grid.idx + length(4:ncol(grid))
