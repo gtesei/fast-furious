@@ -30,7 +30,7 @@ getBasePath = function (type = "data" , ds="") {
   }
   
   if (ds != "" ) {
-    ret = paste0(paste0(ret,ds),"_digest/")
+    ret = paste0(paste0(ret,ds),"_digest_3gen/")
   }
   ret
 } 
@@ -320,8 +320,8 @@ controlObject <- trainControl(method = "boot", number = 30 ,
 # controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10 , 
 #                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
-##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-dss = c("Patient_1")
+dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
+##dss = c("Patient_1")
 cat("|---------------->>> data set to process: <<",dss,">> ..\n")
 
 for (ds in dss) {
@@ -1058,179 +1058,179 @@ for (ds in dss) {
   cat("************ THE WINNER IS ",model.label.winner," <<",model.id.winner,">> \n")
 
   ##### saving on disk perf.grid ...
-  write.csv(perf.grid,quote=FALSE,file=paste0(getBasePath(),paste0(ds,"_perf_grid_class.csv")), row.names=FALSE)
+  write.csv(perf.grid,quote=FALSE,file=paste0(getBasePath(),paste0(ds,"_perf_grid_class_3gen.csv")), row.names=FALSE)
   
-  ##### re-train winner model on whole train set and predict on test set 
-  Xtrain = Xtest = NULL
-  model = NULL
-  
-  ## data set 
-  if (model.id.winner %% 6 == 0) {
-    Xtrain = Xtrain_quant.reduced
-    Xtest  = Xtest_quant.reduced
-  } else if (model.id.winner %% 6 == 1) {
-    Xtrain = Xtrain_mean_sd
-    Xtest  = Xtest_mean_sd
-  } else if (model.id.winner %% 6 == 2) {
-    Xtrain = Xtrain_quant
-    Xtest  = Xtest_quant
-  } else if (model.id.winner %% 6 == 3) {
-    Xtrain = Xtrain_mean_sd.scaled
-    Xtest  = Xtest_mean_sd.scaled
-  } else if (model.id.winner %% 6 == 4) {
-    Xtrain = Xtrain_quant.scaled
-    Xtest  = Xtest_quant.scaled
-  } else if (model.id.winner %% 6 == 5) {
-    Xtrain = Xtrain_mean_sd.reduced
-    Xtest  = Xtest_mean_sd.reduced
-  } else {
-    stop("ma che modello ha vinto (data set) !! ")
-  }
-  
-  ## train and predict 
-  l = trainAndPredict (model.label.winner,model.id.winner, 
-                       Xtrain, ytrain.cat, Xtest, 
-                       verbose=T)
-  pred.prob.train = l[[1]] 
-  pred.train = l[[2]]
-  pred.prob.test = l[[3]]    #### <<<<<<<<<--------------------------
-  pred.test = l[[4]]
-  
-  ########### Model averaging  
-  if (verbose) cat("******************* Model averaging .... \n")
-  if (verbose) cat("** roc.xval.2 summary  \n")
-  summary(perf.grid$roc.xval.2) 
-  
-  top_th = as.numeric(quantile(perf.grid$roc.xval.2 , topxx  ))
-  for (tp in 1:length(topxx) ) {
-    mod.grid = perf.grid[perf.grid$roc.xval.2 >= top_th[tp],]
-    if (verbose) cat("*** building model average for ", as.character(labelAvg[tp]) ," - ", nrow(mod.grid) ," models \n")
-    
-    weigths = rep(-1,nrow(mod.grid))
-    prob.mat = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.test)) , 
-                      nrow = length(pred.prob.test) , ncol = nrow(mod.grid)  )
-    
-#     prob.mat.train = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.train)) , 
-#                        nrow = length(pred.prob.train) , ncol = nrow(mod.grid)  )
-    
-    for ( mi in 1:nrow(mod.grid) ) {
-      model.id = mod.grid[mi,]$model.id
-      model.label = as.character(mod.grid[mi,]$predictor) 
-      weigths[mi] = roc = mod.grid[mi,]$roc.xval.2
-      
-      ## data set 
-      if (model.id %% 6 == 0) {
-        Xtrain = Xtrain_quant.reduced
-        Xtest  = Xtest_quant.reduced
-      } else if (model.id %% 6 == 1) {
-        Xtrain = Xtrain_mean_sd
-        Xtest  = Xtest_mean_sd
-      } else if (model.id %% 6 == 2) {
-        Xtrain = Xtrain_quant
-        Xtest  = Xtest_quant
-      } else if (model.id %% 6 == 3) {
-        Xtrain = Xtrain_mean_sd.scaled
-        Xtest  = Xtest_mean_sd.scaled
-      } else if (model.id %% 6 == 4) {
-        Xtrain = Xtrain_quant.scaled
-        Xtest  = Xtest_quant.scaled
-      } else if (model.id %% 6 == 5) {
-        Xtrain = Xtrain_mean_sd.reduced
-        Xtest  = Xtest_mean_sd.reduced
-      } else {
-        stop("ma che modello ha vinto (data set) !! ")
-      }
-      
-      ## train and predict 
-      ll = trainAndPredict (model.label,model.id, 
-                           Xtrain, ytrain.cat, Xtest, 
-                           verbose=T)
-      pred.prob.train.topxx = ll[[1]] 
-      pred.train.topxx = ll[[2]]
-      pred.prob.test.topxx = ll[[3]]    #### <<<<<<<<<--------------------------
-      pred.test.topxx = ll[[4]]
-      
-      prob.mat[,mi] = pred.prob.test.topxx
-#       prob.mat.train[,mi] = pred.prob.train.topxx
-    }
-    
-    #### averaging 
-    prob.mat.xx = prob.mat 
-#     prob.mat.train.xx = prob.mat.train
-    for ( mi in 1:nrow(mod.grid) ) {
-      prob.mat.xx[,mi] = prob.mat[,mi] * weigths[mi]
-#       prob.mat.train.xx[,mi] = prob.mat.train[,mi] * weigths[mi]
-    }
-    
-    ### update predVect_topxx
-    NUM = apply(prob.mat.xx,1,sum)
-    DENUM = sum(weigths)
-    predVect_topxx[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
-    
-#     ### update predVect_topxx.train
-#     NUM = apply(prob.mat.train.xx,1,sum)
+#   ##### re-train winner model on whole train set and predict on test set 
+#   Xtrain = Xtest = NULL
+#   model = NULL
+#   
+#   ## data set 
+#   if (model.id.winner %% 6 == 0) {
+#     Xtrain = Xtrain_quant.reduced
+#     Xtest  = Xtest_quant.reduced
+#   } else if (model.id.winner %% 6 == 1) {
+#     Xtrain = Xtrain_mean_sd
+#     Xtest  = Xtest_mean_sd
+#   } else if (model.id.winner %% 6 == 2) {
+#     Xtrain = Xtrain_quant
+#     Xtest  = Xtest_quant
+#   } else if (model.id.winner %% 6 == 3) {
+#     Xtrain = Xtrain_mean_sd.scaled
+#     Xtest  = Xtest_mean_sd.scaled
+#   } else if (model.id.winner %% 6 == 4) {
+#     Xtrain = Xtrain_quant.scaled
+#     Xtest  = Xtest_quant.scaled
+#   } else if (model.id.winner %% 6 == 5) {
+#     Xtrain = Xtrain_mean_sd.reduced
+#     Xtest  = Xtest_mean_sd.reduced
+#   } else {
+#     stop("ma che modello ha vinto (data set) !! ")
+#   }
+#   
+#   ## train and predict 
+#   l = trainAndPredict (model.label.winner,model.id.winner, 
+#                        Xtrain, ytrain.cat, Xtest, 
+#                        verbose=T)
+#   pred.prob.train = l[[1]] 
+#   pred.train = l[[2]]
+#   pred.prob.test = l[[3]]    #### <<<<<<<<<--------------------------
+#   pred.test = l[[4]]
+#   
+#   ########### Model averaging  
+#   if (verbose) cat("******************* Model averaging .... \n")
+#   if (verbose) cat("** roc.xval.2 summary  \n")
+#   summary(perf.grid$roc.xval.2) 
+#   
+#   top_th = as.numeric(quantile(perf.grid$roc.xval.2 , topxx  ))
+#   for (tp in 1:length(topxx) ) {
+#     mod.grid = perf.grid[perf.grid$roc.xval.2 >= top_th[tp],]
+#     if (verbose) cat("*** building model average for ", as.character(labelAvg[tp]) ," - ", nrow(mod.grid) ," models \n")
+#     
+#     weigths = rep(-1,nrow(mod.grid))
+#     prob.mat = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.test)) , 
+#                       nrow = length(pred.prob.test) , ncol = nrow(mod.grid)  )
+#     
+# #     prob.mat.train = matrix( data = rep(-1, nrow(mod.grid)*length(pred.prob.train)) , 
+# #                        nrow = length(pred.prob.train) , ncol = nrow(mod.grid)  )
+#     
+#     for ( mi in 1:nrow(mod.grid) ) {
+#       model.id = mod.grid[mi,]$model.id
+#       model.label = as.character(mod.grid[mi,]$predictor) 
+#       weigths[mi] = roc = mod.grid[mi,]$roc.xval.2
+#       
+#       ## data set 
+#       if (model.id %% 6 == 0) {
+#         Xtrain = Xtrain_quant.reduced
+#         Xtest  = Xtest_quant.reduced
+#       } else if (model.id %% 6 == 1) {
+#         Xtrain = Xtrain_mean_sd
+#         Xtest  = Xtest_mean_sd
+#       } else if (model.id %% 6 == 2) {
+#         Xtrain = Xtrain_quant
+#         Xtest  = Xtest_quant
+#       } else if (model.id %% 6 == 3) {
+#         Xtrain = Xtrain_mean_sd.scaled
+#         Xtest  = Xtest_mean_sd.scaled
+#       } else if (model.id %% 6 == 4) {
+#         Xtrain = Xtrain_quant.scaled
+#         Xtest  = Xtest_quant.scaled
+#       } else if (model.id %% 6 == 5) {
+#         Xtrain = Xtrain_mean_sd.reduced
+#         Xtest  = Xtest_mean_sd.reduced
+#       } else {
+#         stop("ma che modello ha vinto (data set) !! ")
+#       }
+#       
+#       ## train and predict 
+#       ll = trainAndPredict (model.label,model.id, 
+#                            Xtrain, ytrain.cat, Xtest, 
+#                            verbose=T)
+#       pred.prob.train.topxx = ll[[1]] 
+#       pred.train.topxx = ll[[2]]
+#       pred.prob.test.topxx = ll[[3]]    #### <<<<<<<<<--------------------------
+#       pred.test.topxx = ll[[4]]
+#       
+#       prob.mat[,mi] = pred.prob.test.topxx
+# #       prob.mat.train[,mi] = pred.prob.train.topxx
+#     }
+#     
+#     #### averaging 
+#     prob.mat.xx = prob.mat 
+# #     prob.mat.train.xx = prob.mat.train
+#     for ( mi in 1:nrow(mod.grid) ) {
+#       prob.mat.xx[,mi] = prob.mat[,mi] * weigths[mi]
+# #       prob.mat.train.xx[,mi] = prob.mat.train[,mi] * weigths[mi]
+#     }
+#     
+#     ### update predVect_topxx
+#     NUM = apply(prob.mat.xx,1,sum)
 #     DENUM = sum(weigths)
-#     predVect_topxx.train[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
-  }
-  
-  ### update predVects 
-  predVect[predVect.idx:(predVect.idx+length(pred.prob.test)-1)] = pred.prob.test
-  predVect.idx = predVect.idx + length(pred.prob.test)
-  
-  ## trainPred
-  if (is.null(trainPred)) {
-    trainPred = pred.prob.train
-    trainClass = ytrain[,2]
-  } else {
-    trainPred = c(trainPred , pred.prob.train)
-    trainClass = c(trainClass , ytrain[,2] )
-  }
-  if (verbose) cat("** predVect and predVect_topxx updated \n")
+#     predVect_topxx[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
+#     
+# #     ### update predVect_topxx.train
+# #     NUM = apply(prob.mat.train.xx,1,sum)
+# #     DENUM = sum(weigths)
+# #     predVect_topxx.train[predVect.idx:(predVect.idx+length(pred.prob.test)-1),tp] = NUM * (DENUM^-1)
+#   }
+#   
+#   ### update predVects 
+#   predVect[predVect.idx:(predVect.idx+length(pred.prob.test)-1)] = pred.prob.test
+#   predVect.idx = predVect.idx + length(pred.prob.test)
+#   
+#   ## trainPred
+#   if (is.null(trainPred)) {
+#     trainPred = pred.prob.train
+#     trainClass = ytrain[,2]
+#   } else {
+#     trainPred = c(trainPred , pred.prob.train)
+#     trainClass = c(trainClass , ytrain[,2] )
+#   }
+#   if (verbose) cat("** predVect and predVect_topxx updated \n")
 }
 
-## submission - top model 
-mySub = data.frame(clip = sampleSubmission$clip , preictal = format(predVect  , scientific = F ))
-write.csv(mySub,quote=FALSE,file=paste0(getBasePath(),"mySub_class.zat"), row.names=FALSE)
-
-## Calibrating Probabilities - sigmoid - top model 
-trainClass.cat = as.factor(trainClass)
-levels(trainClass.cat) =  c("interict","preict")
-train.df = data.frame(class = trainClass.cat , prob = trainPred )
-sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
-coef(summary(sigmoidalCal)) 
-sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect), type = "response")
-mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
-write.csv(mySub2,quote=FALSE,file=paste0(getBasePath(),"mySub_sigmoid_calibrat_class.zat"), row.names=FALSE)
-
-## Calibrating Probabilities - Bayes - top model 
-library(klaR)
-BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
-BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect) )
-BayesProbs.preict <- BayesProbs$posterior[, "preict"]
-mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
-write.csv(mySub3,quote=FALSE,file=paste0(getBasePath(),"mySub_bayes_calibrat_class.zat"), row.names=FALSE)
-
-## submission - averaged models 
-for (tp in 1:length(topxx) ) {
-  label = as.character(labelAvg[tp])
-  mySub = data.frame(clip = sampleSubmission$clip , preictal = format( predVect_topxx[,tp]  , scientific = F ))
-  write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , ".zat" , sep=""), row.names=FALSE)
-  
-  ## Calibrating Probabilities - sigmoid - top model 
-  trainClass.cat = as.factor(trainClass)
-  levels(trainClass.cat) =  c("interict","preict")
-  train.df = data.frame(class = trainClass.cat , prob = trainPred )
-  sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
-  coef(summary(sigmoidalCal)) 
-  sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect_topxx[,tp]), type = "response")
-  mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
-  write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,".zat",sep=""), row.names=FALSE)
-  
-  ## Calibrating Probabilities - Bayes - top model 
-  library(klaR)
-  BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
-  BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect_topxx[,tp]) )
-  BayesProbs.preict <- BayesProbs$posterior[, "preict"]
-  mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
-  write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,".zat"), row.names=FALSE)
-}
+# ## submission - top model 
+# mySub = data.frame(clip = sampleSubmission$clip , preictal = format(predVect  , scientific = F ))
+# write.csv(mySub,quote=FALSE,file=paste0(getBasePath(),"mySub_class.zat"), row.names=FALSE)
+# 
+# ## Calibrating Probabilities - sigmoid - top model 
+# trainClass.cat = as.factor(trainClass)
+# levels(trainClass.cat) =  c("interict","preict")
+# train.df = data.frame(class = trainClass.cat , prob = trainPred )
+# sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
+# coef(summary(sigmoidalCal)) 
+# sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect), type = "response")
+# mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
+# write.csv(mySub2,quote=FALSE,file=paste0(getBasePath(),"mySub_sigmoid_calibrat_class.zat"), row.names=FALSE)
+# 
+# ## Calibrating Probabilities - Bayes - top model 
+# library(klaR)
+# BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
+# BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect) )
+# BayesProbs.preict <- BayesProbs$posterior[, "preict"]
+# mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
+# write.csv(mySub3,quote=FALSE,file=paste0(getBasePath(),"mySub_bayes_calibrat_class.zat"), row.names=FALSE)
+# 
+# ## submission - averaged models 
+# for (tp in 1:length(topxx) ) {
+#   label = as.character(labelAvg[tp])
+#   mySub = data.frame(clip = sampleSubmission$clip , preictal = format( predVect_topxx[,tp]  , scientific = F ))
+#   write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , ".zat" , sep=""), row.names=FALSE)
+#   
+#   ## Calibrating Probabilities - sigmoid - top model 
+#   trainClass.cat = as.factor(trainClass)
+#   levels(trainClass.cat) =  c("interict","preict")
+#   train.df = data.frame(class = trainClass.cat , prob = trainPred )
+#   sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
+#   coef(summary(sigmoidalCal)) 
+#   sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame(prob = predVect_topxx[,tp]), type = "response")
+#   mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
+#   write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,".zat",sep=""), row.names=FALSE)
+#   
+#   ## Calibrating Probabilities - Bayes - top model 
+#   library(klaR)
+#   BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
+#   BayesProbs <- predict(BayesCal, newdata = data.frame(prob = predVect_topxx[,tp]) )
+#   BayesProbs.preict <- BayesProbs$posterior[, "preict"]
+#   mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
+#   write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,".zat"), row.names=FALSE)
+# }

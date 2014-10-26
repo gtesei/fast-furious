@@ -30,7 +30,7 @@ getBasePath = function (type = "data" , ds="") {
   }
   
   if (ds != "" ) {
-    ret = paste0(paste0(ret,ds),"_digest/")
+    ret = paste0(paste0(ret,ds),"_digest_3gen/")
   }
   ret
 } 
@@ -258,7 +258,7 @@ Dog_2.model = data.frame(model = c("PM_QUANTILES_SCALED" ) ,
                          model.id = c(PM_QUANTILES_SCALED ) , 
                          weigth = c(0.71)) 
 
-Dog_3.model = data.frame(model = c("Boosted Trees C5.0 (Mean sd)" ) , 
+Dog_3.model = data.frame(model = c("BOOSTED_TREE_MEAN_SD" ) , 
                          model.id = c(BOOSTED_TREE_MEAN_SD ) , 
                          weigth = c(0.71 )) 
 
@@ -270,8 +270,8 @@ Dog_5.model = data.frame(model = c("PM_MEAN_SD_SCALED" ) ,
                          model.id = c(PM_MEAN_SD_SCALED ) , 
                          weigth = c(0.71 )) 
 
-Patient_1.model = data.frame(model = c("PM_MEAN_SD_SCALED" ) , 
-                             model.id = c(PM_MEAN_SD_SCALED ) , 
+Patient_1.model = data.frame(model = c("CLASS_TREE_MEAN_SD" ) , 
+                             model.id = c(CLASS_TREE_MEAN_SD ) , 
                              weigth = c(0.71 )) 
 
 Patient_2.model = data.frame(model = c("SVM_MEAN_SD_SCALED" ) , 
@@ -714,5 +714,5 @@ for (mo in 1:nrow(sub.grid) ) {
   BayesProbs <- predict(BayesCal, newdata = data.frame(prob = as.numeric(format( sub.grid[mo,]  , scientific = F ))) )
   BayesProbs.preict <- BayesProbs$posterior[, "preict"]
   mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
-  write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,"_fix_mod.zat"), row.names=FALSE)
+  write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,"_fix_mod.zat",sep=""), row.names=FALSE)
 }

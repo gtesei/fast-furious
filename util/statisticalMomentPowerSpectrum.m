@@ -14,9 +14,9 @@ function [m1,m2,m3,m4] = statisticalMomentPowerSpectrum (fs,T,x)
   hzIdxTail = dsearchn( hz', nyquistfreq);
   P =  sum(swaveX.*conj(swaveX));
   
-  m1 = (1/P)*2*sum(swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail)).* (1:hzIdxTail));
-  m2 = (1/P)*2*sum(swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail)).* ((1:hzIdxTail).*(1:hzIdxTail)) );
-  m3 = (1/P)*2*sum(swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail)).* (1:hzIdxTail).*(1:hzIdxTail).*(1:hzIdxTail)  );
-  m4 = (1/P)*2*sum(swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail)).* (1:hzIdxTail).*(1:hzIdxTail).*(1:hzIdxTail).*(1:hzIdxTail)  );
+  m1 = (1/P)*2*sum((swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail)))  .* (1:hzIdxTail));
+  m2 = (1/P)*2*sum(((swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail))) .* ((1:hzIdxTail)) .*(1:hzIdxTail)) );
+  m3 = (1/P)*2*sum((((swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail))) .* (1:hzIdxTail)) .*(1:hzIdxTail)) .*(1:hzIdxTail)  );
+  m4 = (1/P)*2*sum(((((swaveX(1:hzIdxTail).*conj(swaveX(1:hzIdxTail))) .* (1:hzIdxTail)) .*(1:hzIdxTail)) .*(1:hzIdxTail)) .*(1:hzIdxTail)  );
   
 endfunction

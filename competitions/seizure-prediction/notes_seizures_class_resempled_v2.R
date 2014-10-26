@@ -352,33 +352,26 @@ BAGGING_TREE_MEAN_SD_REDUCED = 65
 BAGGING_TREE_QUANTILES_REDUCED = 66
 
 ############ models grids 
-Dog_1.model = data.frame(model = c( "Boosted Trees C5.0 (Mean sd)" ) , 
-                         model.id = c(BOOSTED_TREE_MEAN_SD ) , 
-                         weigth = c(0.65)) 
+Dog_1.model = data.frame(model = c( "Boosted Trees C5.0 (Mean sd)" "NN_QUANTILES_REDUCED") , 
+                         model.id = c(BOOSTED_TREE_MEAN_SD , NN_QUANTILES_REDUCED) ) 
 
-Dog_2.model = data.frame(model = c("NN_MEAN_SD_REDUCED" ) , 
-                         model.id = c(NN_MEAN_SD_REDUCED ) , 
-                         weigth = c(0.65)) 
+Dog_2.model = data.frame(model = c("PM_QUANTILES_SCALED" , "SVM_MEAN_SD_REDUCED") , 
+                         model.id = c(PM_QUANTILES_SCALED , SVM_MEAN_SD_REDUCED) ) 
 
-Dog_3.model = data.frame(model = c("BOOSTED_TREE_MEAN_SD_REDUCED" ) , 
-                         model.id = c(BOOSTED_TREE_MEAN_SD_REDUCED ) , 
-                         weigth = c(0.65 )) 
+Dog_3.model = data.frame(model = c("BOOSTED_TREE_MEAN_SD" , "PM_QUANTILES_SCALED") , 
+                         model.id = c(BOOSTED_TREE_MEAN_SD , PM_QUANTILES_SCALED) ) 
 
-Dog_4.model = data.frame(model = c("NN_QUANTILES_REDUCED" ) , 
-                         model.id = c(NN_QUANTILES_REDUCED ) , 
-                         weigth = c(0.65)) 
+Dog_4.model = data.frame(model = c("BOOSTED_TREE_QUANTILES_REDUCED" , "SVM_QUANTILES_REDUCED") , 
+                         model.id = c(BOOSTED_TREE_QUANTILES_REDUCED , SVM_QUANTILES_REDUCED) ) 
 
-Dog_5.model = data.frame(model = c("Pen. Mod. (Quant scaled)" ) , 
-                         model.id = c(PM_QUANTILES_SCALED ) , 
-                         weigth = c(0.65 )) 
+Dog_5.model = data.frame(model = c("Pen. Mod. (Quant scaled)" , "BOOSTED_TREE_QUANTILES") , 
+                         model.id = c(PM_QUANTILES_SCALED , BOOSTED_TREE_QUANTILES) )
 
-Patient_1.model = data.frame(model = c("Bagged Trees (Mean sd)" ) , 
-                             model.id = c(BAGGING_TREE_MEAN_SD ) , 
-                             weigth = c(0.65 )) 
+Patient_1.model = data.frame(model = c("CLASS_TREE_MEAN_SD" "BAGGING_TREE_MEAN_SD") , 
+                             model.id = c(CLASS_TREE_MEAN_SD , BAGGING_TREE_MEAN_SD) )
 
-Patient_2.model = data.frame(model = c("Bagged Trees (Mean sd)" ) , 
-                             model.id = c(BAGGING_TREE_MEAN_SD ) , 
-                             weigth = c(0.65 ))
+Patient_2.model = data.frame(model = c("SVM_MEAN_SD_SCALED" , "PLSDA_MEAN_SD_SCALED") , 
+                             model.id = c(SVM_MEAN_SD_SCALED , PLSDA_MEAN_SD_SCALED) )
 
 ### check 
 models.per.ds = nrow(Dog_1.model)

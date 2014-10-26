@@ -1,4 +1,5 @@
 pkg load signal;
+menv;
 
   %%% example of signal 
   T = 10;                                  % 10 sec sample
