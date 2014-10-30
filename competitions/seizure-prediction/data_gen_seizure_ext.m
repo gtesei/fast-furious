@@ -25,7 +25,7 @@ for i = 1:size(cdss,1)
   printf("|--> processing %s  ...\n",ds);
   
   %% making digest directory 
-  dirname = [curr_dir "/dataset/seizure-prediction/" ds "_digest_4gen/"];
+  dirname = [curr_dir "/dataset/seizure-prediction/" ds "_digest_7gen/"];
   mkdir(dirname); %% if the directory exists this doesn't do nothing 
   
   %% data files 
@@ -121,6 +121,7 @@ for i = 1:size(cdss,1)
         %%% update ytrain  
         ytrain(train_index,1) = time_before_seizure;
         ytrain(train_index,2) = (mode-1);
+        printf("|- classified as  %i  (0=inter,1=preict) - train_index = %i...\n",ytrain(train_index,2) , train_index );
       endif 
       
       %% garbage collection .. 
@@ -130,9 +131,14 @@ for i = 1:size(cdss,1)
       for i = 1:size(data,1)
         sign = data(i,:)';
         
+        ########################### mov avg 12
+        wndw = 12;                                      %# sliding window size
+        sign = filter(ones(wndw,1)/wndw, 1, sign);      %# moving average
+        ########################### end of mov avg 12
+        
         %% fm and extended stuff 
         [fm] = findMainFrequencyComponent (sampling_fraquency,data_length_sec,sign,doPlot=0);
-        [p0,p1,p2,p3,p4,p5,p6,p7,P] = bandPower (sampling_fraquency,data_length_sec,sign,debug=0);
+        [p0,p1,p2,p3,p4,p5,p6,pTail,P] = bandPower (sampling_fraquency,data_length_sec,sign,debug=0,norm=1);
         [f_50] = findSpectralEdgeFrequency (sampling_fraquency,data_length_sec,sign);
         [min_tau] = findMinTimeAutocorrelationZero (sign,sampling_fraquency);
         skw = skewness (sign);
@@ -147,7 +153,7 @@ for i = 1:size(cdss,1)
           Xtrain_mean_sd(train_index,((i-1)*16+9)) = p4;
           Xtrain_mean_sd(train_index,((i-1)*16+10)) = p5;
           Xtrain_mean_sd(train_index,((i-1)*16+11)) = p6;
-          Xtrain_mean_sd(train_index,((i-1)*16+12)) = p7; 
+          Xtrain_mean_sd(train_index,((i-1)*16+12)) = pTail; 
           Xtrain_mean_sd(train_index,((i-1)*16+13)) = f_50;
           Xtrain_mean_sd(train_index,((i-1)*16+14)) = min_tau;
           Xtrain_mean_sd(train_index,((i-1)*16+15)) = skw;
@@ -162,7 +168,7 @@ for i = 1:size(cdss,1)
           Xtrain_quant(train_index,((i-1)*20+13)) = p4;
           Xtrain_quant(train_index,((i-1)*20+14)) = p5;
           Xtrain_quant(train_index,((i-1)*20+15)) = p6;
-          Xtrain_quant(train_index,((i-1)*20+16)) = p7;
+          Xtrain_quant(train_index,((i-1)*20+16)) = pTail;
           Xtrain_quant(train_index,((i-1)*20+17)) = f_50;
           Xtrain_quant(train_index,((i-1)*20+18)) = min_tau;
           Xtrain_quant(train_index,((i-1)*20+19)) = skw;
@@ -177,7 +183,7 @@ for i = 1:size(cdss,1)
           Xtest_mean_sd(fi,((i-1)*16+9)) = p4;
           Xtest_mean_sd(fi,((i-1)*16+10)) = p5;
           Xtest_mean_sd(fi,((i-1)*16+11)) = p6;
-          Xtest_mean_sd(fi,((i-1)*16+12)) = p7;
+          Xtest_mean_sd(fi,((i-1)*16+12)) = pTail;
           Xtest_mean_sd(fi,((i-1)*16+13)) = f_50;
           Xtest_mean_sd(fi,((i-1)*16+14)) = min_tau;
           Xtest_mean_sd(fi,((i-1)*16+15)) = skw;
@@ -192,7 +198,7 @@ for i = 1:size(cdss,1)
           Xtest_quant(fi,((i-1)*20+13)) = p4;
           Xtest_quant(fi,((i-1)*20+14)) = p5;
           Xtest_quant(fi,((i-1)*20+15)) = p6;
-          Xtest_quant(fi,((i-1)*20+16)) = p7;
+          Xtest_quant(fi,((i-1)*20+16)) = pTail;
           Xtest_quant(fi,((i-1)*20+17)) = f_50;
           Xtest_quant(fi,((i-1)*20+18)) = min_tau;
           Xtest_quant(fi,((i-1)*20+19)) = skw;
@@ -213,9 +219,9 @@ for i = 1:size(cdss,1)
         %% quantiles 
         q = quantile (sign, [0.05 0.15 0.35 0.5 0.65 0.85]);
         if (mode != TEST_MODE) 
-	  Xtrain_quant( train_index , ((i-1)*20+1):((i-1)*20+6) ) = q; 
-	else 
-	  Xtest_quant( fi , ((i-1)*20+1):((i-1)*20+6) ) = q;        
+	        Xtrain_quant( train_index , ((i-1)*20+1):((i-1)*20+6) ) = q; 
+	      else 
+	        Xtest_quant( fi , ((i-1)*20+1):((i-1)*20+6) ) = q;        
         endif 
       endfor 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%

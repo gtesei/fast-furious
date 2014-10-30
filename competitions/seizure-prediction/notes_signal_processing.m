@@ -9,13 +9,13 @@ PREICTAL_MODE = 2;
 TEST_MODE = 3;
 
 NUMBER_OF_FILES = 1;
-NUMBER_CHANNEL_PER_FILE = 1;
+NUMBER_CHANNEL_PER_FILE = 2;
 
 ########################### loadind data sets and meta-data
 printf("|--> generating features set ...\n");
 
 %%dss = ["Dog_1"; "Dog_2"; "Dog_3"; "Dog_4"; "Dog_5"; "Patient_1"; "Patient_2"];
-dss = ["Dog_1" ; "Patient_1"];
+dss = ["Dog_1" ; "Dog_3"; "Patient_1"];
 cdss = cellstr (dss);
 
 printf("|--> found %i data sets ... \n",size(cdss,1));
@@ -142,22 +142,44 @@ for i = 1:size(cdss,1)
         printf("|- pTail ( 150 hz < sign < nyquist hz) = %f  \n", pTail );
         
         [fm] = findMainFrequencyComponent (sampling_fraquency,data_length_sec,sign,doPlot=0)
-    
+        [p0,p1,p2,p3,p4,p5,p6,pTail,P] = bandPower (sampling_fraquency,data_length_sec,sign,debug=0,norm=1)
+
         pause;
         
+        
         ### (2) c'e' davvero cosi tanto rumore da dover smothare il segnale con mov avg 12? 
-        d = 6; % 12-point mean filter 
-        dataMean = zeros( size( sign)); 
-        for i = d + 1: length( t)-d-1 
-          dataMean( i) = mean( sign( i-d:i + d)); 
-        end
+        #d = 6; % 12-point mean filter 
+        #dataMean = zeros(size( sign)); 
+        #dataMed = zeros(size( sign)); 
+        #for i = d + 1: length( t)-d-1 
+        #  dataMean(i) = mean( sign( i-d:i + d)); 
+        #  dataMed(i) = median( data( i-d:i + d));
+        #end
+        
+        wndw = 12;                                      %# sliding window size
+        dataMean = filter(ones(wndw,1)/wndw, 1, sign); %# moving average
         
         tt = 1:(sampling_fraquency*5);  
         subplot (2, 1, 1);
         plot(tt,sign(tt));
+        title('signal');
         subplot (2, 1, 2);
         plot(tt,dataMean(tt));
+        title('mean 12');
         pause;
+        
+        
+        subplot( 211) 
+        plot( hz, 2* abs( swaveX( 1: length( hz)))), hold on 
+        plot( hz, 2* abs( swaveX( 1: length( hz))),' r') 
+        xlabel(' Frequencies (Hz)') 
+        ylabel(' Amplitude') 
+        legend({'fast Fourier transform'}) 
+        
+        subplot( 212) 
+        plot( hz, angle( swaveX( 1: floor( n/ 2) + 1))) 
+        xlabel(' Frequencies (Hz)') 
+        ylabel(' Phase (radians)')
         
         %%%%%%
         t = 0:1/sampling_fraquency:data_length_sec-1/sampling_fraquency;      

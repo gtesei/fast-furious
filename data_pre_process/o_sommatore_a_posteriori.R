@@ -4,9 +4,9 @@ library(data.table)
 
 submission.final.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/merge/sommatora_a_posteriori.zat"
 
-submissions = data.frame(path = c("/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/merge/sub66.zat" , 
-                                  "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/merge/mySub_class.zat" ) , 
-                        weigth = c(0.66174 , 0.65629 )) 
+submissions = data.frame(path = c("/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/merge/a.zat" , 
+                                  "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/merge/b.zat" ) , 
+                        weigth = c(0.5 , 0.5 )) 
 
 sub.col = 2 
 

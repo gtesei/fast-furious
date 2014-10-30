@@ -32,10 +32,34 @@ getBasePath = function (type = "data" , ds="") {
   }
   
   if (ds != "" ) {
-    ret = paste0(paste0(ret,ds),"_digest/")
+    ret = paste0(paste0(ret,ds),"_digest_4gen/")
   }
   ret
 } 
+
+buildPCAFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {
+  Xtrain_pca = as.data.frame(fread(('/Users/gino/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/Patient_2_pca_feature/Xtrain_pca.zat')))
+  Xtest_pca = as.data.frame(fread(('/Users/gino/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/Patient_2_pca_feature/Xtest_pca.zat')))
+  
+  colnames(Xtrain_pca) = paste("pca",rep(1:(ncol(Xtrain_pca))) , sep = "")
+  colnames(Xtest_pca) = paste("pca",rep(1:(ncol(Xtest_pca))) , sep = "")
+  
+#   Xtrain_mean_sd = cbind(Xtrain_mean_sd,Xtrain_pca)
+#   Xtrain_quant = cbind(Xtrain_quant,Xtrain_pca)
+#   
+#   Xtest_mean_sd = cbind(Xtest_mean_sd,Xtest_pca)
+#   Xtest_quant = cbind(Xtest_quant,Xtest_pca)
+  
+    Xtrain_mean_sd = Xtrain_pca
+    Xtrain_quant = Xtrain_pca
+    
+    Xtest_mean_sd = Xtest_pca 
+    Xtest_quant = Xtest_pca
+  
+  return(list(Xtrain_mean_sd,Xtrain_quant,Xtest_mean_sd,Xtest_quant))
+}
+
+
 verify.kfolds = function(k,folds,dataset,event.level) {
   correct = T
   for(j in 1:k) {  
@@ -352,26 +376,28 @@ BAGGING_TREE_MEAN_SD_REDUCED = 65
 BAGGING_TREE_QUANTILES_REDUCED = 66
 
 ############ models grids 
-Dog_1.model = data.frame(model = c( "Boosted Trees C5.0 (Mean sd)" "NN_QUANTILES_REDUCED") , 
-                         model.id = c(BOOSTED_TREE_MEAN_SD , NN_QUANTILES_REDUCED) ) 
+Dog_1.model = data.frame(model = c( "NN_QUANTILES_REDUCED" ) , 
+                         model.id = c(NN_QUANTILES_REDUCED ) ) 
 
-Dog_2.model = data.frame(model = c("PM_QUANTILES_SCALED" , "SVM_MEAN_SD_REDUCED") , 
-                         model.id = c(PM_QUANTILES_SCALED , SVM_MEAN_SD_REDUCED) ) 
+Dog_2.model = data.frame(model = c("SVM_QUANTILES_REDUCED" ) , 
+                         model.id = c(SVM_QUANTILES_REDUCED ) )
 
-Dog_3.model = data.frame(model = c("BOOSTED_TREE_MEAN_SD" , "PM_QUANTILES_SCALED") , 
-                         model.id = c(BOOSTED_TREE_MEAN_SD , PM_QUANTILES_SCALED) ) 
+Dog_3.model = data.frame(model = c("SVM_MEAN_SD_SCALED" ) , 
+                         model.id = c(SVM_MEAN_SD_SCALED ) )
 
-Dog_4.model = data.frame(model = c("BOOSTED_TREE_QUANTILES_REDUCED" , "SVM_QUANTILES_REDUCED") , 
-                         model.id = c(BOOSTED_TREE_QUANTILES_REDUCED , SVM_QUANTILES_REDUCED) ) 
+Dog_4.model = data.frame(model = c("SVM_QUANTILES_REDUCED" ) , 
+                         model.id = c(SVM_QUANTILES_REDUCED ) )
 
-Dog_5.model = data.frame(model = c("Pen. Mod. (Quant scaled)" , "BOOSTED_TREE_QUANTILES") , 
-                         model.id = c(PM_QUANTILES_SCALED , BOOSTED_TREE_QUANTILES) )
+Dog_5.model = data.frame(model = c("NN_MEAN_SD_REDUCED" ) , 
+                         model.id = c(NN_MEAN_SD_REDUCED ) )
 
-Patient_1.model = data.frame(model = c("CLASS_TREE_MEAN_SD" "BAGGING_TREE_MEAN_SD") , 
-                             model.id = c(CLASS_TREE_MEAN_SD , BAGGING_TREE_MEAN_SD) )
+Patient_1.model = data.frame(model = c("KNN_QUANTILES_SCALED" ) , 
+                             model.id = c(KNN_QUANTILES_SCALED ) )
 
-Patient_2.model = data.frame(model = c("SVM_MEAN_SD_SCALED" , "PLSDA_MEAN_SD_SCALED") , 
-                             model.id = c(SVM_MEAN_SD_SCALED , PLSDA_MEAN_SD_SCALED) )
+Patient_2.model = data.frame(model = c("PM_QUANTILES_SCALED" ) , 
+                             model.id = c(PM_QUANTILES_SCALED ) )
+
+
 
 ### check 
 models.per.ds = nrow(Dog_1.model)
@@ -389,6 +415,8 @@ doPlot = F
 
 perf.grid = NULL
 
+Patient_2.pca = T
+
 controlObject <- trainControl(method = "boot", number = 30 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
@@ -396,7 +424,7 @@ controlObject <- trainControl(method = "boot", number = 30 ,
 #                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
 ##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-dss = c("Dog_1")
+dss = c("Patient_2")
 cat("|---------------->>> data set to process: <<",dss,">> ..\n")
 
 for (ds in dss) {
@@ -418,6 +446,15 @@ for (ds in dss) {
   
   ytrain.cat = factor(ytrain[,2]) 
   levels(ytrain.cat) = c("interict","preict")
+  
+  if (ds == "Patient_2" && Patient_2.pca) {
+    cat("building PCA features ... \n") 
+    l = buildPCAFeatures (Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose)
+    Xtrain_mean_sd  = l[[1]]
+    Xtrain_quant = l[[2]]
+    Xtest_mean_sd = l[[3]]
+    Xtest_quant = l[[4]]   
+  }
   
   ######### making train / xval set ...
   ### removing predictors that make ill-conditioned square matrix
@@ -553,13 +590,13 @@ for (ds in dss) {
         Xtest  = Xtrain_quant.xval
       } else if (model.id %% 6 == 3) {
         Xtrain = Xtrain_mean_sd.scaled.train
-        Xtest  = Xtest_mean_sd.scaled.xval
+        Xtest  = Xtrain_mean_sd.scaled.xval
       } else if (model.id %% 6 == 4) {
         Xtrain = Xtrain_quant.scaled.train
-        Xtest  = Xtest_quant.scaled.xval
+        Xtest  = Xtrain_quant.scaled.xval
       } else if (model.id %% 6 == 5) {
         Xtrain = Xtrain_mean_sd.reduced.train
-        Xtest  = Xtest_mean_sd.reduced.xval
+        Xtest  = Xtrain_mean_sd.reduced.xval
       } else {
         stop("ma che modello ha vinto (data set) !! ")
       }

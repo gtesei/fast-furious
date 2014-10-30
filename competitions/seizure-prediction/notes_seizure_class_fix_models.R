@@ -30,13 +30,125 @@ getBasePath = function (type = "data" , ds="") {
   }
   
   if (ds != "" ) {
-    ret = paste0(paste0(ret,ds),"_digest_3gen/")
+    if (ds == "Patient_2") {
+      cat("data from 5gen ... \n")
+      ret = paste0(paste0(ret,ds),"_digest_5gen/")
+    } else {
+      cat("data from 4gen ... \n")
+      ret = paste0(paste0(ret,ds),"_digest_4gen/")
+    }
   }
   ret
 } 
 
+buildPCAFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {
+  Xtrain_pca = as.data.frame(fread(('/Users/gino/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/Patient_2_pca_feature/Xtrain_pca.zat')))
+  Xtest_pca = as.data.frame(fread(('/Users/gino/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/Patient_2_pca_feature/Xtest_pca.zat')))
+  
+  colnames(Xtrain_pca) = paste("pca",rep(1:(ncol(Xtrain_pca))) , sep = "")
+  colnames(Xtest_pca) = paste("pca",rep(1:(ncol(Xtest_pca))) , sep = "")
+  
+  Xtrain_mean_sd = cbind(Xtrain_mean_sd,Xtrain_pca)
+  Xtrain_quant = cbind(Xtrain_quant,Xtrain_pca)
+  
+  Xtest_mean_sd = cbind(Xtest_mean_sd,Xtest_pca)
+  Xtest_quant = cbind(Xtest_quant,Xtest_pca)
+  
+#     Xtrain_mean_sd = Xtrain_pca
+#     Xtrain_quant = Xtrain_pca
+#     
+#     Xtest_mean_sd = Xtest_pca 
+#     Xtest_quant = Xtest_pca
+  
+  return(list(Xtrain_mean_sd,Xtrain_quant,Xtest_mean_sd,Xtest_quant))
+}
 
-trainAndPredict = function(model.label,model.id,
+buildRelativeSpectralPowerFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,ytrain,NN=10,verbose) {
+  ########
+  #   1- Xtrain_mean_sd(train_index,((i-1)*16+1)) = mu;
+  #   2 - Xtrain_mean_sd(train_index,((i-1)*16+2)) = sd;
+  #   3 - Xtrain_mean_sd(train_index,((i-1)*16+3)) = fm;
+  #   4 - Xtrain_mean_sd(train_index,((i-1)*16+4)) = P;
+  
+  #   5 - Xtrain_mean_sd(train_index,((i-1)*16+5)) = p0; 
+  #   6 - Xtrain_mean_sd(train_index,((i-1)*16+6)) = p1;
+  #   7 - Xtrain_mean_sd(train_index,((i-1)*16+7)) = p2;
+  #   8 - Xtrain_mean_sd(train_index,((i-1)*16+8)) = p3;
+  #   9 - Xtrain_mean_sd(train_index,((i-1)*16+9)) = p4;
+  #   10 - Xtrain_mean_sd(train_index,((i-1)*16+10)) = p5;
+  #   11 - Xtrain_mean_sd(train_index,((i-1)*16+11)) = p6;
+  #   12 - Xtrain_mean_sd(train_index,((i-1)*16+12)) = pTail; 
+  
+  #   13 - Xtrain_mean_sd(train_index,((i-1)*16+13)) = f_50;
+  #   14 - Xtrain_mean_sd(train_index,((i-1)*16+14)) = min_tau;
+  #   15 - Xtrain_mean_sd(train_index,((i-1)*16+15)) = skw;
+  #   16 - Xtrain_mean_sd(train_index,((i-1)*16+16)) = kur;
+  
+  P.mean = apply(Xtrain_mean_sd,2,mean)
+  idx.preict = (ytrain[,2] == 1)
+  P.mean.inter = apply(Xtrain_mean_sd[! idx.preict , ],2,mean)
+  P.mean.preict = apply(Xtrain_mean_sd[idx.preict , ],2,mean)
+  delta.mean =  ((P.mean.inter -  P.mean.preict) / P.mean)
+  idx.delta.mean.asc = order(delta.mean)
+  idx.delta.mean.desc = order(delta.mean, decreasing = T)
+  
+  delta.mean[idx.delta.mean.asc]
+  delta.mean[idx.delta.mean.desc]
+  
+  
+  ## solo le features di interesse 
+  idx.filter = idx.delta.mean.asc %% 16 == 5 | idx.delta.mean.asc %% 16 == 6 | idx.delta.mean.asc %% 16 == 7 |
+    idx.delta.mean.asc %% 16 == 8 | idx.delta.mean.asc %% 16 == 9 | idx.delta.mean.asc %% 16 == 10 |
+    idx.delta.mean.asc %% 16 == 11 | idx.delta.mean.asc %% 16 == 12 
+  
+  idx.delta.mean.asc = idx.delta.mean.asc[idx.filter]
+  idx.delta.mean.desc = idx.delta.mean.desc[idx.filter]
+  
+  ## fill train 
+  feat.mat = matrix(rep(-1,nrow(Xtrain_mean_sd)*NN*NN),nrow = nrow(Xtrain_mean_sd) , ncol = NN*NN)
+  for (idx.num in 1:NN) {
+    for (idx.denum in 1:NN) {
+      feat.mat[,idx.denum+NN*(idx.num-1)] =  (Xtrain_mean_sd[,idx.delta.mean.asc[idx.num]] / mean(Xtrain_mean_sd[,idx.delta.mean.asc[idx.num]])) / (Xtrain_mean_sd[,idx.delta.mean.desc[idx.denum]]/mean(Xtrain_mean_sd[,idx.delta.mean.desc[idx.denum]]))
+    }
+  }
+  
+  new.features.train = as.data.frame(feat.mat) 
+  colnames(new.features.train) = paste("relspect",rep(1:(ncol(feat.mat))) , sep = "")
+  new.features.train = new.features.train[,1:10]
+  
+  if (verbose) {
+    for (yy in 1:10) {
+      cat("----------------------------------------------------------------- \n")
+      cat("-- [train] mean of relspect feature n. ", yy , "=",as.character(mean (new.features.train[,yy]))  , "\n")
+      cat("-- [train] mean of relspect feature (preict) n. ", yy  ,"=",as.character(mean (new.features.train[idx.preict,yy])) , "\n")
+      cat("-- [train] mean of relspect feature (interict) n. ", yy  ,"=",as.character(mean (new.features.train[!idx.preict,yy])) , "\n")
+    }
+  }
+  
+  ## fill test 
+  feat.mat = matrix(rep(-1,nrow(Xtest_mean_sd)*NN*NN),nrow = nrow(x = Xtest_mean_sd) , ncol = NN*NN)
+  for (idx.num in 1:NN) {
+    for (idx.denum in 1:NN) {
+      feat.mat[,idx.denum+NN*(idx.num-1)] =  (Xtest_mean_sd[,idx.delta.mean.asc[idx.num]]/mean(Xtest_mean_sd[,idx.delta.mean.asc[idx.num]])) / (Xtest_mean_sd[,idx.delta.mean.desc[idx.denum]]/mean(Xtest_mean_sd[,idx.delta.mean.desc[idx.denum]]))
+    }
+  }
+  
+  new.features.test = as.data.frame(feat.mat) 
+  colnames(new.features.test) = paste("relspect",rep(1:(ncol(feat.mat))) , sep = "")
+  new.features.test = new.features.test[,1:10]
+  
+  ###### merge 
+  Xtrain_mean_sd = cbind(Xtrain_mean_sd,new.features.train)
+  Xtest_mean_sd = cbind(Xtest_mean_sd , new.features.test)
+  
+  Xtrain_quant = cbind(Xtrain_quant,new.features.train)
+  Xtest_quant = cbind(Xtest_quant,new.features.test)
+  
+  return( list(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant) )
+} 
+
+
+trainAndPredict = function(ds,model.label,model.id,
                            Xtrain, ytrain.cat,
                            Xtest,
                            verbose=F) {
@@ -72,10 +184,20 @@ trainAndPredict = function(model.label,model.id,
                     MaxNWts = numWts, trControl = controlObject)
   } else if (model.id >= 37 && model.id <= 42) { ## svm 
     sigmaRangeReduced <- sigest(as.matrix(Xtrain))
-    svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1], .C = 2^(seq(-4, 4)))
-    model <- train( x = Xtrain , y = ytrain.cat,  
-                    method = "svmRadial", tuneGrid = svmRGridReduced, 
-                    metric = "ROC", fit = FALSE, trControl = controlObject)
+    svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1], .C = 2^(seq(-6, 6,by=0.2)))
+    if (ds == "Patient_2") {
+      cat("setting class.weights = c(preict = 2, interict = 1) .... \n")
+      controlObject <- trainControl(method = "boot", number = 70 , 
+                                    summaryFunction = twoClassSummary , classProbs = TRUE)
+      model <- train( x = Xtrain , y = ytrain.cat,  
+                      method = "svmRadial", tuneGrid = svmRGridReduced, 
+                      class.weights = c(preict = 2, interict = 1),
+                      metric = "ROC", fit = FALSE, trControl = controlObject)
+    } else{
+      model <- train( x = Xtrain , y = ytrain.cat,  
+                      method = "svmRadial", tuneGrid = svmRGridReduced, 
+                      metric = "ROC", fit = FALSE, trControl = controlObject)
+    }
   } else if (model.id >= 43 && model.id <= 49) { ## knn 
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "knn", 
@@ -249,33 +371,38 @@ trainClass = NULL
 verbose = T
 doPlot = F 
 
+superFeature = F
+
+Patient_2.pca = F
+
+
 ############ models grids 
-Dog_1.model = data.frame(model = c( "Boosted Trees C5.0 (Mean sd)" ) , 
-                         model.id = c(BOOSTED_TREE_MEAN_SD ) , 
+Dog_1.model = data.frame(model = c( "NN_QUANTILES_REDUCED" ) , 
+                         model.id = c(NN_QUANTILES_REDUCED ) , 
                          weigth = c(0.71)) 
 
-Dog_2.model = data.frame(model = c("PM_QUANTILES_SCALED" ) , 
-                         model.id = c(PM_QUANTILES_SCALED ) , 
+Dog_2.model = data.frame(model = c("SVM_QUANTILES_REDUCED" ) , 
+                         model.id = c(SVM_QUANTILES_REDUCED ) , 
                          weigth = c(0.71)) 
 
-Dog_3.model = data.frame(model = c("BOOSTED_TREE_MEAN_SD" ) , 
-                         model.id = c(BOOSTED_TREE_MEAN_SD ) , 
+Dog_3.model = data.frame(model = c("SVM_MEAN_SD_SCALED" ) , 
+                         model.id = c(SVM_MEAN_SD_SCALED ) , 
                          weigth = c(0.71 )) 
 
-Dog_4.model = data.frame(model = c("BOOSTED_TREE_QUANTILES_REDUCED" ) , 
-                         model.id = c(BOOSTED_TREE_QUANTILES_REDUCED ) , 
+Dog_4.model = data.frame(model = c("SVM_QUANTILES_REDUCED" ) , 
+                         model.id = c(SVM_QUANTILES_REDUCED ) , 
                          weigth = c(0.71)) 
 
-Dog_5.model = data.frame(model = c("PM_MEAN_SD_SCALED" ) , 
-                         model.id = c(PM_MEAN_SD_SCALED ) , 
+Dog_5.model = data.frame(model = c("NN_MEAN_SD_REDUCED" ) , 
+                         model.id = c(NN_MEAN_SD_REDUCED ) , 
                          weigth = c(0.71 )) 
 
-Patient_1.model = data.frame(model = c("CLASS_TREE_MEAN_SD" ) , 
-                             model.id = c(CLASS_TREE_MEAN_SD ) , 
+Patient_1.model = data.frame(model = c("KNN_QUANTILES_SCALED" ) , 
+                             model.id = c(KNN_QUANTILES_SCALED ) , 
                              weigth = c(0.71 )) 
 
-Patient_2.model = data.frame(model = c("SVM_MEAN_SD_SCALED" ) , 
-                             model.id = c(SVM_MEAN_SD_SCALED ) , 
+Patient_2.model = data.frame(model = c("BOOSTED_TREE_QUANTILES" ) , 
+                             model.id = c(BOOSTED_TREE_QUANTILES ) , 
                              weigth = c(0.71 )) 
 
 ### check 
@@ -311,6 +438,8 @@ dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
 ##dss = c("Patient_2")
 cat("|---------------->>> data set to process: <<",dss,">> ..\n")
 
+source(paste0(getBasePath("code") , "SelectBestPredictors_Lib.R"))
+
 ### completing models grids
 for (ds in dss) {
   
@@ -332,9 +461,55 @@ for (ds in dss) {
   ytrain.cat = factor(ytrain[,2]) 
   levels(ytrain.cat) = c("interict","preict")
   
+  ###### super-features 
+  if (superFeature) {
+    l = buildRelativeSpectralPowerFeatures (Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,ytrain,NN=10,verbose)
+    Xtrain_mean_sd = l[[1]]
+    Xtest_mean_sd = l[[2]]
+    Xtrain_quant = l[[3]]
+    Xtest_quant = l[[4]]
+  }
+  
+  if (ds == "Patient_2" && Patient_2.pca) {
+    cat("building PCA features ... \n") 
+    l = buildPCAFeatures (Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose)
+    Xtrain_mean_sd  = l[[1]]
+    Xtrain_quant = l[[2]]
+    Xtest_mean_sd = l[[3]]
+    Xtest_quant = l[[4]]   
+  }
+  
   ### check 
   if ( length(grep(ds , sampleSubmission$clip)) != nrow(Xtest_mean_sd) | 
        length(grep(ds , sampleSubmission$clip)) != nrow(Xtest_quant)   )  stop ("rows in sample submission different for test set!")
+  
+  ###################### finding best predictors 
+#   if (verbose) cat("finding min p-value predictors for meand_sd series ... \n")
+#   predictors.class.linear = getPvalueFeatures( features = Xtrain_mean_sd , response = ytrain.cat , p = 1 , 
+#                                                pValueAdjust = F, pValueAdjustMethod = "default", 
+#                                                verbose = verbose)
+#   predictors.class.linear = predictors.class.linear[order(predictors.class.linear$pValue,decreasing = F),]
+#   
+#   l = getPredictorsMinPvalue(predPvalues = predictors.class.linear , data = Xtrain_mean_sd , th = 0.05 , verbose = verbose)
+#   var.name = l[[1]]
+#   var.index = l[[2]]
+#   
+#   Xtrain_mean_sd  = Xtrain_mean_sd[,var.index]
+#   Xtest_mean_sd = Xtest_mean_sd[,var.index]
+#   
+#   if (verbose) cat("finding min p-value predictors for quant series ... \n")
+#   predictors.class.linear = getPvalueFeatures( features = Xtrain_quant , response = ytrain.cat , p = 1 , 
+#                                                pValueAdjust = F, pValueAdjustMethod = "default", 
+#                                                verbose = verbose)
+#   predictors.class.linear = predictors.class.linear[order(predictors.class.linear$pValue,decreasing = F),]
+#   
+#   l = getPredictorsMinPvalue(predPvalues = predictors.class.linear , data = Xtrain_quant , th = 0.05 , verbose = verbose)
+#   var.name = l[[1]]
+#   var.index = l[[2]]
+#   
+#   Xtrain_quant  = Xtrain_quant[,var.index]
+#   Xtest_quant = Xtest_quant[,var.index]
+  ###################### end finding best predictors 
   
   ######### making train / xval set ...
   ### removing predictors that make ill-conditioned square matrix
@@ -471,7 +646,7 @@ for (ds in dss) {
     }
     
     ## train and predict 
-    ll = trainAndPredict (model.label,model.id, 
+    ll = trainAndPredict (ds,model.label,model.id, 
                           Xtrain, ytrain.cat, Xtest, 
                           verbose=T)
     pred.prob.train = ll[[1]] 
