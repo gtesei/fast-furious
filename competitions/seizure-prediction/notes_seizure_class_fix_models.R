@@ -186,14 +186,18 @@ trainAndPredict = function(ds,model.label,model.id,
     sigmaRangeReduced <- sigest(as.matrix(Xtrain))
     svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1], .C = 2^(seq(-6, 6,by=0.2)))
     if (ds == "Patient_2") {
-      cat("setting class.weights = c(preict = 2, interict = 1) .... \n")
-      controlObject <- trainControl(method = "boot", number = 70 , 
-                                    summaryFunction = twoClassSummary , classProbs = TRUE)
+      cat("<<Patient_2>> setting class.weights = c(preict = 2, interict = 1) .... \n")
       model <- train( x = Xtrain , y = ytrain.cat,  
                       method = "svmRadial", tuneGrid = svmRGridReduced, 
                       class.weights = c(preict = 2, interict = 1),
                       metric = "ROC", fit = FALSE, trControl = controlObject)
-    } else{
+    } else if (ds == "Dog_2") { 
+      cat("<<Dog_2>> setting class.weights = c(preict = 13, interict = 1) .... \n")
+      model <- train( x = Xtrain , y = ytrain.cat,  
+                      method = "svmRadial", tuneGrid = svmRGridReduced, 
+                      class.weights = c(preict = 13, interict = 1),
+                      metric = "ROC", fit = FALSE, trControl = controlObject)
+      } else{
       model <- train( x = Xtrain , y = ytrain.cat,  
                       method = "svmRadial", tuneGrid = svmRGridReduced, 
                       metric = "ROC", fit = FALSE, trControl = controlObject)
@@ -375,6 +379,12 @@ superFeature = F
 
 Patient_2.pca = F
 
+SUB_DIR = "svm_weigth_only_dog_2"
+if (SUB_DIR != "") {
+  cat("creating directory <<",SUB_DIR,">> ... \n")
+  SUB_DIR = paste0(SUB_DIR,"/")
+  dir.create(paste(getBasePath(),SUB_DIR,sep=""))
+}
 
 ############ models grids 
 Dog_1.model = data.frame(model = c( "NN_QUANTILES_REDUCED" ) , 
@@ -401,8 +411,8 @@ Patient_1.model = data.frame(model = c("KNN_QUANTILES_SCALED" ) ,
                              model.id = c(KNN_QUANTILES_SCALED ) , 
                              weigth = c(0.71 )) 
 
-Patient_2.model = data.frame(model = c("BOOSTED_TREE_QUANTILES" ) , 
-                             model.id = c(BOOSTED_TREE_QUANTILES ) , 
+Patient_2.model = data.frame(model = c("SVM_MEAN_SD_REDUCED" ) , 
+                             model.id = c(SVM_MEAN_SD_REDUCED ) , 
                              weigth = c(0.71 )) 
 
 ### check 
@@ -428,12 +438,20 @@ if (ncol(Dog_1.model.train) > 3) stop("Dog_1.model.train has a wrong number of c
 
 ############ 
 
-controlObject <- trainControl(method = "boot", number = 30 , 
+### resampling method 
+controlObject <- trainControl(method = "boot", number = 100 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
-# controlObject <- trainControl(method = "repeatedcv", repeats = 5, number = 10 , 
+# controlObject <- trainControl(method = "boot632", number = 100 , 
+#                               summaryFunction = twoClassSummary , classProbs = TRUE)
+# 
+# controlObject <- trainControl(method = "repeatedcv", number = 10 , repeats = 20 , 
+#                               summaryFunction = twoClassSummary , classProbs = TRUE)
+# 
+# controlObject <- trainControl(method = "LOOCV" , 
 #                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
+### data sets to process 
 dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
 ##dss = c("Patient_2")
 cat("|---------------->>> data set to process: <<",dss,">> ..\n")
@@ -869,7 +887,7 @@ for (ds in dss) {
 for (mo in 1:nrow(sub.grid) ) {
   label = paste0("avg_",mo)
   mySub = data.frame(clip = sampleSubmission$clip , preictal = format( sub.grid[mo,]  , scientific = F )  )
-  write.csv(mySub,quote=FALSE,file=paste(getBasePath(),"mySub_class_" , label , "_fix_mod.zat" , sep=""), row.names=FALSE)
+  write.csv(mySub,quote=FALSE,file=paste(getBasePath(),SUB_DIR,"mySub_class_" , label , "_fix_mod.zat" , sep=""), row.names=FALSE)
   
   ## calibrating probs ... 
   trainClass.cat = as.factor(trainClass)
@@ -881,7 +899,7 @@ for (mo in 1:nrow(sub.grid) ) {
   #coef(summary(sigmoidalCal)) 
   sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame( prob = as.numeric(format( sub.grid[mo,]  , scientific = F ) )), type = "response")
   mySub2 = data.frame(clip = sampleSubmission$clip , preictal = format(sigmoidProbs,scientific = F))  
-  write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),"mySub_sigmoid_calibrat_class_",label,"_fix_mod.zat",sep=""), row.names=FALSE)
+  write.csv(mySub2,quote=FALSE,file=paste(getBasePath(),SUB_DIR,"mySub_sigmoid_calibrat_class_",label,"_fix_mod.zat",sep=""), row.names=FALSE)
    
   ## Calibrating Probabilities - Bayes - top model 
   library(klaR)
@@ -889,5 +907,5 @@ for (mo in 1:nrow(sub.grid) ) {
   BayesProbs <- predict(BayesCal, newdata = data.frame(prob = as.numeric(format( sub.grid[mo,]  , scientific = F ))) )
   BayesProbs.preict <- BayesProbs$posterior[, "preict"]
   mySub3 = data.frame(clip = sampleSubmission$clip , preictal = format(BayesProbs.preict,scientific = F))
-  write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),"mySub_bayes_calibrat_class_",label,"_fix_mod.zat",sep=""), row.names=FALSE)
+  write.csv(mySub3,quote=FALSE,file=paste(getBasePath(),SUB_DIR,"mySub_bayes_calibrat_class_",label,"_fix_mod.zat",sep=""), row.names=FALSE)
 }
