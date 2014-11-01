@@ -67,25 +67,31 @@ buildPCAFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quan
 trainAndPredict = function(ds,model.label,model.id,
                            Xtrain, ytrain.cat,
                            Xtest,
+                           seed=NULL, 
                            verbose=F) {
   ## model 
   if (model.id >= 1 && model.id <= 6) { ## logistic reg 
+    if (! is.null(seed) ) set.seed(seed)
     model <- train( x = Xtrain , y = ytrain.cat , 
                     method = "glm", metric = "ROC", trControl = controlObject)
   } else if (model.id >= 7 && model.id <= 12) { ## lda 
+    if (! is.null(seed) ) set.seed(seed)
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "lda", metric = "ROC" , trControl = controlObject)
   } else if (model.id >= 13 && model.id <= 18) { ## plsda 
+    if (! is.null(seed) ) set.seed(seed)
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "pls", tuneGrid = expand.grid(.ncomp = 1:10), 
                     metric = "ROC" , trControl = controlObject)
   } else if (model.id >= 19 && model.id <= 24) { ## pm 
     glmnGrid <- expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1), .lambda = seq(.01, .2, length = 40))
+    if (! is.null(seed) ) set.seed(seed)
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "glmnet", tuneGrid = glmnGrid, 
                     metric = "ROC", trControl = controlObject)
   } else if (model.id >= 25 && model.id <= 30) { ## nsc 
     nscGrid <- data.frame(.threshold = 0:25)
+    if (! is.null(seed) ) set.seed(seed)
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "pam", tuneGrid = nscGrid, 
                     metric = "ROC", trControl = controlObject)
@@ -93,6 +99,7 @@ trainAndPredict = function(ds,model.label,model.id,
     nnetGrid <- expand.grid(.size = 1:10, .decay = c(0, .1, 1, 2))
     maxSize <- max(nnetGrid$.size)
     numWts <- 1*(maxSize * ( (dim(Xtrain)[2]) + 1) + maxSize + 1)
+    if (! is.null(seed) ) set.seed(seed)
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "nnet", metric = "ROC", 
                     preProc = c( "spatialSign") , 
@@ -100,40 +107,41 @@ trainAndPredict = function(ds,model.label,model.id,
                     MaxNWts = numWts, trControl = controlObject)
   } else if (model.id >= 37 && model.id <= 42) { ## svm 
     sigmaRangeReduced <- sigest(as.matrix(Xtrain))
-    svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1], .C = 2^(seq(-6, 6,by=0.2)))
+    svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1], .C = 2^(seq(-6, 6,by=0.2)) )
     if (ds == "Patient_2") {
       cat("<<Patient_2>> setting class.weights = c(preict = 2, interict = 1) .... \n")
+      if (! is.null(seed) ) set.seed(seed)
       model <- train( x = Xtrain , y = ytrain.cat,  
-                      method = "svmRadial", tuneGrid = svmRGridReduced, 
+                      method = "svmRadial", 
+                      tuneGrid = svmRGridReduced, 
                       class.weights = c(preict = 2, interict = 1),
                       metric = "ROC", fit = FALSE, trControl = controlObject)
-    } else if (ds == "Dog_2") { 
-      cat("<<Dog_2>> setting class.weights = c(preict = 13, interict = 1) .... \n")
-      model <- train( x = Xtrain , y = ytrain.cat,  
-                      method = "svmRadial", tuneGrid = svmRGridReduced, 
-                      class.weights = c(preict = 13, interict = 1),
-                      metric = "ROC", fit = FALSE, trControl = controlObject)
-    } else{
+    } else {
+      if (! is.null(seed) ) set.seed(seed)
       model <- train( x = Xtrain , y = ytrain.cat,  
                       method = "svmRadial", tuneGrid = svmRGridReduced, 
                       metric = "ROC", fit = FALSE, trControl = controlObject)
     }
   } else if (model.id >= 43 && model.id <= 49) { ## knn 
+    if (! is.null(seed) ) set.seed(seed)
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "knn", 
                     tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
                     metric = "ROC",  trControl = controlObject)
   } else if (model.id >= 49 && model.id <= 54) { ## class trees 
+    if (! is.null(seed) ) set.seed(seed)
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "rpart", tuneLength = 30, 
                     metric = "ROC", trControl = controlObject)
   } else if (model.id >= 55 && model.id <= 60) { ## boosted trees 
     if (model.id >= 55 && model.id <= 59) {
       ## 55 - 59 
+      if (! is.null(seed) ) set.seed(seed)
       model <- train( x = Xtrain , y = ytrain.cat,  
                       method = "C5.0",  metric = "ROC", trControl = controlObject)
     } else {
       ## 60 - BOOSTED_TREE_QUANTILES_REDUCED 
+      if (! is.null(seed) ) set.seed(seed)
       model <- train( x = Xtrain , y = ytrain.cat,  
                       tuneGrid = expand.grid(.trials = c(1, (1:10)*10), .model = "tree", .winnow = c(TRUE, FALSE) ),
                       method = "C5.0",  metric = "ROC", trControl = controlObject)
@@ -141,6 +149,7 @@ trainAndPredict = function(ds,model.label,model.id,
   } else if (model.id >= 61 && model.id <= 66) { ## bagging trees 
     if (model.id >= 61 && model.id <= 65) {
       ## 61 - 65 
+      if (! is.null(seed) ) set.seed(seed)
       model <- train( x = Xtrain , y = ytrain.cat,  
                       method = "bag",  metric = "ROC", trControl = controlObject, B = 50 ,
                       bagControl = bagControl(fit = plsBag$fit,
@@ -148,6 +157,7 @@ trainAndPredict = function(ds,model.label,model.id,
                                               aggregate = plsBag$aggregate))
     } else {
       ## 66 - BAGGING_TREE_QUANTILES_REDUCED
+      if (! is.null(seed) ) set.seed(seed)
       model <- train( x = Xtrain , y = ytrain.cat,  
                       method = "bag",  metric = "ROC", trControl = controlObject, 
                       tuneGrid = data.frame(vars = seq(1, 15, by = 2)), 
@@ -156,6 +166,7 @@ trainAndPredict = function(ds,model.label,model.id,
                                               aggregate = plsBag$aggregate))
     }
   } else if (model.id == 0) { ## null prediction, i.e. pred = (0,0,0,...,0)
+    if (! is.null(seed) ) set.seed(seed)
     model = NULL
   } else {
     stop("ma che modello ha vinto (modello) !! ")
@@ -373,8 +384,8 @@ BAGGING_TREE_QUANTILES_REDUCED = 66
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
 
 ############# da modificare manualmente con il path del file di submission da cui si parte 
-input.sub = "sampleSubmission.csv"
-cat ("loading intial submission file <<",as.character(paste(getBasePath(type = "data"),input.sub,sep="")),">> "  )
+input.sub = "/svm_weight/IN.zat"
+cat ("loading intial submission file <<",as.character(paste(getBasePath(type = "data"),input.sub,sep="")),">> \n"  )
 INPUT_SUBMISSION = as.data.frame(fread(paste(getBasePath(type = "data"),input.sub,sep="") , header = T , sep=","  ))
 
 ############# general settings ... 
@@ -384,7 +395,7 @@ superFeature = F
 Patient_2.pca = F
 
 ############# general settings ...
-SUB_DIR = "select_1"
+SUB_DIR = "svm_weight"
 if (SUB_DIR != "") {
   cat("creating directory <<",SUB_DIR,">> ... \n")
   SUB_DIR = paste0(SUB_DIR,"/")
@@ -393,12 +404,16 @@ if (SUB_DIR != "") {
 
 ############ models grids 
 
-model.grid = data.frame( data.source.to.process = c("Dog_1","Dog_3") , 
-                         model.label = c( "LOGISTIC_REG_MEAN_SD_REDUCED" , "LOGISTIC_REG_MEAN_SD_REDUCED" ) , 
-                         model.id = c(LOGISTIC_REG_MEAN_SD_REDUCED , LOGISTIC_REG_MEAN_SD_REDUCED) , 
-                         data.source.gen = c("4gen" , "5gen"), 
-                         recalib.bayes = c(T, F), 
-                         recalib.sigmoid = c(F, T))
+## baseline mix 1 
+model.grid = data.frame( data.source.to.process = c("Dog_1", "Dog_2", "Dog_3", "Dog_4", "Dog_5" , "Patient_1", "Patient_2") , 
+                         model.label = c("NN_QUANTILES_REDUCED", "SVM_QUANTILES_REDUCED", "SVM_MEAN_SD_SCALED", "SVM_QUANTILES_REDUCED", 
+                                         "NN_MEAN_SD_REDUCED", "KNN_QUANTILES_SCALED", "SVM_MEAN_SD_REDUCED") , 
+                         model.id = c(NN_QUANTILES_REDUCED , SVM_QUANTILES_REDUCED , SVM_MEAN_SD_SCALED , SVM_QUANTILES_REDUCED, 
+                                      NN_MEAN_SD_REDUCED, KNN_QUANTILES_SCALED, SVM_MEAN_SD_REDUCED) , 
+                         data.source.gen = c("4gen" , "4gen" , "4gen" , "4gen" , "4gen", "4gen" , "5gen"  ), 
+                         recalib.bayes = c(T,T,T,T,T,T,T), 
+                         recalib.sigmoid = c(F,F,F,F,F,F,F), 
+                         seed = c(-1,-1,-1,-1,-1,-1,-1) )
 
 ##### check 
 if (    nrow(model.grid) > 7 ) stop("there're 7 data source!")
@@ -439,6 +454,7 @@ for (ds in model.grid$data.source.to.process) {
   model.label = as.character( model.grid[model.grid$data.source.to.process==ds,]$model.label)  
   recalib.bayes = as.logical( model.grid[model.grid$data.source.to.process==ds,]$recalib.bayes)  
   recalib.sigmoid = as.logical( model.grid[model.grid$data.source.to.process==ds,]$recalib.sigmoid)  
+  seed =  as.numeric( model.grid[model.grid$data.source.to.process==ds,]$seed) 
   
   ######### loading data sets ...
   Xtrain_mean_sd = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds , gen=data.source.gen),"Xtrain_mean_sd.zat",sep="") , header = F , sep=","  ))
@@ -572,7 +588,7 @@ for (ds in model.grid$data.source.to.process) {
   ## train and predict 
   ll = trainAndPredict (ds,model.label,model.id, 
                         Xtrain, ytrain.cat, Xtest, 
-                        verbose=verbose)
+                        verbose=verbose,seed=NULL)
   pred.prob.train = ll[[1]] 
   pred.train = ll[[2]]
   pred.prob.test = ll[[3]]    #### <<<<<<<<<--------------------------
@@ -581,7 +597,7 @@ for (ds in model.grid$data.source.to.process) {
   ## Calibrating Probabilities - Bayes / sigmoid 
   if (recalib.bayes) {
     cat("recalibrating probabilities with Bayes ... \n") 
-    train.df = data.frame(class = pred.train , prob = as.numeric( pred.prob.train ) )
+    train.df = data.frame(class = ytrain.cat , prob = as.numeric( pred.prob.train ) )
     
     library(klaR)
     BayesCal <- NaiveBayes( class ~ prob  , data = train.df, usekernel = TRUE)
@@ -593,7 +609,7 @@ for (ds in model.grid$data.source.to.process) {
   } else if (recalib.sigmoid) {
     cat("recalibrating probabilities with sigmoid ... \n") 
     
-    train.df = data.frame(class = pred.train , prob = as.numeric( format( pred.prob.train  , scientific = F )) )
+    train.df = data.frame(class = ytrain.cat , prob = as.numeric( format( pred.prob.train  , scientific = F )) )
     sigmoidalCal <- glm(  class ~ prob  , data = train.df , family = binomial)
     sigmoidProbs <- predict(sigmoidalCal, newdata = data.frame( prob = as.numeric( pred.prob.test  )), type = "response")
     
