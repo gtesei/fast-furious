@@ -392,9 +392,6 @@ doPlot = F
 controlObject <- trainControl(method = "boot", number = 30 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
-#### data source 
-DS = "Patient_2"
-
 #### model grid 
 model.grid = NULL 
 

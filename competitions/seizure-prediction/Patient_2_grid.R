@@ -206,6 +206,11 @@ cat("*************************************** MODEL GRID ************************
 print(model.grid.pat2)
 cat("****************************************************************************** \n")
 
+################# setting speifici del data source 
+#### data source 
+DS = "Patient_2"
+
+#### out dir 
 SUB_DIR = "comp_Patient_2"
 if (SUB_DIR != "") {
   cat("creating directory <<",SUB_DIR,">> ... \n")
