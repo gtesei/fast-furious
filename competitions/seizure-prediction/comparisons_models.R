@@ -41,9 +41,10 @@ getBasePath = function (type = "data" , ds = "" , gen="") {
 } 
 
 
-buildPCAFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {
-  Xtrain_pca = as.data.frame(fread(('/Users/gino/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/Patient_2_pca_feature/Xtrain_pca.zat')))
-  Xtest_pca = as.data.frame(fread(('/Users/gino/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/Patient_2_pca_feature/Xtest_pca.zat')))
+buildPCAFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {  
+  
+  Xtrain_pca = as.data.frame(fread( paste0(getBasePath(type = "data") ,'Patient_2_pca_feature/Xtrain_pca.zat') ))
+  Xtest_pca = as.data.frame(fread(  paste0(getBasePath(type = "data") , 'Patient_2_pca_feature/Xtest_pca.zat') ))
   
   colnames(Xtrain_pca) = paste("pca",rep(1:(ncol(Xtrain_pca))) , sep = "")
   colnames(Xtest_pca) = paste("pca",rep(1:(ncol(Xtest_pca))) , sep = "")
@@ -386,13 +387,6 @@ sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleS
 #### general settings ... 
 verbose = T
 doPlot = F 
-
-SUB_DIR = "comp_Patient_2"
-if (SUB_DIR != "") {
-  cat("creating directory <<",SUB_DIR,">> ... \n")
-  SUB_DIR = paste0(SUB_DIR,"/")
-  dir.create(paste(getBasePath(),SUB_DIR,sep=""))
-}
 
 ### resampling method 
 controlObject <- trainControl(method = "boot", number = 30 , 

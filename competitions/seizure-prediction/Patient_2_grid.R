@@ -206,3 +206,9 @@ cat("*************************************** MODEL GRID ************************
 print(model.grid.pat2)
 cat("****************************************************************************** \n")
 
+SUB_DIR = "comp_Patient_2"
+if (SUB_DIR != "") {
+  cat("creating directory <<",SUB_DIR,">> ... \n")
+  SUB_DIR = paste0(SUB_DIR,"/")
+  dir.create(paste(getBasePath(),SUB_DIR,sep=""))
+}
