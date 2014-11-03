@@ -12,7 +12,7 @@ TEST_MODE = 3;
 printf("|--> generating features set ...\n");
 
 %%dss = ["Dog_1"; "Dog_2"; "Dog_3"; "Dog_4"; "Dog_5"; "Patient_1"; "Patient_2"];
-dss = ["Dog_5"; "Patient_2"];
+dss = ["Patient_1"];
 cdss = cellstr (dss);
 
 printf("|--> found %i data sets ... \n",size(cdss,1));
@@ -87,6 +87,8 @@ for i = 1:size(cdss,1)
           ncol =1;
         elseif (strcmp(ds,"Patient_2"))
           ncol=4;
+        elseif (strcmp(ds,"Patient_1"))
+          ncol=4;
         else 
          error("for this data set the relation doen't hold."); 
         endif 
@@ -136,7 +138,7 @@ for i = 1:size(cdss,1)
             else 
               Xtest_pca(fi,1)  = ev_13; 
             endif 
-          elseif (strcmp(ds,"Patient_2"))
+          elseif (strcmp(ds,"Patient_2") | strcmp(ds,"Patient_1"))
             ev_8 = sum(ev > 8);
             ev_9 = sum(ev > 9);
             ev_10 = sum(ev > 10);
