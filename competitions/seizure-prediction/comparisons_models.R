@@ -395,17 +395,30 @@ controlObject <- trainControl(method = "boot", number = 30 ,
 #### model grid 
 model.grid = NULL 
 
-# model.grid.test = data.frame(  
-#                          model.label = c("LOG_MS_RED" , "LDA_MS_RED" , "LDA_MS_RED", "LDA_QT_RED") , 
-#                          model.id = c(LOGISTIC_REG_MEAN_SD_REDUCED, LDA_MEAN_SD_REDUCED, LDA_MEAN_SD_REDUCED, LDA_REG_QUANTILES_REDUCED) , 
-#                          data.source.gen = c("4gen", "7gen" , "7gen", "5gen") , 
-#                          pca.feature = c(T,T,F,T) , 
-#                          superFeature = c(T,T,F,T) )
-# model.grid = model.grid.test 
+##################################### TEST
+model.grid.test = data.frame(  
+                         model.label = c("LOG_MS_RED" , "LDA_MS_RED" , "LDA_MS_RED", "LDA_QT_RED") , 
+                         model.id = c(LOGISTIC_REG_MEAN_SD_REDUCED, LDA_MEAN_SD_REDUCED, LDA_MEAN_SD_REDUCED, LDA_REG_QUANTILES_REDUCED) , 
+                         data.source.gen = c("4gen", "7gen" , "7gen", "5gen") , 
+                         pca.feature = c(T,T,F,T) , 
+                         superFeature = c(T,T,F,T) )
+
+#### data source 
+DS = "Patient_2"
+
+#### out dir 
+SUB_DIR = "test"
+if (SUB_DIR != "") {
+  cat("creating directory <<",SUB_DIR,">> ... \n")
+  SUB_DIR = paste0(SUB_DIR,"/")
+  dir.create(paste(getBasePath(),SUB_DIR,sep=""))
+}
+model.grid = model.grid.test 
+###################################################### END OF TEST
 
 #### Patient_2 
-source( paste0(getBasePath("code") , "Patient_2_grid.R") )
-model.grid = model.grid.pat2 
+#source( paste0(getBasePath("code") , "Patient_2_grid.R") )
+#model.grid = model.grid.pat2 
 
 cat("|---------------->>> data set to process: <<",DS,">> ..\n")
 
@@ -508,22 +521,36 @@ for (i in 1:nrow(model.grid)) {
   Xtrain_mean_sd.reduced = Xtrain_mean_sd [,-PredToDel]
   
   # feature scaling 
-  scale.reduced.mean_sd = preProcess(Xtrain_mean_sd.reduced,method = c("center","scale"))
-  scale.reduced.quant = preProcess(Xtrain_quant.reduced,method = c("center","scale"))
+  scale.reduced.mean_sd = preProcess(rbind(Xtrain_mean_sd.reduced,Xtest_mean_sd.reduced),method = c("center","scale"))
+  scale.reduced.quant = preProcess(rbind(Xtrain_quant.reduced,Xtest_quant.reduced),method = c("center","scale"))
   
   Xtest_mean_sd.reduced = predict(scale.reduced.mean_sd,Xtest_mean_sd.reduced)
   Xtrain_mean_sd.reduced = predict(scale.reduced.mean_sd,Xtrain_mean_sd.reduced)
   Xtest_quant.reduced = predict(scale.reduced.quant,Xtest_quant.reduced)
   Xtrain_quant.reduced = predict(scale.reduced.quant,Xtrain_quant.reduced)
   
+  delta = apply(Xtest_mean_sd.reduced,2,mean) - apply(Xtrain_mean_sd.reduced,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_mean_sd.reduced / Xtrain_mean_sd.reduced \n")
+  print(delta)
+  delta = apply(Xtest_quant.reduced,2,mean) - apply(Xtrain_quant.reduced,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_quant.reduced / Xtrain_quant.reduced \n")
+  print(delta)
+  
   ### B. scaled only  
-  scale.mean_sd = preProcess(Xtrain_mean_sd,method = c("center","scale"))
-  scale.quant = preProcess(Xtrain_quant,method = c("center","scale"))
+  scale.mean_sd = preProcess(rbind(Xtrain_mean_sd,Xtest_mean_sd),method = c("center","scale"))
+  scale.quant = preProcess(rbind(Xtrain_quant,Xtest_quant),method = c("center","scale"))
   
   Xtrain_mean_sd.scaled = predict(scale.mean_sd,Xtrain_mean_sd)
   Xtest_mean_sd.scaled = predict(scale.mean_sd,Xtest_mean_sd)
   Xtrain_quant.scaled = predict(scale.quant,Xtrain_quant)
   Xtest_quant.scaled = predict(scale.quant,Xtest_quant)
+  
+  delta = apply(Xtest_mean_sd.scaled,2,mean) - apply(Xtrain_mean_sd.scaled,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_mean_sd.scaled / Xtrain_mean_sd.scaled \n")
+  print(delta)
+  delta = apply(Xtest_quant.scaled,2,mean) - apply(Xtrain_quant.scaled,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_quant.scaled / Xtrain_quant.scaled \n")
+  print(delta)
   
   ###################################################################
   
@@ -600,20 +627,19 @@ for (i in 1:nrow(model.grid)) {
   model.list[[(i-bl)]] = get(paste0("modelxx",i), environment())
   
   
-  model.label = as.character(model.grid[i,]$model.label)
-  model.id = model.grid[i,]$model.id 
-  data.source.gen = as.character(model.grid[i,]$data.source.gen)
-  pca.feature = model.grid[i,]$pca.feature
-  superFeature = model.grid[i,]$superFeature
+  model.label = as.character(model.grid[i,1])
+  model.id = model.grid[i,2] 
+  data.source.gen = as.character(model.grid[i,3])
+  pca.feature = model.grid[i,4]
+  superFeature = model.grid[i,5]
   
-  full.model.label = as.character(paste(model.label,"-",as.character(model.id),"_ds-",data.source.gen,
-                           "_pca-",ifelse(pca.feature,"T","F"),"_super-",ifelse(superFeature,"T","F"),sep="")) 
-  ##names(model.list[[i]]) = full.model.label
+  full.model.label = as.character(paste(model.label," ",as.character(model.id)," ds",data.source.gen,
+                           "pca",ifelse(pca.feature,"T","F"),"super",ifelse(superFeature,"T","F"),sep="")) 
   if (is.null(model.names)) model.names = c(full.model.label) 
   else model.names = c(model.names,full.model.label) 
 }
 
-names(model.list) = model.names
+##names(model.list) = model.names
 
 cvValues <- resamples( model.list )
 summary(cvValues)
@@ -637,10 +663,18 @@ cat("***************** BEST MAX  ***************** \n")
 print(best.max)
 cat("********************************************** \n")
 
+cat("***** FULL LIST - MEDIAN - (descending order) \n")
+ll = (apply(cvValues.ROC,2,median))
+median.list = ll[order(ll , decreasing = T)]
+print(ll[order(ll , decreasing = T)])
+write.csv(data.frame(mod=names(ll[order(ll , decreasing = T)]) , ROC=ll[order(ll , decreasing = T)]),
+          quote=FALSE,file=paste(getBasePath(),SUB_DIR,"list_median.zat" , sep=""), row.names=FALSE)
+cat("********************************************** \n")
 
 cat("***** FULL LIST - MEAN - (descending order) \n")
 ll = (apply(cvValues.ROC,2,mean))
 print(ll[order(ll , decreasing = T)])
+mean.list = ll[order(ll , decreasing = T)]
 write.csv(data.frame(mod=names(ll[order(ll , decreasing = T)]) , ROC=ll[order(ll , decreasing = T)]),
           quote=FALSE,file=paste(getBasePath(),SUB_DIR,"list_mean.zat" , sep=""), row.names=FALSE)
 cat("********************************************** \n")
@@ -648,6 +682,7 @@ cat("********************************************** \n")
 cat("***** FULL LIST - MIN - (descending order) \n")
 ll = (apply(cvValues.ROC,2,min))
 print(ll[order(ll , decreasing = T)])
+min.list = ll[order(ll , decreasing = T)]
 write.csv(data.frame(mod=names(ll[order(ll , decreasing = T)]) , ROC=ll[order(ll , decreasing = T)]),
           quote=FALSE,file=paste(getBasePath(),SUB_DIR,"list_min.zat" , sep=""), row.names=FALSE)
 cat("********************************************** \n")
@@ -672,7 +707,7 @@ dev.off()
 
 dotplot(cvValues, metric = "ROC") ### <<<<<<<<<<<<<<<<<<<<<<<<<<--------------------- il modello in alto e' il migliore 
 
-##rocDiffs <- diff(cvValues, metric = "ROC")
+rocDiffs <- diff(cvValues, metric = "ROC")
 ##summary(rocDiffs)
 ##dotplot(rocDiffs, metric = "ROC")
 
@@ -681,4 +716,6 @@ if (! is.null(black.list) ) {
   print(model.grid[black.list,])
   write.csv(model.grid[black.list,] , quote=FALSE,file=paste(getBasePath(),SUB_DIR,"black_list.zat" , sep=""), row.names=FALSE)
 } 
+
+write.csv(model.grid , quote=FALSE,file=paste(getBasePath(),SUB_DIR,"model_grid.csv" , sep=""), row.names=T)
                          

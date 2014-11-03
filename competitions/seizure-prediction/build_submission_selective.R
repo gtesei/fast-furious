@@ -42,9 +42,10 @@ getBasePath = function (type = "data" , ds = "" , gen="") {
 } 
 
 
-buildPCAFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {
-  Xtrain_pca = as.data.frame(fread(('/Users/gino/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/Patient_2_pca_feature/Xtrain_pca.zat')))
-  Xtest_pca = as.data.frame(fread(('/Users/gino/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/Patient_2_pca_feature/Xtest_pca.zat')))
+buildPCAFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {  
+  
+  Xtrain_pca = as.data.frame(fread( paste0(getBasePath(type = "data") ,'Patient_2_pca_feature/Xtrain_pca.zat') ))
+  Xtest_pca = as.data.frame(fread(  paste0(getBasePath(type = "data") , 'Patient_2_pca_feature/Xtest_pca.zat') ))
   
   colnames(Xtrain_pca) = paste("pca",rep(1:(ncol(Xtrain_pca))) , sep = "")
   colnames(Xtest_pca) = paste("pca",rep(1:(ncol(Xtest_pca))) , sep = "")
@@ -384,7 +385,7 @@ BAGGING_TREE_QUANTILES_REDUCED = 66
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
 
 ############# da modificare manualmente con il path del file di submission da cui si parte 
-input.sub = "/svm_weight/IN.zat"
+input.sub = "/sub_selective_pat2/IN.zat"
 cat ("loading intial submission file <<",as.character(paste(getBasePath(type = "data"),input.sub,sep="")),">> \n"  )
 INPUT_SUBMISSION = as.data.frame(fread(paste(getBasePath(type = "data"),input.sub,sep="") , header = T , sep=","  ))
 
@@ -392,10 +393,10 @@ INPUT_SUBMISSION = as.data.frame(fread(paste(getBasePath(type = "data"),input.su
 verbose = T
 doPlot = F 
 superFeature = F
-Patient_2.pca = F
+Patient_2.pca = T
 
 ############# general settings ...
-SUB_DIR = "svm_weight"
+SUB_DIR = "sub_selective_pat2"
 if (SUB_DIR != "") {
   cat("creating directory <<",SUB_DIR,">> ... \n")
   SUB_DIR = paste0(SUB_DIR,"/")
@@ -405,15 +406,23 @@ if (SUB_DIR != "") {
 ############ models grids 
 
 ## baseline mix 1 
-model.grid = data.frame( data.source.to.process = c("Dog_1", "Dog_2", "Dog_3", "Dog_4", "Dog_5" , "Patient_1", "Patient_2") , 
-                         model.label = c("NN_QUANTILES_REDUCED", "SVM_QUANTILES_REDUCED", "SVM_MEAN_SD_SCALED", "SVM_QUANTILES_REDUCED", 
-                                         "NN_MEAN_SD_REDUCED", "KNN_QUANTILES_SCALED", "SVM_MEAN_SD_REDUCED") , 
-                         model.id = c(NN_QUANTILES_REDUCED , SVM_QUANTILES_REDUCED , SVM_MEAN_SD_SCALED , SVM_QUANTILES_REDUCED, 
-                                      NN_MEAN_SD_REDUCED, KNN_QUANTILES_SCALED, SVM_MEAN_SD_REDUCED) , 
-                         data.source.gen = c("4gen" , "4gen" , "4gen" , "4gen" , "4gen", "4gen" , "5gen"  ), 
-                         recalib.bayes = c(T,T,T,T,T,T,T), 
-                         recalib.sigmoid = c(F,F,F,F,F,F,F), 
-                         seed = c(-1,-1,-1,-1,-1,-1,-1) )
+# model.grid = data.frame( data.source.to.process = c("Dog_1", "Dog_2", "Dog_3", "Dog_4", "Dog_5" , "Patient_1", "Patient_2") , 
+#                          model.label = c("NN_QUANTILES_REDUCED", "SVM_QUANTILES_REDUCED", "SVM_MEAN_SD_SCALED", "SVM_QUANTILES_REDUCED", 
+#                                          "NN_MEAN_SD_REDUCED", "KNN_QUANTILES_SCALED", "SVM_MEAN_SD_REDUCED") , 
+#                          model.id = c(NN_QUANTILES_REDUCED , SVM_QUANTILES_REDUCED , SVM_MEAN_SD_SCALED , SVM_QUANTILES_REDUCED, 
+#                                       NN_MEAN_SD_REDUCED, KNN_QUANTILES_SCALED, SVM_MEAN_SD_REDUCED) , 
+#                          data.source.gen = c("4gen" , "4gen" , "4gen" , "4gen" , "4gen", "4gen" , "5gen"  ), 
+#                          recalib.bayes = c(T,T,T,T,T,T,T), 
+#                          recalib.sigmoid = c(F,F,F,F,F,F,F), 
+#                          seed = c(-1,-1,-1,-1,-1,-1,-1) )
+
+model.grid = data.frame( data.source.to.process = c("Patient_2") , 
+                         model.label = c("SVM_MEAN_SD_SCALED") , 
+                         model.id = c(SVM_MEAN_SD_SCALED) , 
+                         data.source.gen = c("5gen"), 
+                         recalib.bayes = c(F), 
+                         recalib.sigmoid = c(F), 
+                         seed = c(-1) )
 
 ##### check 
 if (    nrow(model.grid) > 7 ) stop("there're 7 data source!")
@@ -429,7 +438,7 @@ if (   nrow(model.grid[model.grid$data.source.to.process=="Dog_1",]) > 1 |
 
 
 ### resampling method 
-controlObject <- trainControl(method = "boot", number = 100 , 
+controlObject <- trainControl(method = "boot", number = 200 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
 # controlObject <- trainControl(method = "boot632", number = 100 , 
@@ -541,22 +550,36 @@ for (ds in model.grid$data.source.to.process) {
   Xtrain_mean_sd.reduced = Xtrain_mean_sd [,-PredToDel]
   
   # feature scaling 
-  scale.reduced.mean_sd = preProcess(Xtrain_mean_sd.reduced,method = c("center","scale"))
-  scale.reduced.quant = preProcess(Xtrain_quant.reduced,method = c("center","scale"))
+  scale.reduced.mean_sd = preProcess(rbind(Xtrain_mean_sd.reduced,Xtest_mean_sd.reduced),method = c("center","scale"))
+  scale.reduced.quant = preProcess(rbind(Xtrain_quant.reduced,Xtest_quant.reduced),method = c("center","scale"))
   
   Xtest_mean_sd.reduced = predict(scale.reduced.mean_sd,Xtest_mean_sd.reduced)
   Xtrain_mean_sd.reduced = predict(scale.reduced.mean_sd,Xtrain_mean_sd.reduced)
   Xtest_quant.reduced = predict(scale.reduced.quant,Xtest_quant.reduced)
   Xtrain_quant.reduced = predict(scale.reduced.quant,Xtrain_quant.reduced)
   
+  delta = apply(Xtest_mean_sd.reduced,2,mean) - apply(Xtrain_mean_sd.reduced,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_mean_sd.reduced / Xtrain_mean_sd.reduced \n")
+  print(delta)
+  delta = apply(Xtest_quant.reduced,2,mean) - apply(Xtrain_quant.reduced,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_quant.reduced / Xtrain_quant.reduced \n")
+  print(delta)
+  
   ### B. scaled only  
-  scale.mean_sd = preProcess(Xtrain_mean_sd,method = c("center","scale"))
-  scale.quant = preProcess(Xtrain_quant,method = c("center","scale"))
+  scale.mean_sd = preProcess(rbind(Xtrain_mean_sd,Xtest_mean_sd),method = c("center","scale"))
+  scale.quant = preProcess(rbind(Xtrain_quant,Xtest_quant),method = c("center","scale"))
   
   Xtrain_mean_sd.scaled = predict(scale.mean_sd,Xtrain_mean_sd)
   Xtest_mean_sd.scaled = predict(scale.mean_sd,Xtest_mean_sd)
   Xtrain_quant.scaled = predict(scale.quant,Xtrain_quant)
   Xtest_quant.scaled = predict(scale.quant,Xtest_quant)
+  
+  delta = apply(Xtest_mean_sd.scaled,2,mean) - apply(Xtrain_mean_sd.scaled,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_mean_sd.scaled / Xtrain_mean_sd.scaled \n")
+  print(delta)
+  delta = apply(Xtest_quant.scaled,2,mean) - apply(Xtrain_quant.scaled,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_quant.scaled / Xtrain_quant.scaled \n")
+  print(delta)
   
   ################################################################### completing grids with probabilities 
   Xtrain = Xtest = NULL
