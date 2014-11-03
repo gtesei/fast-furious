@@ -395,30 +395,31 @@ controlObject <- trainControl(method = "boot", number = 30 ,
 #### model grid 
 model.grid = NULL 
 
-##################################### TEST
-model.grid.test = data.frame(  
-                         model.label = c("LOG_MS_RED" , "LDA_MS_RED" , "LDA_MS_RED", "LDA_QT_RED") , 
-                         model.id = c(LOGISTIC_REG_MEAN_SD_REDUCED, LDA_MEAN_SD_REDUCED, LDA_MEAN_SD_REDUCED, LDA_REG_QUANTILES_REDUCED) , 
-                         data.source.gen = c("4gen", "7gen" , "7gen", "5gen") , 
-                         pca.feature = c(T,T,F,T) , 
-                         superFeature = c(T,T,F,T) )
+# ##################################### TEST
+# model.grid.test = data.frame(  
+#                          model.label = c("LOG_MS_RED" , "LDA_MS_RED" , "LDA_MS_RED", "LDA_QT_RED") , 
+#                          model.id = c(LOGISTIC_REG_MEAN_SD_REDUCED, LDA_MEAN_SD_REDUCED, LDA_MEAN_SD_REDUCED, LDA_REG_QUANTILES_REDUCED) , 
+#                          data.source.gen = c("4gen", "7gen" , "7gen", "5gen") , 
+#                          pca.feature = c(T,T,F,T) , 
+#                          superFeature = c(T,T,F,T) )
+# 
+# #### data source 
+# DS = "Patient_2"
+# 
+# #### out dir 
+# SUB_DIR = "test"
+# if (SUB_DIR != "") {
+#   cat("creating directory <<",SUB_DIR,">> ... \n")
+#   SUB_DIR = paste0(SUB_DIR,"/")
+#   dir.create(paste(getBasePath(),SUB_DIR,sep=""))
+# }
+# model.grid = model.grid.test 
+# ###################################################### END OF TEST
 
-#### data source 
-DS = "Patient_2"
-
-#### out dir 
-SUB_DIR = "test"
-if (SUB_DIR != "") {
-  cat("creating directory <<",SUB_DIR,">> ... \n")
-  SUB_DIR = paste0(SUB_DIR,"/")
-  dir.create(paste(getBasePath(),SUB_DIR,sep=""))
-}
-model.grid = model.grid.test 
-###################################################### END OF TEST
-
-#### Patient_2 
+#### DATA SET TO PROCESS  
 #source( paste0(getBasePath("code") , "Patient_2_grid.R") )
-#model.grid = model.grid.pat2 
+source( paste0(getBasePath("code") , "Dog_2_grid.R") )
+
 
 cat("|---------------->>> data set to process: <<",DS,">> ..\n")
 
@@ -434,7 +435,7 @@ for (i in 1:nrow(model.grid)) {
   full.model.label = paste(model.label,"_",as.character(model.id),"__ds_",data.source.gen,
                            "__pca_",as.character(pca.feature),"__super_",as.character(superFeature),sep="") 
   
-  cat("-------> " , full.model.label , " .. \n")
+  cat("-------> [", i , "/" , as.character(nrow(model.grid)) ,"] ",  full.model.label , " .. \n")
 
   ######### loading data sets ...
   Xtrain_mean_sd = as.data.frame(fread(paste(getBasePath(type = "data" , ds=DS , gen=data.source.gen),"Xtrain_mean_sd.zat",sep="") , header = F , sep=","  ))
@@ -581,7 +582,7 @@ for (i in 1:nrow(model.grid)) {
   }
   
   ## train and predict 
-  cat("|---------------->>> training and predicting ..\n")
+  cat("|---------------->>> [", i , "/" , as.character(nrow(model.grid)) ,"] training and predicting ..\n")
   model = NULL 
   model = tryCatch({
     
@@ -625,7 +626,6 @@ for (i in 1:nrow(model.grid)) {
     next
   }  
   model.list[[(i-bl)]] = get(paste0("modelxx",i), environment())
-  
   
   model.label = as.character(model.grid[i,1])
   model.id = model.grid[i,2] 
