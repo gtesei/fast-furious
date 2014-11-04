@@ -138,7 +138,7 @@ for i = 1:size(cdss,1)
             else 
               Xtest_pca(fi,1)  = ev_13; 
             endif 
-          elseif (strcmp(ds,"Patient_2") | strcmp(ds,"Patient_1"))
+          elseif (strcmp(ds,"Patient_2") )
             ev_8 = sum(ev > 8);
             ev_9 = sum(ev > 9);
             ev_10 = sum(ev > 10);
@@ -153,6 +153,22 @@ for i = 1:size(cdss,1)
               Xtest_pca(fi,2)  = ev_9; 
               Xtest_pca(fi,3)  = ev_10; 
               Xtest_pca(fi,4)  = ev_11; 
+            endif
+          elseif ( strcmp(ds,"Patient_1") )
+            ev_13 = sum(ev > 13);
+            ev_14 = sum(ev > 14);
+            ev_15 = sum(ev > 15);
+            ev_16 = sum(ev > 16);
+            if (mode != TEST_MODE)
+              Xtrain_pca(train_index,1) = ev_13;
+              Xtrain_pca(train_index,2) = ev_14;
+              Xtrain_pca(train_index,3) = ev_15;
+              Xtrain_pca(train_index,4) = ev_16;
+            else
+              Xtest_pca(fi,1)  = ev_13;
+              Xtest_pca(fi,2)  = ev_14;
+              Xtest_pca(fi,3)  = ev_15;
+              Xtest_pca(fi,4)  = ev_16;
             endif
           else 
            error("for this data set the relation doen't hold."); 

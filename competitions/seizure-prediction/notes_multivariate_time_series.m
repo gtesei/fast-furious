@@ -305,7 +305,7 @@ NUMBER_OF_FILES = 2;
 printf("|--> generating features set ...\n");
 
 %%dss = ["Dog_1"; "Dog_2"; "Dog_3"; "Dog_4"; "Dog_5"; "Patient_1"; "Patient_2"];
-dss = ["Dog_5"];
+dss = ["Patient_1"];
 cdss = cellstr (dss);
 
 interict_mat = [];

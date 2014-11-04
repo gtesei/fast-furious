@@ -42,10 +42,10 @@ getBasePath = function (type = "data" , ds = "" , gen="") {
 } 
 
 
-buildPCAFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {  
+buildPCAFeatures = function(ds,Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {  
   
-  Xtrain_pca = as.data.frame(fread( paste0(getBasePath(type = "data") ,'Patient_2_pca_feature/Xtrain_pca.zat') ))
-  Xtest_pca = as.data.frame(fread(  paste0(getBasePath(type = "data") , 'Patient_2_pca_feature/Xtest_pca.zat') ))
+  Xtrain_pca = as.data.frame(fread( paste0(getBasePath(type = "data") , paste0(ds,'_pca_feature/Xtrain_pca.zat')) ))
+  Xtest_pca = as.data.frame(fread(  paste0(getBasePath(type = "data") , paste0(ds,'_pca_feature/Xtest_pca.zat' )) ))
   
   colnames(Xtrain_pca) = paste("pca",rep(1:(ncol(Xtrain_pca))) , sep = "")
   colnames(Xtest_pca) = paste("pca",rep(1:(ncol(Xtest_pca))) , sep = "")
@@ -385,7 +385,7 @@ BAGGING_TREE_QUANTILES_REDUCED = 66
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
 
 ############# da modificare manualmente con il path del file di submission da cui si parte 
-input.sub = "/sub_selective_pat2/IN.zat"
+input.sub = "/sub_selective_pat2/IN_ROC_79454.zat"
 cat ("loading intial submission file <<",as.character(paste(getBasePath(type = "data"),input.sub,sep="")),">> \n"  )
 INPUT_SUBMISSION = as.data.frame(fread(paste(getBasePath(type = "data"),input.sub,sep="") , header = T , sep=","  ))
 
@@ -393,7 +393,7 @@ INPUT_SUBMISSION = as.data.frame(fread(paste(getBasePath(type = "data"),input.su
 verbose = T
 doPlot = F 
 superFeature = F
-Patient_2.pca = T
+pca.feature = F
 
 ############# general settings ...
 SUB_DIR = "sub_selective_pat2"
@@ -416,10 +416,10 @@ if (SUB_DIR != "") {
 #                          recalib.sigmoid = c(F,F,F,F,F,F,F), 
 #                          seed = c(-1,-1,-1,-1,-1,-1,-1) )
 
-model.grid = data.frame( data.source.to.process = c("Patient_2") , 
-                         model.label = c("SVM_MEAN_SD_SCALED") , 
-                         model.id = c(SVM_MEAN_SD_SCALED) , 
-                         data.source.gen = c("5gen"), 
+model.grid = data.frame( data.source.to.process = c("Dog_1") , 
+                         model.label = c("NN_QUANTILES_REDUCED") , 
+                         model.id = c(NN_QUANTILES_REDUCED) , 
+                         data.source.gen = c("4gen"), 
                          recalib.bayes = c(F), 
                          recalib.sigmoid = c(F), 
                          seed = c(-1) )
@@ -438,7 +438,7 @@ if (   nrow(model.grid[model.grid$data.source.to.process=="Dog_1",]) > 1 |
 
 
 ### resampling method 
-controlObject <- trainControl(method = "boot", number = 200 , 
+controlObject <- trainControl(method = "boot", number = 100 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
 # controlObject <- trainControl(method = "boot632", number = 100 , 
@@ -491,9 +491,9 @@ for (ds in model.grid$data.source.to.process) {
     Xtest_quant = l[[4]]
   }
   
-  if (ds == "Patient_2" && Patient_2.pca) {
+  if ((ds == "Patient_2" | ds == "Patient_1" ) && pca.feature ) {
     cat("building PCA features ... \n") 
-    l = buildPCAFeatures (Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose)
+    l = buildPCAFeatures (ds,Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose)
     Xtrain_mean_sd  = l[[1]]
     Xtrain_quant = l[[2]]
     Xtest_mean_sd = l[[3]]
