@@ -419,7 +419,8 @@ model.grid = NULL
 #### DATA SET TO PROCESS  
 #source( paste0(getBasePath("code") , "Patient_2_grid.R") )
 #source( paste0(getBasePath("code") , "Dog_2_grid.R") )
-source( paste0(getBasePath("code") , "Patient_1_grid.R") )
+#source( paste0(getBasePath("code") , "Patient_1_grid.R") )
+source( paste0(getBasePath("code") , "Dog_1_grid.R") )
 
 cat("|---------------->>> data set to process: <<",DS,">> ..\n")
 
