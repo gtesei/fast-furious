@@ -421,7 +421,8 @@ model.grid = NULL
 #source( paste0(getBasePath("code") , "Dog_2_grid.R") )
 #source( paste0(getBasePath("code") , "Patient_1_grid.R") )
 #source( paste0(getBasePath("code") , "Dog_1_grid.R") )
-source( paste0(getBasePath("code") , "Dog_3_grid.R") )
+#source( paste0(getBasePath("code") , "Dog_3_grid.R") )
+source( paste0(getBasePath("code") , "Dog_4_grid.R") )
 
 cat("|---------------->>> data set to process: <<",DS,">> ..\n")
 
