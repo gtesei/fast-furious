@@ -8,7 +8,7 @@ INTERICTAL_MODE = 1;
 PREICTAL_MODE = 2;
 TEST_MODE = 3;
 
-########################### loadind data sets and meta-data
+###########################  loadind data sets and meta-data
 printf("|--> generating features set ...\n");
 
 %%dss = ["Dog_1"; "Dog_2"; "Dog_3"; "Dog_4"; "Dog_5"; "Patient_1"; "Patient_2"];
