@@ -1,4 +1,4 @@
-function  [LLE lambda]=lyaprosen(y,tau,m)
+function  [LLE LLE_mean LLE_sd]=lyaprosen(y,tau,m)
 
 %__________________________________________________________________________
 % Usage: Calculates  largest Lyapunov exponent
@@ -365,16 +365,16 @@ plot(K,L,'.');
 title(['Lyapunov Exponent'])
 %_________________Nonlinear Regression Layapunov Exponents_________________
 
-Lmax=max(L);
-L0=L(1);
-Lm=L0+0.9*(Lmax-L0);
-Ldiff=abs(L-Lm);
+%Lmax=max(L);
+%L0=L(1);
+%Lm=L0+0.9*(Lmax-L0);
+%Ldiff=abs(L-Lm);
 
-Tl=find(Ldiff==min(Ldiff));
+%Tl=find(Ldiff==min(Ldiff));
 
-x=K(1:Tl);
+%x=K(1:Tl);
 
-[betar]=regress(L(1:Tl), [ones(Tl,1) x]);
+%[betar]=regress(L(1:Tl), [ones(Tl,1) x]);
 
 
 %%%%%%%%
@@ -391,6 +391,8 @@ x=K(1:Tl);
 %LLE=mean(LLE1);
 
 LLE = max(L);
+LLE_mean = mean(L);
+LLE_sd = std(L);
 
 toc
 end 

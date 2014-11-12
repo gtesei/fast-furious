@@ -12,7 +12,7 @@ TEST_MODE = 3;
 printf("|--> generating features set ...\n");
 
 %%dss = ["Dog_1"; "Dog_2"; "Dog_3"; "Dog_4"; "Dog_5"; "Patient_1"; "Patient_2"];
-dss = ["Dog_1"];
+dss = ["Dog_2"];
 cdss = cellstr (dss);
 
 printf("|--> found %i data sets ... \n",size(cdss,1));
@@ -25,7 +25,7 @@ for i = 1:size(cdss,1)
   printf("|--> processing %s  ...\n",ds);
   
   %% making digest directory 
-  dirname = [curr_dir "/dataset/seizure-prediction/" ds "_pca_feateare/"];
+  dirname = [curr_dir "/dataset/seizure-prediction/" ds "_feature_pack/"];
   mkdir(dirname); %% if the directory exists this doesn't do nothing 
   
   %% data files 
@@ -91,7 +91,7 @@ for i = 1:size(cdss,1)
       
       %%% initializing matrices ... 
       if (matrix_in == 0) 
-        ncol = 5 * length(channels);
+        ncol = 8 * length(channels);
        
         Xtrain_pack = zeros(tr_size,ncol);
         Xtest_pack = zeros(ts_size,ncol);
@@ -120,18 +120,26 @@ for i = 1:size(cdss,1)
         kur = kurtosis (sign2); 
         etot = sum(sign2);
         
+        [LLE LLE_mean LLE_sd]=lyaprosen(sign,0,0);
+        
         if (mode != TEST_MODE)
-          Xtrain_pack(train_index,(i-1)*5+1) = mu;
-          Xtrain_pack(train_index,(i-1)*5+2) = sd;
-          Xtrain_pack(train_index,(i-1)*5+3) = skw;
-          Xtrain_pack(train_index,(i-1)*5+4) = kur;
-          Xtrain_pack(train_index,(i-1)*5+5) = etot;
+          Xtrain_pack(train_index,(i-1)*8+1) = mu;
+          Xtrain_pack(train_index,(i-1)*8+2) = sd;
+          Xtrain_pack(train_index,(i-1)*8+3) = skw;
+          Xtrain_pack(train_index,(i-1)*8+4) = kur;
+          Xtrain_pack(train_index,(i-1)*8+5) = etot;
+          Xtrain_pack(train_index,(i-1)*8+6) = LLE;
+          Xtrain_pack(train_index,(i-1)*8+7) = LLE_mean;
+          Xtrain_pack(train_index,(i-1)*8+8) = LLE_sd;
         else 
-          Xtest_pack(fi,(i-1)*5+1) = mu;
-          Xtest_pack(fi,(i-1)*5+2) = sd;
-          Xtest_pack(fi,(i-1)*5+3) = skw;
-          Xtest_pack(fi,(i-1)*5+4) = kur;
-          Xtest_pack(fi,(i-1)*5+5) = etot;
+          Xtest_pack(fi,(i-1)*8+1) = mu;
+          Xtest_pack(fi,(i-1)*8+2) = sd;
+          Xtest_pack(fi,(i-1)*8+3) = skw;
+          Xtest_pack(fi,(i-1)*8+4) = kur;
+          Xtest_pack(fi,(i-1)*8+5) = etot;
+          Xtest_pack(fi,(i-1)*8+6) = LLE;
+          Xtest_pack(fi,(i-1)*8+7) = LLE_mean;
+          Xtest_pack(fi,(i-1)*8+8) = LLE_sd;
         endif 
         
       endfor 
