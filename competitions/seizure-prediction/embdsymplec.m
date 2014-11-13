@@ -25,7 +25,7 @@ function  [sigma embdim]=embdsymplec(y,m)
 % Ref:
 %  Min Lei Zhizhong Wang Zhengjin Feng(2002). A method of embedding 
 %  dimension estimation based on symplectic geometry. Physics Letters A 303
-%  ,pp. 179–189
+%  ,pp. 179189
  
 % Keywords: Noise; Chaos; Embedding dimension; Symplectic geometry.
  
@@ -67,8 +67,8 @@ lambda=sort(lambda1,'descend');
 sigma=lambda.^2;
 SIGMA=log10(sigma/sum(sigma));
 for ii=2:length(SIGMA)-1
-    Hyp(ii,1)= vartest2(SIGMA(ii:end),SIGMA(1:end),0.05);
-    
+    %Hyp(ii,1)= vartest2(SIGMA(ii:end),SIGMA(1:end),0.05);
+    Hyp(ii,1)= vartest2(SIGMA(ii:end),SIGMA(1:end),'Tail','right');
 end
 
 ind=find(Hyp==1);
