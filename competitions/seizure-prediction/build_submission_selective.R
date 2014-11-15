@@ -41,6 +41,22 @@ getBasePath = function (type = "data" , ds = "" , gen="") {
   ret
 } 
 
+buildFeaturePack = function(ds,Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {  
+  
+  Xtrain_pack = as.data.frame(fread( paste0(getBasePath(type = "data") , paste0(ds,'_feature_pack/Xtrain_pack.zat')) ))
+  Xtest_pack = as.data.frame(fread(  paste0(getBasePath(type = "data") , paste0(ds,'_feature_pack/Xtest_pack.zat' )) ))
+  
+  colnames(Xtrain_pack) = paste("pack",rep(1:(ncol(Xtrain_pack))) , sep = "")
+  colnames(Xtest_pack) = paste("pack",rep(1:(ncol(Xtest_pack))) , sep = "")
+  
+  Xtrain_mean_sd = cbind(Xtrain_mean_sd,Xtrain_pack)
+  Xtrain_quant = cbind(Xtrain_quant,Xtrain_pack)
+  
+  Xtest_mean_sd = cbind(Xtest_mean_sd,Xtest_pack)
+  Xtest_quant = cbind(Xtest_quant,Xtest_pack)
+  
+  return(list(Xtrain_mean_sd,Xtrain_quant,Xtest_mean_sd,Xtest_quant))
+}
 
 buildPCAFeatures = function(ds,Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {  
   
@@ -385,18 +401,21 @@ BAGGING_TREE_QUANTILES_REDUCED = 66
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
 
 ############# da modificare manualmente con il path del file di submission da cui si parte 
-input.sub = "/sub_selective_pat2/IN_ROC_79454.zat"
+input.sub = "/comp_Dog_3/IN.zat"
 cat ("loading intial submission file <<",as.character(paste(getBasePath(type = "data"),input.sub,sep="")),">> \n"  )
 INPUT_SUBMISSION = as.data.frame(fread(paste(getBasePath(type = "data"),input.sub,sep="") , header = T , sep=","  ))
 
 ############# general settings ... 
 verbose = T
 doPlot = F 
+
+feature.pack = F
+
 superFeature = F
 pca.feature = F
 
 ############# general settings ...
-SUB_DIR = "sub_selective_pat2"
+SUB_DIR = "comp_Dog_5"
 if (SUB_DIR != "") {
   cat("creating directory <<",SUB_DIR,">> ... \n")
   SUB_DIR = paste0(SUB_DIR,"/")
@@ -416,9 +435,9 @@ if (SUB_DIR != "") {
 #                          recalib.sigmoid = c(F,F,F,F,F,F,F), 
 #                          seed = c(-1,-1,-1,-1,-1,-1,-1) )
 
-model.grid = data.frame( data.source.to.process = c("Dog_1") , 
-                         model.label = c("NN_QUANTILES_REDUCED") , 
-                         model.id = c(NN_QUANTILES_REDUCED) , 
+model.grid = data.frame( data.source.to.process = c("Dog_3") , 
+                         model.label = c("SVM_MEAN_SD_SCALED") , 
+                         model.id = c(SVM_MEAN_SD_SCALED) , 
                          data.source.gen = c("4gen"), 
                          recalib.bayes = c(F), 
                          recalib.sigmoid = c(F), 
@@ -491,9 +510,20 @@ for (ds in model.grid$data.source.to.process) {
     Xtest_quant = l[[4]]
   }
   
+  #### pca feature 
   if ((ds == "Patient_2" | ds == "Patient_1" ) && pca.feature ) {
     cat("building PCA features ... \n") 
     l = buildPCAFeatures (ds,Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose)
+    Xtrain_mean_sd  = l[[1]]
+    Xtrain_quant = l[[2]]
+    Xtest_mean_sd = l[[3]]
+    Xtest_quant = l[[4]]   
+  }
+  
+  #### feature pack 
+  if (feature.pack) {
+    cat("building feature pack ... \n") 
+    l = buildFeaturePack (ds,Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose)
     Xtrain_mean_sd  = l[[1]]
     Xtrain_quant = l[[2]]
     Xtest_mean_sd = l[[3]]

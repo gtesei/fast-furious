@@ -2,13 +2,13 @@ library(data.table)
 
 ############ da editare 
 
-submission.final.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/sub_selective_pat2/sommatora_a_posteriori.zat"
+submission.final.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/merge/sommatora_a_posteriori.zat"
 
 submissions = data.frame(path = 
                            c(
                               
-                             "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/sub_selective_pat2/mySub_selec_136_boot_200_ROC_7945.zat", 
-                             "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/sub_selective_pat2/mySub_selec_43_boot_200_ROC7904.zat") , 
+                             "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/merge/in_1.zat", 
+                             "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/merge/in_2.zat") , 
                         weigth = c(  0.7945 , 0.7904)) 
 
 sub.col = 2 

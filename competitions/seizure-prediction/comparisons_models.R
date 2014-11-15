@@ -40,6 +40,23 @@ getBasePath = function (type = "data" , ds = "" , gen="") {
   ret
 } 
 
+buildFeaturePack = function(ds,Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {  
+  
+  Xtrain_pack = as.data.frame(fread( paste0(getBasePath(type = "data") , paste0(ds,'_feature_pack/Xtrain_pack.zat')) ))
+  Xtest_pack = as.data.frame(fread(  paste0(getBasePath(type = "data") , paste0(ds,'_feature_pack/Xtest_pack.zat' )) ))
+  
+  colnames(Xtrain_pack) = paste("pack",rep(1:(ncol(Xtrain_pack))) , sep = "")
+  colnames(Xtest_pack) = paste("pack",rep(1:(ncol(Xtest_pack))) , sep = "")
+  
+  Xtrain_mean_sd = cbind(Xtrain_mean_sd,Xtrain_pack)
+  Xtrain_quant = cbind(Xtrain_quant,Xtrain_pack)
+  
+  Xtest_mean_sd = cbind(Xtest_mean_sd,Xtest_pack)
+  Xtest_quant = cbind(Xtest_quant,Xtest_pack)
+  
+  return(list(Xtrain_mean_sd,Xtrain_quant,Xtest_mean_sd,Xtest_quant))
+}
+
 
 buildPCAFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {  
   
@@ -388,6 +405,8 @@ sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleS
 verbose = T
 doPlot = F 
 
+feature.pack = T
+
 ### resampling method 
 controlObject <- trainControl(method = "boot", number = 30 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
@@ -467,9 +486,20 @@ for (i in 1:nrow(model.grid)) {
     Xtest_quant = l[[4]]
   }
   
+  ### pca feature 
   if (DS == "Patient_2" && pca.feature) {
     cat("building PCA features ... \n") 
     l = buildPCAFeatures (Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose)
+    Xtrain_mean_sd  = l[[1]]
+    Xtrain_quant = l[[2]]
+    Xtest_mean_sd = l[[3]]
+    Xtest_quant = l[[4]]   
+  }
+  
+  #### feature pack 
+  if (feature.pack) {
+    cat("building feature pack ... \n") 
+    l = buildFeaturePack (DS,Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose)
     Xtrain_mean_sd  = l[[1]]
     Xtrain_quant = l[[2]]
     Xtest_mean_sd = l[[3]]

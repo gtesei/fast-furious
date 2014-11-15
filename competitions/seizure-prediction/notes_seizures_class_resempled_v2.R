@@ -37,24 +37,25 @@ getBasePath = function (type = "data" , ds="") {
   ret
 } 
 
-buildPCAFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {
-  Xtrain_pca = as.data.frame(fread(('/Users/gino/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/Patient_2_pca_feature/Xtrain_pca.zat')))
-  Xtest_pca = as.data.frame(fread(('/Users/gino/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/Patient_2_pca_feature/Xtest_pca.zat')))
+buildPCAFeatures = function(ds,Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose) {  
+  
+  Xtrain_pca = as.data.frame(fread( paste0(getBasePath(type = "data") , paste0(ds,'_pca_feature/Xtrain_pca.zat')) ))
+  Xtest_pca = as.data.frame(fread(  paste0(getBasePath(type = "data") , paste0(ds,'_pca_feature/Xtest_pca.zat' )) ))
   
   colnames(Xtrain_pca) = paste("pca",rep(1:(ncol(Xtrain_pca))) , sep = "")
   colnames(Xtest_pca) = paste("pca",rep(1:(ncol(Xtest_pca))) , sep = "")
   
-#   Xtrain_mean_sd = cbind(Xtrain_mean_sd,Xtrain_pca)
-#   Xtrain_quant = cbind(Xtrain_quant,Xtrain_pca)
-#   
-#   Xtest_mean_sd = cbind(Xtest_mean_sd,Xtest_pca)
-#   Xtest_quant = cbind(Xtest_quant,Xtest_pca)
+  Xtrain_mean_sd = cbind(Xtrain_mean_sd,Xtrain_pca)
+  Xtrain_quant = cbind(Xtrain_quant,Xtrain_pca)
   
-    Xtrain_mean_sd = Xtrain_pca
-    Xtrain_quant = Xtrain_pca
-    
-    Xtest_mean_sd = Xtest_pca 
-    Xtest_quant = Xtest_pca
+  Xtest_mean_sd = cbind(Xtest_mean_sd,Xtest_pca)
+  Xtest_quant = cbind(Xtest_quant,Xtest_pca)
+  
+  #     Xtrain_mean_sd = Xtrain_pca
+  #     Xtrain_quant = Xtrain_pca
+  #     
+  #     Xtest_mean_sd = Xtest_pca 
+  #     Xtest_quant = Xtest_pca
   
   return(list(Xtrain_mean_sd,Xtrain_quant,Xtest_mean_sd,Xtest_quant))
 }
@@ -297,6 +298,90 @@ trainAndPredict = function(model.label,model.id,
   list(pred.prob.train, pred.train, pred.prob.test, pred.test)
 }
 
+buildRelativeSpectralPowerFeatures = function(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,ytrain,NN=10,verbose) {
+  ########
+  #   1- Xtrain_mean_sd(train_index,((i-1)*16+1)) = mu;
+  #   2 - Xtrain_mean_sd(train_index,((i-1)*16+2)) = sd;
+  #   3 - Xtrain_mean_sd(train_index,((i-1)*16+3)) = fm;
+  #   4 - Xtrain_mean_sd(train_index,((i-1)*16+4)) = P;
+  
+  #   5 - Xtrain_mean_sd(train_index,((i-1)*16+5)) = p0; 
+  #   6 - Xtrain_mean_sd(train_index,((i-1)*16+6)) = p1;
+  #   7 - Xtrain_mean_sd(train_index,((i-1)*16+7)) = p2;
+  #   8 - Xtrain_mean_sd(train_index,((i-1)*16+8)) = p3;
+  #   9 - Xtrain_mean_sd(train_index,((i-1)*16+9)) = p4;
+  #   10 - Xtrain_mean_sd(train_index,((i-1)*16+10)) = p5;
+  #   11 - Xtrain_mean_sd(train_index,((i-1)*16+11)) = p6;
+  #   12 - Xtrain_mean_sd(train_index,((i-1)*16+12)) = pTail; 
+  
+  #   13 - Xtrain_mean_sd(train_index,((i-1)*16+13)) = f_50;
+  #   14 - Xtrain_mean_sd(train_index,((i-1)*16+14)) = min_tau;
+  #   15 - Xtrain_mean_sd(train_index,((i-1)*16+15)) = skw;
+  #   16 - Xtrain_mean_sd(train_index,((i-1)*16+16)) = kur;
+  
+  P.mean = apply(Xtrain_mean_sd,2,mean)
+  idx.preict = (ytrain[,2] == 1)
+  P.mean.inter = apply(Xtrain_mean_sd[! idx.preict , ],2,mean)
+  P.mean.preict = apply(Xtrain_mean_sd[idx.preict , ],2,mean)
+  delta.mean =  ((P.mean.inter -  P.mean.preict) / P.mean)
+  idx.delta.mean.asc = order(delta.mean)
+  idx.delta.mean.desc = order(delta.mean, decreasing = T)
+  
+  delta.mean[idx.delta.mean.asc]
+  delta.mean[idx.delta.mean.desc]
+  
+  
+  ## solo le features di interesse 
+  idx.filter = idx.delta.mean.asc %% 16 == 5 | idx.delta.mean.asc %% 16 == 6 | idx.delta.mean.asc %% 16 == 7 |
+    idx.delta.mean.asc %% 16 == 8 | idx.delta.mean.asc %% 16 == 9 | idx.delta.mean.asc %% 16 == 10 |
+    idx.delta.mean.asc %% 16 == 11 | idx.delta.mean.asc %% 16 == 12 
+  
+  idx.delta.mean.asc = idx.delta.mean.asc[idx.filter]
+  idx.delta.mean.desc = idx.delta.mean.desc[idx.filter]
+  
+  ## fill train 
+  feat.mat = matrix(rep(-1,nrow(Xtrain_mean_sd)*NN*NN),nrow = nrow(Xtrain_mean_sd) , ncol = NN*NN)
+  for (idx.num in 1:NN) {
+    for (idx.denum in 1:NN) {
+      feat.mat[,idx.denum+NN*(idx.num-1)] =  (Xtrain_mean_sd[,idx.delta.mean.asc[idx.num]] / mean(Xtrain_mean_sd[,idx.delta.mean.asc[idx.num]])) / (Xtrain_mean_sd[,idx.delta.mean.desc[idx.denum]]/mean(Xtrain_mean_sd[,idx.delta.mean.desc[idx.denum]]))
+    }
+  }
+  
+  new.features.train = as.data.frame(feat.mat) 
+  colnames(new.features.train) = paste("relspect",rep(1:(ncol(feat.mat))) , sep = "")
+  new.features.train = new.features.train[,1:10]
+  
+  if (verbose) {
+    for (yy in 1:10) {
+      cat("----------------------------------------------------------------- \n")
+      cat("-- [train] mean of relspect feature n. ", yy , "=",as.character(mean (new.features.train[,yy]))  , "\n")
+      cat("-- [train] mean of relspect feature (preict) n. ", yy  ,"=",as.character(mean (new.features.train[idx.preict,yy])) , "\n")
+      cat("-- [train] mean of relspect feature (interict) n. ", yy  ,"=",as.character(mean (new.features.train[!idx.preict,yy])) , "\n")
+    }
+  }
+  
+  ## fill test 
+  feat.mat = matrix(rep(-1,nrow(Xtest_mean_sd)*NN*NN),nrow = nrow(x = Xtest_mean_sd) , ncol = NN*NN)
+  for (idx.num in 1:NN) {
+    for (idx.denum in 1:NN) {
+      feat.mat[,idx.denum+NN*(idx.num-1)] =  (Xtest_mean_sd[,idx.delta.mean.asc[idx.num]]/mean(Xtest_mean_sd[,idx.delta.mean.asc[idx.num]])) / (Xtest_mean_sd[,idx.delta.mean.desc[idx.denum]]/mean(Xtest_mean_sd[,idx.delta.mean.desc[idx.denum]]))
+    }
+  }
+  
+  new.features.test = as.data.frame(feat.mat) 
+  colnames(new.features.test) = paste("relspect",rep(1:(ncol(feat.mat))) , sep = "")
+  new.features.test = new.features.test[,1:10]
+  
+  ###### merge 
+  Xtrain_mean_sd = cbind(Xtrain_mean_sd,new.features.train)
+  Xtest_mean_sd = cbind(Xtest_mean_sd , new.features.test)
+  
+  Xtrain_quant = cbind(Xtrain_quant,new.features.train)
+  Xtest_quant = cbind(Xtest_quant,new.features.test)
+  
+  return( list(Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant) )
+} 
+
 ######################################################## CONSTANTS 
 LOGISTIC_REG_MEAN_SD = 1 
 LOGISTIC_REG_QUANTILES = 2
@@ -410,12 +495,14 @@ if (nrow(Dog_2.model) != models.per.ds |
 
 
 ############# model selection ... 
+sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
+
 verbose = T
 doPlot = F 
+superFeature = F
+pca.feature = F
 
 perf.grid = NULL
-
-Patient_2.pca = T
 
 controlObject <- trainControl(method = "boot", number = 30 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
@@ -447,14 +534,29 @@ for (ds in dss) {
   ytrain.cat = factor(ytrain[,2]) 
   levels(ytrain.cat) = c("interict","preict")
   
-  if (ds == "Patient_2" && Patient_2.pca) {
+  ###### super-features 
+  if (superFeature) {
+    cat("building superFeature ... \n") 
+    l = buildRelativeSpectralPowerFeatures (Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,ytrain,NN=10,verbose)
+    Xtrain_mean_sd = l[[1]]
+    Xtest_mean_sd = l[[2]]
+    Xtrain_quant = l[[3]]
+    Xtest_quant = l[[4]]
+  }
+  
+  #### pca.feature 
+  if ((ds == "Patient_2" | ds == "Patient_1" ) && pca.feature ) {
     cat("building PCA features ... \n") 
-    l = buildPCAFeatures (Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose)
+    l = buildPCAFeatures (ds,Xtrain_mean_sd,Xtest_mean_sd,Xtrain_quant,Xtest_quant,verbose)
     Xtrain_mean_sd  = l[[1]]
     Xtrain_quant = l[[2]]
     Xtest_mean_sd = l[[3]]
     Xtest_quant = l[[4]]   
   }
+  
+  ### check 
+  if ( length(grep(ds , sampleSubmission$clip)) != nrow(Xtest_mean_sd) | 
+         length(grep(ds , sampleSubmission$clip)) != nrow(Xtest_quant)   )  stop ("rows in sample submission different for test set!")
   
   ######### making train / xval set ...
   ### removing predictors that make ill-conditioned square matrix
@@ -466,7 +568,7 @@ for (ds in dss) {
   }
   PredToDel = trim.matrix( cov( Xtrain_mean_sd ) )
   if (length(PredToDel$numbers.discarded) > 0) {
-    cat("removing ",length(PredToDel$numbers.discarded)," predictors that make ill-conditioned square matrix: ", paste(colnames(Xtrain_mean_sd) [PredToDel$numbers.discarded] , collapse=" " ) , " ... \n")
+    cat("removing ",length(PredToDel$numbers.discarded)," predictors that make ill-conditioned square matrix: ", paste(colnames(Xtrain_mean_sd) [PredToDel$numbers.discarded] , collapse=" " ) , " ... \n ")
     Xtest_mean_sd  =  Xtest_mean_sd  [,-PredToDel$numbers.discarded]
     Xtrain_mean_sd =  Xtrain_mean_sd [,-PredToDel$numbers.discarded]
   }
@@ -474,51 +576,64 @@ for (ds in dss) {
   ### removing near zero var predictors 
   PredToDel = nearZeroVar(Xtrain_quant)
   if (length(PredToDel) > 0) {
-    cat("removing ",length(PredToDel)," nearZeroVar predictors: ", paste(colnames(Xtrain_quant) [PredToDel] , collapse=" " ) , " ... \n")
+    cat("removing ",length(PredToDel)," nearZeroVar predictors: ", paste(colnames(Xtrain_quant) [PredToDel] , collapse=" " ) , " ... \n ")
     Xtest_quant  =  Xtest_quant  [,-PredToDel]
     Xtrain_quant =  Xtrain_quant [,-PredToDel]
   }
   
   PredToDel = nearZeroVar(Xtrain_mean_sd)
   if (length(PredToDel) > 0) {
-    cat("removing ",length(PredToDel)," nearZeroVar predictors: ", paste(colnames(Xtrain_mean_sd) [PredToDel] , collapse=" " ) , " ... \n")
+    cat("removing ",length(PredToDel)," nearZeroVar predictors: ", paste(colnames(Xtrain_mean_sd) [PredToDel] , collapse=" " ) , " ... \n ")
     Xtest_mean_sd  =  Xtest_mean_sd  [,-PredToDel]
     Xtrain_mean_sd =  Xtrain_mean_sd [,-PredToDel]
   }
-  
   ### A. reduced+scaled  
   Xtest_quant.reduced = Xtrain_quant.reduced = NULL 
   Xtest_mean_sd.reduced = Xtrain_mean_sd.reduced = NULL 
   
   # rmoving high correlated predictors on Xtrain_quant
   PredToDel = findCorrelation(cor( Xtrain_quant )) 
-  cat("PLS:: on Xtrain_quant removing ",length(PredToDel), " predictors: ",paste(colnames(Xtrain_quant) [PredToDel] , collapse=" " ) , " ... \n")
+  cat("PLS:: on Xtrain_quant removing ",length(PredToDel), " predictors: ",paste(colnames(Xtrain_quant) [PredToDel] , collapse=" " ) , " ... \n ")
   Xtest_quant.reduced =  Xtest_quant  [,-PredToDel]
   Xtrain_quant.reduced = Xtrain_quant [,-PredToDel]
   
   # rmoving high correlated predictors Xtrain_mean_sd
   PredToDel = findCorrelation(cor( Xtrain_mean_sd )) 
-  cat("PLS:: on Xtrain_mean_sd removing ",length(PredToDel), " predictors: ",paste(colnames(Xtrain_mean_sd) [PredToDel] , collapse=" " ) , " ... \n")
+  cat("PLS:: on Xtrain_mean_sd removing ",length(PredToDel), " predictors: ",paste(colnames(Xtrain_mean_sd) [PredToDel] , collapse=" " ) , " ... \n ")
   Xtest_mean_sd.reduced =  Xtest_mean_sd  [,-PredToDel]
   Xtrain_mean_sd.reduced = Xtrain_mean_sd [,-PredToDel]
   
   # feature scaling 
-  scale.reduced.mean_sd = preProcess(Xtrain_mean_sd.reduced,method = c("center","scale"))
-  scale.reduced.quant = preProcess(Xtrain_quant.reduced,method = c("center","scale"))
+  scale.reduced.mean_sd = preProcess(rbind(Xtrain_mean_sd.reduced,Xtest_mean_sd.reduced),method = c("center","scale"))
+  scale.reduced.quant = preProcess(rbind(Xtrain_quant.reduced,Xtest_quant.reduced),method = c("center","scale"))
   
   Xtest_mean_sd.reduced = predict(scale.reduced.mean_sd,Xtest_mean_sd.reduced)
   Xtrain_mean_sd.reduced = predict(scale.reduced.mean_sd,Xtrain_mean_sd.reduced)
   Xtest_quant.reduced = predict(scale.reduced.quant,Xtest_quant.reduced)
   Xtrain_quant.reduced = predict(scale.reduced.quant,Xtrain_quant.reduced)
   
+  delta = apply(Xtest_mean_sd.reduced,2,mean) - apply(Xtrain_mean_sd.reduced,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_mean_sd.reduced / Xtrain_mean_sd.reduced \n")
+  print(delta)
+  delta = apply(Xtest_quant.reduced,2,mean) - apply(Xtrain_quant.reduced,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_quant.reduced / Xtrain_quant.reduced \n")
+  print(delta)
+  
   ### B. scaled only  
-  scale.mean_sd = preProcess(Xtrain_mean_sd,method = c("center","scale"))
-  scale.quant = preProcess(Xtrain_quant,method = c("center","scale"))
+  scale.mean_sd = preProcess(rbind(Xtrain_mean_sd,Xtest_mean_sd),method = c("center","scale"))
+  scale.quant = preProcess(rbind(Xtrain_quant,Xtest_quant),method = c("center","scale"))
   
   Xtrain_mean_sd.scaled = predict(scale.mean_sd,Xtrain_mean_sd)
   Xtest_mean_sd.scaled = predict(scale.mean_sd,Xtest_mean_sd)
   Xtrain_quant.scaled = predict(scale.quant,Xtrain_quant)
   Xtest_quant.scaled = predict(scale.quant,Xtest_quant)
+  
+  delta = apply(Xtest_mean_sd.scaled,2,mean) - apply(Xtrain_mean_sd.scaled,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_mean_sd.scaled / Xtrain_mean_sd.scaled \n")
+  print(delta)
+  delta = apply(Xtest_quant.scaled,2,mean) - apply(Xtrain_quant.scaled,2,mean)
+  cat("**** differenza tra le medie dei predittori Xtest_quant.scaled / Xtrain_quant.scaled \n")
+  print(delta)
   
   ###################### resempling 
   k = 10
