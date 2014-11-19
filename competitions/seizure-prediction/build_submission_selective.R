@@ -98,7 +98,7 @@ trainAndPredict = function(ds,model.label,model.id,
   } else if (model.id >= 13 && model.id <= 18) { ## plsda 
     if (! is.null(seed) ) set.seed(seed)
     model <- train( x = Xtrain , y = ytrain.cat,  
-                    method = "pls", tuneGrid = expand.grid(.ncomp = 1:10), 
+                    method = "pls", tuneGrid = expand.grid(.ncomp = 1:20), 
                     metric = "ROC" , trControl = controlObject)
   } else if (model.id >= 19 && model.id <= 24) { ## pm 
     glmnGrid <- expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1), .lambda = seq(.01, .2, length = 40))
@@ -113,6 +113,7 @@ trainAndPredict = function(ds,model.label,model.id,
                     method = "pam", tuneGrid = nscGrid, 
                     metric = "ROC", trControl = controlObject)
   } else if (model.id >= 31 && model.id <= 36) { # neural networks 
+    #nnetGrid <- expand.grid(.size = 1:15, .decay = c(0, .1, 0.5, 0.9 , 1, 2, 3 ))
     nnetGrid <- expand.grid(.size = 1:10, .decay = c(0, .1, 1, 2))
     maxSize <- max(nnetGrid$.size)
     numWts <- 1*(maxSize * ( (dim(Xtrain)[2]) + 1) + maxSize + 1)
@@ -143,7 +144,8 @@ trainAndPredict = function(ds,model.label,model.id,
     if (! is.null(seed) ) set.seed(seed)
     model <- train( x = Xtrain , y = ytrain.cat,  
                     method = "knn", 
-                    tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
+                    #tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
+                    tuneGrid = data.frame(.k = 1:500),
                     metric = "ROC",  trControl = controlObject)
   } else if (model.id >= 49 && model.id <= 54) { ## class trees 
     if (! is.null(seed) ) set.seed(seed)
@@ -153,11 +155,14 @@ trainAndPredict = function(ds,model.label,model.id,
   } else if (model.id >= 55 && model.id <= 60) { ## boosted trees 
     if (model.id >= 55 && model.id <= 59) {
       ## 55 - 59 
+      cat("BOOSTED_TREE max tuning ...\n")
       if (! is.null(seed) ) set.seed(seed)
       model <- train( x = Xtrain , y = ytrain.cat,  
-                      method = "C5.0",  metric = "ROC", trControl = controlObject)
+                      method = "C5.0",  
+                      tuneGrid = expand.grid(.trials = 1:100, .model = "tree", .winnow = c(TRUE, FALSE) ),
+                      metric = "ROC", trControl = controlObject)
     } else {
-      ## 60 - BOOSTED_TREE_QUANTILES_REDUCED 
+      ## 60 - BOOSTED_TREE_QUANTILES_REDUCED
       if (! is.null(seed) ) set.seed(seed)
       model <- train( x = Xtrain , y = ytrain.cat,  
                       tuneGrid = expand.grid(.trials = c(1, (1:10)*10), .model = "tree", .winnow = c(TRUE, FALSE) ),
@@ -401,7 +406,7 @@ BAGGING_TREE_QUANTILES_REDUCED = 66
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
 
 ############# da modificare manualmente con il path del file di submission da cui si parte 
-input.sub = "/comp_Dog_3/IN.zat"
+input.sub = "/comp_Patient_2/IN.zat"
 cat ("loading intial submission file <<",as.character(paste(getBasePath(type = "data"),input.sub,sep="")),">> \n"  )
 INPUT_SUBMISSION = as.data.frame(fread(paste(getBasePath(type = "data"),input.sub,sep="") , header = T , sep=","  ))
 
@@ -409,13 +414,13 @@ INPUT_SUBMISSION = as.data.frame(fread(paste(getBasePath(type = "data"),input.su
 verbose = T
 doPlot = F 
 
-feature.pack = F
+feature.pack = T
 
 superFeature = F
-pca.feature = F
+pca.feature = T
 
 ############# general settings ...
-SUB_DIR = "comp_Dog_5"
+SUB_DIR = "comp_Patient_2"
 if (SUB_DIR != "") {
   cat("creating directory <<",SUB_DIR,">> ... \n")
   SUB_DIR = paste0(SUB_DIR,"/")
@@ -435,10 +440,10 @@ if (SUB_DIR != "") {
 #                          recalib.sigmoid = c(F,F,F,F,F,F,F), 
 #                          seed = c(-1,-1,-1,-1,-1,-1,-1) )
 
-model.grid = data.frame( data.source.to.process = c("Dog_3") , 
-                         model.label = c("SVM_MEAN_SD_SCALED") , 
-                         model.id = c(SVM_MEAN_SD_SCALED) , 
-                         data.source.gen = c("4gen"), 
+model.grid = data.frame( data.source.to.process = c("Patient_2") , 
+                         model.label = c("KNN_MEAN_SD_REDUCED") , 
+                         model.id = c(KNN_MEAN_SD_REDUCED) , 
+                         data.source.gen = c("5gen"), 
                          recalib.bayes = c(F), 
                          recalib.sigmoid = c(F), 
                          seed = c(-1) )
@@ -457,7 +462,7 @@ if (   nrow(model.grid[model.grid$data.source.to.process=="Dog_1",]) > 1 |
 
 
 ### resampling method 
-controlObject <- trainControl(method = "boot", number = 100 , 
+controlObject <- trainControl(method = "boot", number = 200 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
 # controlObject <- trainControl(method = "boot632", number = 100 , 
@@ -677,5 +682,5 @@ for (ds in model.grid$data.source.to.process) {
 
 
 ### scrivo su disco le predictions 
-write.csv(INPUT_SUBMISSION,quote=FALSE,file=paste(getBasePath(),SUB_DIR,"mySub_selec.zat" , sep=""), row.names=FALSE)
+write.csv(INPUT_SUBMISSION,quote=FALSE,file=paste(getBasePath(),SUB_DIR,"mySub_seleccazzo.zat" , sep=""), row.names=FALSE)
 

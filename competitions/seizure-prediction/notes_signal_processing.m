@@ -8,14 +8,14 @@ INTERICTAL_MODE = 1;
 PREICTAL_MODE = 2;
 TEST_MODE = 3;
 
-NUMBER_OF_FILES = 1;
+NUMBER_OF_FILES = 2;
 NUMBER_CHANNEL_PER_FILE = 2;
 
 ########################### loadind data sets and meta-data
 printf("|--> generating features set ...\n");
 
 %%dss = ["Dog_1"; "Dog_2"; "Dog_3"; "Dog_4"; "Dog_5"; "Patient_1"; "Patient_2"];
-dss = ["Dog_1" ; "Dog_3"; "Patient_1"];
+dss = ["Patient_2"];
 cdss = cellstr (dss);
 
 printf("|--> found %i data sets ... \n",size(cdss,1));

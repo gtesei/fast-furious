@@ -10,7 +10,7 @@ library(subselect)
 library(plyr)
 
 
-getBasePath = function (type = "data" , ds="") {
+getBasePath = function (type = "data" , ds = "" , gen="") {
   ret = ""
   base.path1 = ""
   base.path2 = ""
@@ -32,7 +32,13 @@ getBasePath = function (type = "data" , ds="") {
   }
   
   if (ds != "" ) {
-    ret = paste0(paste0(ret,ds),"_digest_4gen/")
+    if (gen != "") {
+      cat("data from ", gen ," ... \n")
+      ret = paste(paste0(ret,ds),"_digest_",gen,"/",sep="")
+    } else {
+      cat("data from 4gen <<default>>... \n")
+      ret = paste0(paste0(ret,ds),"_digest_4gen/")  
+    }
   }
   ret
 } 
@@ -468,7 +474,8 @@ Dog_2.model = data.frame(model = c("SVM_QUANTILES_REDUCED" ) ,
                          model.id = c(SVM_QUANTILES_REDUCED ) )
 
 Dog_3.model = data.frame(model = c("SVM_MEAN_SD_SCALED" ) , 
-                         model.id = c(SVM_MEAN_SD_SCALED ) )
+                         model.id = c(SVM_MEAN_SD_SCALED ) , 
+                         gen = c("4gen") )
 
 Dog_4.model = data.frame(model = c("SVM_QUANTILES_REDUCED" ) , 
                          model.id = c(SVM_QUANTILES_REDUCED ) )
@@ -476,31 +483,38 @@ Dog_4.model = data.frame(model = c("SVM_QUANTILES_REDUCED" ) ,
 Dog_5.model = data.frame(model = c("NN_MEAN_SD_REDUCED" ) , 
                          model.id = c(NN_MEAN_SD_REDUCED ) )
 
-Patient_1.model = data.frame(model = c("KNN_QUANTILES_SCALED" ) , 
-                             model.id = c(KNN_QUANTILES_SCALED ) )
+Patient_1.model = data.frame(model = c("BOOSTED_TREE_QUANTILES_SCALED" , "KNN_MEAN_SD_SCALED" , "SVM_MEAN_SD_SCALED" , "CLASS_TREE_MEAN_SD_SCALED") , 
+                             model.id = c(BOOSTED_TREE_QUANTILES_SCALED , KNN_MEAN_SD_SCALED , SVM_MEAN_SD_SCALED , CLASS_TREE_MEAN_SD_SCALED) )
 
-Patient_2.model = data.frame(model = c("PM_QUANTILES_SCALED" ) , 
-                             model.id = c(PM_QUANTILES_SCALED ) )
+Patient_2.model = data.frame(model = c("KNN_MEAN_SD_REDUCED" , "BOOSTED_TREE_QUANTILES_SCALED" , "NN_MEAN_SD_REDUCED" , "SVM_MEAN_SD_REDUCED", "BOOSTED_TREE_MEAN_SD_SCALED") , 
+                             model.id = c(KNN_MEAN_SD_REDUCED , BOOSTED_TREE_QUANTILES_SCALED , NN_MEAN_SD_REDUCED , SVM_MEAN_SD_REDUCED , BOOSTED_TREE_MEAN_SD_SCALED) )
 
 
 
 ### check 
-models.per.ds = nrow(Dog_1.model)
-if (nrow(Dog_2.model) != models.per.ds | 
-      nrow(Dog_3.model) != models.per.ds |
-      nrow(Dog_4.model) != models.per.ds |
-      nrow(Dog_5.model) != models.per.ds |
-      nrow(Patient_1.model) != models.per.ds |
-      nrow(Patient_2.model) != models.per.ds) stop("number of model per data set must be equal.")
+# models.per.ds = nrow(Dog_1.model)
+# if (nrow(Dog_2.model) != models.per.ds | 
+#       nrow(Dog_3.model) != models.per.ds |
+#       nrow(Dog_4.model) != models.per.ds |
+#       nrow(Dog_5.model) != models.per.ds |
+#       nrow(Patient_1.model) != models.per.ds |
+#       nrow(Patient_2.model) != models.per.ds) stop("number of model per data set must be equal.")
 
 
 ############# model selection ... 
 sampleSubmission = as.data.frame(fread(paste(getBasePath(type = "data"),"sampleSubmission.csv",sep="") , header = T , sep=","  ))
 
+SUB_DIR = "comp_Patient_1"
+if (SUB_DIR != "") {
+  cat("creating directory <<",SUB_DIR,">> ... \n")
+  SUB_DIR = paste0(SUB_DIR,"/")
+  dir.create(paste(getBasePath(),SUB_DIR,sep=""))
+}
+
 verbose = T
 doPlot = F 
 superFeature = F
-pca.feature = F
+pca.feature = T
 
 perf.grid = NULL
 
@@ -511,21 +525,23 @@ controlObject <- trainControl(method = "boot", number = 30 ,
 #                               summaryFunction = twoClassSummary , classProbs = TRUE)
 
 ##dss = c("Dog_1","Dog_2","Dog_3","Dog_4","Dog_5","Patient_1","Patient_2")
-dss = c("Patient_2")
+dss = c("Patient_1")
 cat("|---------------->>> data set to process: <<",dss,">> ..\n")
 
 for (ds in dss) {
   
   cat("|---------------->>> processing data set <<",ds,">> ..\n")
   
+  data.source.gen = "5gen"
+  
   ######### loading data sets ...
-  Xtrain_mean_sd = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds),"Xtrain_mean_sd.zat",sep="") , header = F , sep=","  ))
-  Xtrain_quant = as.data.frame( fread(paste(getBasePath(type = "data" , ds=ds),"Xtrain_quant.zat",sep="") , header = F , sep=","  ))
+  Xtrain_mean_sd = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds , gen=data.source.gen),"Xtrain_mean_sd.zat",sep="") , header = F , sep=","  ))
+  Xtrain_quant = as.data.frame( fread(paste(getBasePath(type = "data" , ds=ds , gen=data.source.gen),"Xtrain_quant.zat",sep="") , header = F , sep=","  ))
   
-  Xtest_mean_sd = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds),"Xtest_mean_sd.zat",sep="") , header = F , sep=","  ))
-  Xtest_quant = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds),"Xtest_quant.zat",sep="") , header = F , sep=","  ))
+  Xtest_mean_sd = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds , gen=data.source.gen),"Xtest_mean_sd.zat",sep="") , header = F , sep=","  ))
+  Xtest_quant = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds , gen=data.source.gen),"Xtest_quant.zat",sep="") , header = F , sep=","  ))
   
-  ytrain = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds),"ytrain.zat",sep="") , header = F , sep=","  ))
+  ytrain = as.data.frame(fread(paste(getBasePath(type = "data" , ds=ds , gen=data.source.gen),"ytrain.zat",sep="") , header = F , sep=","  ))
   
   ## names 
   colnames(Xtrain_mean_sd)  = colnames(Xtest_mean_sd) = paste("fmeansd",rep(1:((dim(Xtrain_mean_sd)[2]))) , sep = "")
@@ -749,8 +765,9 @@ perf.grid.mean = ddply(perf.grid ,
                                      time_min=sum(x$time)/60))
 
 ## saving on disk perf.grids ...
-if (verbose) write.csv(perf.grid,quote=FALSE,file=paste0(getBasePath(),"k_fold_perf_grid_class.csv"), row.names=FALSE)
-write.csv(perf.grid.mean,quote=FALSE,file=paste0(getBasePath(),"k_fold_perf_grid_class_mean.csv"), row.names=FALSE)
+if (verbose) write.csv(perf.grid,quote=FALSE,file=paste(getBasePath(),SUB_DIR,"perf.grid.csv",sep=""), row.names=FALSE)
+write.csv(perf.grid.mean,quote=FALSE,file=paste(getBasePath(),SUB_DIR,"perf.grid.mean.csv",sep=""), row.names=FALSE)
+
 
 perf.grid
 perf.grid.mean

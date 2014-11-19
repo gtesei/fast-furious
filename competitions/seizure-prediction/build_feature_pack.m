@@ -12,7 +12,7 @@ TEST_MODE = 3;
 printf("|--> generating features set ...\n");
 
 %%dss = ["Dog_1"; "Dog_2"; "Dog_3"; "Dog_4"; "Dog_5"; "Patient_1"; "Patient_2"];
-dss = ["Dog_2"; "Dog_4"; "Dog_5"; "Patient_1"];
+dss = ["Patient_2"];
 cdss = cellstr (dss);
 
 printf("|--> found %i data sets ... \n",size(cdss,1));
