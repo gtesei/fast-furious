@@ -1,14 +1,14 @@
 function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
-  findOptPAndHAndLambda(Xtrain, ytrain, Xval, yval, 
-  featureScaled = 0 , scaleFeatures = 0 , 
-  p_vec = [] ,
-  h_vec = [1 2 3 4 5 6 7 8 9 10] ,
-  lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10] ,
-  verbose = 1, doPlot=1 ,
-  initGrid = [] , initStart = -1 ,  
-  iter = 200 , 
-  regression = 1 , num_labels = 0 )
-    
+	 findOptPAndHAndLambda(Xtrain, ytrain, Xval, yval, ...
+			       featureScaled = 0 , scaleFeatures = 0 , ...
+			       p_vec = [] , ...
+			       h_vec = [1 2 3 4 5 6 7 8 9 10] , ...
+			       lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10] , ...
+			       verbose = 1, doPlot=1 , ...
+			       initGrid = [] , initStart = -1 , ...   
+			       iter = 200 , ...
+			       regression = 1 , num_labels = 0 ) 
+	 
   if (! featureScaled & scaleFeatures) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,1);
     [Xval,mu,sigma] = treatContFeatures(Xval,1,1,mu,sigma);
@@ -99,9 +99,9 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
 	i = i + 1;
         dlmwrite('_____NN__grid_tmp.mat',grid);
 	fflush(stdout);
-       endfor
-     endfor
-   endfor
+      endfor
+    endfor
+  endfor
 
   [RMSE_opt,RMSE_opt_idx] = min(grid(:,6));
   p_opt_RMSE = grid(RMSE_opt_idx,2);
@@ -118,7 +118,7 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
     endif 
     for i = 1:gLen
       fprintf('%i\t%f\t%f\t%f\t%f\t%f \n',
-      i, grid(i,2), grid(i,3),grid(i,4),grid(i,5),grid(i,6) );
+	      i, grid(i,2), grid(i,3),grid(i,4),grid(i,5),grid(i,6) );
     endfor
     if (regression)
       fprintf('>>>> found min RMSE=%f  with p=%i , h=%f , lambda=%f \n', RMSE_opt , p_opt_RMSE , h_opt_RMSE , lambda_opt_RMSE );
@@ -132,10 +132,10 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
     plot(1:gLen, grid(:,5), 1:gLen, grid(:,6));
     if (regression)
       title(sprintf('Validation Curve -- min RMSE=%f  with p=%i,h=%f,lambda=%f', RMSE_opt ,...
-                  p_opt_RMSE , h_opt_RMSE , lambda_opt_RMSE));
+                    p_opt_RMSE , h_opt_RMSE , lambda_opt_RMSE));
     else 
       title(sprintf('Validation Curve -- min Accuracy=%f  with p=%i,h=%f,lambda=%f', RMSE_opt ,...
-                  p_opt_RMSE , h_opt_RMSE , lambda_opt_RMSE));
+                    p_opt_RMSE , h_opt_RMSE , lambda_opt_RMSE));
     endif 
     xlabel('i')
     if (regression)
