@@ -80,7 +80,7 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
           NNMeta = buildNNMeta([s0 (ones(h,1) .* p)' num_labels]');disp(NNMeta);
           [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = iter, featureScaled = 1);
           pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
-          pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
+          pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
           
           acc_train = mean(double(pred_train == ytrain)) * 100;
           acc_val = mean(double(pred_val == yval)) * 100;
