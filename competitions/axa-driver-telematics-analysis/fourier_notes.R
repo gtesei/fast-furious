@@ -132,8 +132,8 @@ which(mag == max(mag)) * dt ## max comp freq ?
 
 
 #######
----------------------------------------------------------------------------
-  # R-script
+##---------------------------------------------------------------------------
+# R-script
 acq.freq <- 4000       # data acquisition frequency (Hz)
 sig1.freq <- 50           # frequency of 1st signal component (Hz)
 sig2.freq <- 130        # frequency of 2nd signal component (Hz)
@@ -175,5 +175,54 @@ plot(x=x.axis,y=magn.1,type="l")
 #### find freq with max magnitude 
 mi = which(magn.1 == max(magn.1))
 x.axis[mi]
+
+findMainFrequencyComponent  = function (fs,Time,x,doPlot=F) { 
+  FFT <- fft(x)
+  magn <- Mod(test) # sqrt(Re(test)*Re(test)+Im(test)*Im(test))
+  magn.1 <- magn[1:(length(magn)/2)]
+  phase <- Arg(test) # atan(Im(test)/Re(test))
+  x.axis <- 1:length(magn.1)/Time
+  mi = which(magn.1 == max(magn.1))
+  ret = x.axis[mi]
+  
+  if (doPlot) {
+    plot(x=x.axis,y=magn.1,type="l",xlab="Hz",ylab="u.m. of observed phenomenon")
+  }
+  
+  ret
+}
+
+findMainFrequencyComponent(acq.freq,time,data,T) 
+
+PSD  = function (fs,Time,x,doPlot=F) { 
+  
+  N = length(Time)
+  fNyq = fs / 2 
+  Nf <- N/2 
+  
+  
+  FFT <- fft(x)
+  magn <- Mod(test) # sqrt(Re(test)*Re(test)+Im(test)*Im(test))
+  phase <- Arg(test) # atan(Im(test)/Re(test))
+  x.axis <- 1:length(magn.1)/Time
+  
+  Sa <- Mod(FFT) # Amplitude spectrum
+  Sp <- Arg(FFT) # Phase spectrum
+  XC <- Conj(FFT)
+  Se <- Sa^2
+  all.equal(Se <- Sa^2, Se_2 <- Mod(XC * FFT), Se_2R <- Mod(FFT * XC))
+  
+  pp = Se[2:(Nf + 1)] * 2/N
+  
+  if (doPlot) {
+    plot(x=x.axis,y=magn.1,type="l",xlab="Hz",ylab="u.m. of observed phenomenon")
+  }
+  
+  pp
+ 
+}
+
+PSD(acq.freq,time,data,T)
+                                
 
 

@@ -1,4 +1,9 @@
+---
+title: "AxaExp1"
+output: html_document
+---
 
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
 library(caret)
 library(Hmisc)
 library(data.table)
@@ -20,13 +25,11 @@ getTrips = function (drv = 0) {
   
   if (file.exists(base.path1))  {
     
-    ret = order(as.numeric(lapply(as.character(list.files(base.path1)), function(x) as.numeric ( substr(x, 1, nchar(x) - 4)) ) 
-                 , decreasing = T))
+    ret = order (as.numeric (lapply(list.files(base.path1), function(x) as.numeric ( substr(x, 1, nchar(x) - 4)) )) , decreasing = F)
     
   } else if (file.exists(base.path2)) {
     
-    ret = order(as.numeric(lapply(as.character(list.files(base.path2)), function(x) as.numeric(substr(x, 1, nchar(x) - 4)) ) 
-                 , decreasing = T))
+    ret = order (as.numeric (lapply(list.files(base.path2), function(x) as.numeric ( substr(x, 1, nchar(x) - 4)) )) , decreasing = F)
   } else {
     ret = NA
   }
@@ -92,34 +95,48 @@ findMainFrequencyComponent  = function (fsamp , Time , sign ,doPlot=F) {
   ret
 }
 
-powerSpect  = function (fs,tt,sign,doPlot=F) { 
-
+PSD  = function (fs,Time,sign,doPlot=F) { 
+  
+  N = length(Time)
   fNyq = fs / 2 
-  Nf <- tt/2 
+  Nf <- N/2 
+  
   
   FFT <- fft(sign)
+  magn <- Mod(FFT) # sqrt(Re(test)*Re(test)+Im(test)*Im(test))
+  magn.1 <- magn[1:(length(magn)/2)]
+  phase <- Arg(FFT) # atan(Im(test)/Re(test))
+  x.axis <- 1:length(magn.1)/Time
   
   Sa <- Mod(FFT) # Amplitude spectrum
   Sp <- Arg(FFT) # Phase spectrum
   XC <- Conj(FFT)
   Se <- Sa^2
+  all.equal(Se <- Sa^2, Se_2 <- Mod(XC * FFT), Se_2R <- Mod(FFT * XC))
   
-  pp = sum(Se[2:(Nf + 1)]) * 2/tt
+  pp = sum(Se[2:(Nf + 1)]) * 2/N
   
   if (doPlot) {
-    plot(x=x.axis,y=Sa,type="l",xlab="Hz",ylab="u.m. of observed phenomenon")
+    plot(x=x.axis,y=magn.1,type="l",xlab="Hz",ylab="u.m. of observed phenomenon")
   }
   
   pp
+ 
 }
+
+```
+
+
+
+```{r}
 
 ######################### settings ans constants 
 debug = T
 
 ######################### main loop 
 
-DRIVERS = c(1)
-##TRIPS = c(1,26)
+DRIVERS = c(1,23)
+TRIPS = c(1,26)
 
 ALL_DRIVERS = getDrivers() 
 if (exists("DRIVERS")) 
@@ -132,8 +149,6 @@ for ( drv in ALL_DRIVERS  ) {
     trips = getTrips(drv) 
     if (exists("TRIPS")) 
       trips = intersect(trips,TRIPS)
-    
-    features = data.frame(trip = trips, V.msc = -1 , V.pow = -1 , A.msc = -1 , A.pow = -1)
     
     cat("|---------------->>> found <<",length(trips),">>  trips for driver <<",drv,">> ..\n")
     for (trip in trips) {
@@ -150,7 +165,7 @@ for ( drv in ALL_DRIVERS  ) {
         ## rho 
         trdata$rho = apply(trdata,1,function(x) {
               sqrt(x[1]^2 + x[2]^2)
-          	})
+            })
         
         ## alpha 
         trdata$alpha = apply(trdata,1,function(x) {
@@ -185,27 +200,39 @@ for ( drv in ALL_DRIVERS  ) {
         trdata$A =  apply(trdata,1,function(x) {
           sqrt(x[8]^2 + x[9]^2)
         })
-        #### extract 2-tier features 
         
-        ## V.msc 
-        V.msc = findMainFrequencyComponent(fsamp=1,Time=dim(trdata)[1],sign=trdata$V,doPlot=F)
-        
-        ## V.pow 
-        V.pow = powerSpect(fs=1,tt=dim(trdata)[1],sign=trdata$V,doPlot=F) 
-        
-        ## A.msc 
-        A.msc = findMainFrequencyComponent(fsamp=1,Time=dim(trdata)[1],sign=trdata$A,doPlot=F)
-        
-        ## A.pow 
-        A.pow = powerSpect(fs=1,tt=dim(trdata)[1],sign=trdata$A,doPlot=F)
-        
-        #### update featutures set   
+        #### plot   
         
         if (debug) print(head(trdata))
-        ############ TRIP PROCESSING - end 
+        
+        mlab = paste("Driver=" , drv , " - Trip=",trip,sep = "")
+        
+        plot( seq(1:dim(trdata)[1]) , trdata$x,  xlab="(secs)", ylab="x", type="l" , main = mlab)
+        plot( seq(1:dim(trdata)[1]) , trdata$y,  xlab="(secs)", ylab="y", type="l" , main = mlab)
+        
+        plot( seq(1:dim(trdata)[1]) , trdata$rho,  xlab="(secs)", ylab="rho", type="l" , main = mlab)
+        plot( seq(1:dim(trdata)[1]) , trdata$alpha,  xlab="(secs)", ylab="alpha", type="l" , main = mlab)
+        
+        plot( seq(1:dim(trdata)[1]) , trdata$vx,  xlab="(secs)", ylab="Vx", type="l" , main = mlab)
+        plot( seq(1:dim(trdata)[1]) , trdata$vy,  xlab="(secs)", ylab="Vy", type="l" , main = mlab)
+        plot( seq(1:dim(trdata)[1]) , trdata$V,  xlab="(secs)", ylab="V", type="l" , main = mlab)
+        fmc = findMainFrequencyComponent(fsamp=1,Time=dim(trdata)[1],sign=trdata$V,doPlot=T) 
+        cat("freq main comp = ",fmc,"\n")
+        psd = PSD(1,dim(trdata)[1],trdata$V,doPlot=F)
+        cat(" psd = ",psd,"\n")
+        
+        plot( seq(1:dim(trdata)[1]) , trdata$ax,  xlab="(secs)", ylab="Ax", type="l" , main = mlab)
+        plot( seq(1:dim(trdata)[1]) , trdata$ay,  xlab="(secs)", ylab="Ay", type="l" , main = mlab)
+        plot( seq(1:dim(trdata)[1]) , trdata$A,  xlab="(secs)", ylab="A", type="l" , main = mlab)
+        findMainFrequencyComponent(fsamp=1,Time=dim(trdata)[1],sign=trdata$A,doPlot=T)
+        cat("freq main comp = ",fmc,"\n")
+        psd = PSD(1,dim(trdata)[1],trdata$A,doPlot=F)
+        cat(" psd = ",psd,"\n")
+        
+        
+        ############ TRIP PROCESSING - end  
       }
-    
-    if (debug) print(features) 
 } 
 
 
+```
