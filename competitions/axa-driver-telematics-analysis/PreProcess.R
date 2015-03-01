@@ -193,7 +193,7 @@ debug = F
 
 ######################### main loop 
 
-DRIVERS = c(1)
+#DRIVERS = c(1)
 ##TRIPS = c(1,26)
 
 ALL_DRIVERS = getDrivers() 
