@@ -21,13 +21,14 @@ getTrips = function (drv = 0) {
   
   if (file.exists(base.path1))  {
     
-    ret = order(as.numeric(lapply(as.character(list.files(base.path1)), function(x) as.numeric ( substr(x, 1, nchar(x) - 4)) ) 
-                 , decreasing = T))
+    ret = as.numeric(lapply(as.character(list.files(base.path1)), function(x) as.numeric ( substr(x, 1, nchar(x) - 4)) ) )
+    ret = sort( ret , decreasing = F)
     
   } else if (file.exists(base.path2)) {
     
-    ret = order(as.numeric(lapply(as.character(list.files(base.path2)), function(x) as.numeric(substr(x, 1, nchar(x) - 4)) ) 
-                 , decreasing = T))
+    ret = as.numeric(lapply(as.character(list.files(base.path2)), function(x) as.numeric(substr(x, 1, nchar(x) - 4)) ))
+    ret = sort( ret , decreasing = F)
+
   } else {
     ret = NA
   }
@@ -44,11 +45,14 @@ getDrivers = function () {
   
   if (file.exists(base.path1))  {
     
-    ret = order (as.numeric (lapply(list.files(base.path1), function(x) as.numeric (x)) , decreasing = F) )
+    ret = as.numeric (lapply(list.files(base.path1), function(x) as.numeric (x))) 
+    ret = sort (ret , decreasing = F) 
     
   } else if (file.exists(base.path2)) {
     
-    ret = order (as.numeric (lapply(list.files(base.path2), function(x) as.numeric (x)) , decreasing = F) )
+    ret = as.numeric (lapply(list.files(base.path2), function(x) as.numeric (x)))
+    ret = sort (ret , decreasing = F) 
+    
   } else {
     ret = NA
   }
@@ -189,7 +193,7 @@ debug = F
 
 ######################### main loop 
 
-#DRIVERS = c(1)
+DRIVERS = c(1)
 ##TRIPS = c(1,26)
 
 ALL_DRIVERS = getDrivers() 
