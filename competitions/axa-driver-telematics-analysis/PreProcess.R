@@ -84,11 +84,12 @@ getTripPath = function (driver = 0 , trip = 0) {
 store = function (driver = 0 , data , label) {
   ret = ""
   
-  base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/axa-driver-telematics-analysis/digest/"
+  base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/axa-driver-telematics-analysis/digest"
   base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/axa-driver-telematics-analysis/digest/"
   
   if (file.exists(base.path1))  {
     ret = base.path1
+    ret = paste(ret,"/",sep="")
   } else if (file.exists(base.path2)) {
     ret = base.path2
   } else {
@@ -193,7 +194,7 @@ debug = F
 
 ######################### main loop 
 
-#DRIVERS = c(1)
+##DRIVERS = c(144,145)
 ##TRIPS = c(1,26)
 
 ALL_DRIVERS = getDrivers() 
@@ -361,27 +362,38 @@ for ( drv in ALL_DRIVERS  ) {
         ############ TRIP PROCESSING - end 
       }
     
+    cat("********* building reduced matrix .... \n")
+        
     #### features reduction 
     features.red = features 
     
-    ### removing predictors that make ill-conditioned square matrix
+    ### 1 - removing columns with NAs values both in features and features.red
+    features.na = apply(features,2,function(x) sum(is.na(x)) > 0 )
+    if ( sum(sum(features.na) > 0 ) ) {
+      cat("removing columns with NAs values both in features and features.red: ",colnames(features.red)[features.na]," ... \n ")
+      
+      features.red = features.red[-which(features.na)]
+      features = features[-which(features.na)]
+    } 
+    
+    ### 2 - removing near zero var predictors 
+    PredToDel = nearZeroVar(features.red)
+    if (length(PredToDel) > 0) {
+      cat("removing ",length(PredToDel)," nearZeroVar predictors: ", paste(colnames(features.red) [PredToDel] , collapse=" " ) , " ... \n ")
+      features.red  =  features.red  [,-PredToDel]
+    }
+    
+    # 3 - rmoving high correlated predictors 
+    PredToDel = findCorrelation(cor( features.red )) 
+    cat("PLS:: on features.red removing ",length(PredToDel), " predictors: ",paste(colnames(features.red) [PredToDel] , collapse=" " ) , " ... \n ")
+    features.red =  features.red  [,-PredToDel]
+    
+    ### 4 - removing predictors that make ill-conditioned square matrix
     PredToDel = trim.matrix( cov( features.red ) )
     if (length(PredToDel$numbers.discarded) > 0) {
       cat("removing ",length(PredToDel$numbers.discarded)," predictors that make ill-conditioned square matrix: ", paste(colnames(features.red) [PredToDel$numbers.discarded] , collapse=" " ) , " ... \n ")
       features.red  =  features.red  [,-PredToDel$numbers.discarded]
     }
-    
-    ### removing near zero var predictors 
-    PredToDel = nearZeroVar(features.red)
-    if (length(PredToDel) > 0) {
-      cat("removing ",length(PredToDel)," nearZeroVar predictors: ", paste(colnames(features) [PredToDel] , collapse=" " ) , " ... \n ")
-      features.red  =  features.red  [,-PredToDel]
-    }
-    
-    # rmoving high correlated predictors 
-    PredToDel = findCorrelation(cor( features.red )) 
-    cat("PLS:: on features.red removing ",length(PredToDel), " predictors: ",paste(colnames(features.red) [PredToDel] , collapse=" " ) , " ... \n ")
-    features.red =  features.red  [,-PredToDel]
     
     if (debug) print(head(features)) 
     if (debug) print(head(features.red)) 
