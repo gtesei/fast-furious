@@ -169,7 +169,7 @@ logErrors = function (  feat.label ,
     ret = NA
   }
   
-  fn = paste(ret, feat.label, "_" , main.clust.alg , "_" , sec.clust.alg  , ".csv", sep="")
+  fn = paste(ret, feat.label, "_" , main.clust.alg , "_" , sec.clust.alg  , "_errors.csv", sep="")
   data = NULL 
   if ( file.exists(fn) ) {
     data = as.data.frame(fread( fn )) 
@@ -199,8 +199,8 @@ SUBMISSION_PREFIX = "sub"
 FEAT_SET = "features_red_" ### reduced data set
 
 ## clustering algorithms 
-MAIN_CLUST_METH = "complete"
-SEC_CLUST_METH = "centroid"
+MAIN_CLUST_METH = "ward"
+SEC_CLUST_METH = "kmeans"
 
 ######################### main loop 
 
