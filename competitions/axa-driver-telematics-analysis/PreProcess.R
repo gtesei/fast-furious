@@ -399,10 +399,10 @@ for ( drv in ALL_DRIVERS  ) {
     
     # 4 - rmoving high correlated predictors 
     PredToDel = findCorrelation(cor( features.red )) 
-    if (  (dim(features.red)[2]-length(PredToDel)>3)  ) {
+    #if (  (dim(features.red)[2]-length(PredToDel)>3)  ) {
       cat("PLS:: on features.red removing ",length(PredToDel), " predictors: ",paste(colnames(features.red) [PredToDel] , collapse=" " ) , " ... \n ")
       features.red =  features.red  [,-PredToDel]
-    }
+    #}
     
     if (debug) print(head(features)) 
     if (debug) print(head(features.red)) 
