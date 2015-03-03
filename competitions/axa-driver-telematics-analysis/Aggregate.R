@@ -187,7 +187,7 @@ logErrors = function (  feat.label ,
 } 
 
 ######################### settings ans constants 
-debug = T
+debug = F
 
 ALL_ONES = c(1634)
 
