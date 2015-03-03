@@ -1,0 +1,23 @@
+
+sum(sub[sub$prob != -1,]$prob) / length((sub[sub$prob != -1,]$prob) )
+sd(sub[sub$prob != -1,]$prob)
+
+sample of 29  drivers
+
+***************
+
+4 - average (kmeans , errors:0) - mean = 0.9927586 sd = 0.08479494
+
+7 - single (kmeans , errors:2) - mean = 0.9825862 , sd = 0.1308186
+
+1 - complete (centroid) - mean = 0.9815517
+
+3 - median (kmeans - nota: centroid si blocca , errors:: 1/29 = 3%) - mean =  0.9648276 - sd = 0.1842313
+
+6 - centroid (kmeans , errors:: 2/29) - mean = 0.9622414 , sd = 0.1906284 
+
+5 - mcquitty(kmeans , err:2/29=7%) - mean = 0.9525862 , sd = 0.2125406    <<<<<------ 
+
+2 - kmeans (centriod , errors::0) - mean = 0.6708621 - sd= 0.4699407
+
+8 - ward (kmeans , 29/29 = 100% ... praticamente kmeans ) - mean = 0.6184483 - sd = 0.4858093 
