@@ -194,7 +194,10 @@ debug = F
 
 ######################### main loop 
 
-DRIVERS = c(1634)
+ALL_ONES = c(1634)
+FROM = 1634 
+
+#DRIVERS = c(1634)
 ##TRIPS = c(1,26)
 
 ALL_DRIVERS = getDrivers() 
@@ -204,6 +207,9 @@ if (exists("DRIVERS"))
 cat("|--------------------------------->>> found ",length(ALL_DRIVERS)," drivers ... \n")
 
 for ( drv in ALL_DRIVERS  ) {
+  
+    if (exists("ALL_ONES") && is.element(el = drv , set = ALL_ONES)) next 
+    if (exists("FROM") && drv < FROM ) next 
   
     trips = getTrips(drv) 
     if (exists("TRIPS")) 

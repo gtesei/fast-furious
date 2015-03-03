@@ -189,6 +189,8 @@ logErrors = function (  feat.label ,
 ######################### settings ans constants 
 debug = T
 
+ALL_ONES = c(1634)
+
 ## file types 
 ERROR_PREFIX = "error"
 SUBMISSION_PREFIX = "sub"
@@ -205,7 +207,7 @@ SEC_CLUST_METH = "centroid"
 sub = getSampleSubmission()
 sub$prob = -1
 
-DRIVERS = c(1634)
+#DRIVERS = c(1634)
 
 ALL_DRIVERS_ORIG = getDrivers() 
 if (exists("DRIVERS")) 
@@ -222,6 +224,11 @@ cat("|--------------------------------->>> found ",length(DIGESTED_DRIVERS)," dr
 for ( drv in DIGESTED_DRIVERS  ) { 
   
   cat("|---------------->>> processing driver:  [",FEAT_SET,"] <<",drv,">>  ..\n")
+  
+  if (exists("ALL_ONES") && is.element(el = drv , set = ALL_ONES)) {
+    sub[sub$drv==drv,]$prob = 1
+    next
+  }
   
   data = getDigestedDriverData (FEAT_SET,drv)
   df <- scale(data[,-1]) 
@@ -287,7 +294,7 @@ for ( drv in DIGESTED_DRIVERS  ) {
 ## store submission 
 cat("|----->>> storing submission ..  \n")
 storeSubmission (sub[,(grep(pattern = "driver_trip|prob"  , 
-                            x = colnames(m1)))] , FEAT_SET , MAIN_CLUST_METH , SEC_CLUST_METH)
+                            x = colnames(sub)))] , FEAT_SET , MAIN_CLUST_METH , SEC_CLUST_METH)
 
 ## some statistics ... 
 cat("|----------------------->>> some statistics ..  \n")
