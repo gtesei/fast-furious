@@ -56,6 +56,33 @@ storeSubmission = function (data , feat.label , main.clust.alg , sec.clust.alg) 
   write.csv(data,quote=FALSE,file=fn, row.names=FALSE)
 } 
 
+recoverSubmission = function (feat.label , main.clust.alg , sec.clust.alg) {
+  ret = ""
+  
+  base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/axa-driver-telematics-analysis/submission"
+  base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/axa-driver-telematics-analysis/submission/"
+  
+  if (file.exists(base.path1))  {
+    ret = base.path1
+    ret = paste(ret,"/",sep="")
+  } else if (file.exists(base.path2)) {
+    ret = base.path2
+  } else {
+    ret = NA
+  }
+  
+  fn = paste(ret, feat.label, "_" , main.clust.alg , "_" , sec.clust.alg  , "_submission.csv", sep="")
+  sampleSubmission = as.data.frame(fread( fn ))
+  
+  drv = as.numeric (lapply(sampleSubmission$driver_trip, function(x) as.numeric (strsplit(x,"_")[[1]][1])  ))
+  trp = as.numeric (lapply(sampleSubmission$driver_trip, function(x) as.numeric (strsplit(x,"_")[[1]][2])  ))
+  
+  sampleSubmission$drv = drv 
+  sampleSubmission$trip = trp
+  
+  sampleSubmission
+}
+
 getTrips = function (drv = 0) {
   ret = ""
   
@@ -189,6 +216,7 @@ logErrors = function (  feat.label ,
 ######################### settings ans constants 
 debug = F
 
+#RECOVER_FROM = 1385 ## <<<<<<<------------- attenzione session recovering in corso ... 
 ALL_ONES = c(1634)
 
 ## file types 
@@ -199,13 +227,19 @@ SUBMISSION_PREFIX = "sub"
 FEAT_SET = "features_red_" ### reduced data set
 
 ## clustering algorithms 
-MAIN_CLUST_METH = "ward"
+MAIN_CLUST_METH = "mcquitty"
 SEC_CLUST_METH = "kmeans"
 
 ######################### main loop 
 
 sub = getSampleSubmission()
 sub$prob = -1
+if (exists("RECOVER_FROM") && RECOVER_FROM > -1) {
+  cat("|--------------------------------->>> recovering session [data set:",FEAT_SET,"][main clust alg:",
+      MAIN_CLUST_METH,"][secondary clust alg:",SEC_CLUST_METH,"] from driver ",RECOVER_FROM," ... \n")
+  sub = recoverSubmission  (FEAT_SET , MAIN_CLUST_METH , "centroid")
+  print(head(sub))
+}
 
 #DRIVERS = c(1634)
 
@@ -225,8 +259,14 @@ for ( drv in DIGESTED_DRIVERS  ) {
   
   cat("|---------------->>> processing driver:  [",FEAT_SET,"] <<",drv,">>  ..\n")
   
+  ## skip all ones after selecting all ones ...
   if (exists("ALL_ONES") && is.element(el = drv , set = ALL_ONES)) {
     sub[sub$drv==drv,]$prob = 1
+    next
+  }
+  
+  ## if you are recovering a session skip work already performed ...
+  if (exists("RECOVER_FROM") && drv < RECOVER_FROM ) {
     next
   }
   
@@ -244,7 +284,7 @@ for ( drv in DIGESTED_DRIVERS  ) {
     print(paste("ERROR:  ",err))
     logErrors(FEAT_SET, MAIN_CLUST_METH , SEC_CLUST_METH , drv )
       
-    cat("|-------->>> trying with centroid method only ... \n")  
+    cat("|-------->>> trying with secondary method ... \n")  
     NbClust(df, distance = "euclidean", min.nc = 2, max.nc = 8, 
                  method = SEC_CLUST_METH )
   })
