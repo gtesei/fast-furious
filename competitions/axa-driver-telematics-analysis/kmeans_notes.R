@@ -99,7 +99,12 @@ predictNumCentrioids = function(data
   simGrid
 } 
 
-predictNumCentrioidsFromGrid = function(data , simGrid) {
+predictNumCentrioidsFromGrid = function(data , simGrid , count.cluster.size=F) {
+  
+  if (count.cluster.size) {
+    simGrid$cluster.size.mean = -1 
+    simGrid$cluster.size.sd = -1 
+  }
   
   for (i in (1:(dim(simGrid)[1]))) {
     scenario.lab = paste("[dist=",as.character(simGrid[i,]$dist),"] [agg.method="
@@ -131,6 +136,19 @@ predictNumCentrioidsFromGrid = function(data , simGrid) {
       
       pairs(data[,-1], main = paste("simulated data - basic scenario - predict ", scenario.lab,sep=""),
             pch = 21, bg = MY_COLORS[ 1:clust.num.pred ]  [unclass(part)] )
+      
+      if (count.cluster.size) {
+        clust.size = rep(-1,length(part.val))
+        
+        for (j in 1:(length(clust.size))) {
+          clust.size[j] = sum(part == part.val[j]) 
+        }
+        
+        simGrid[i,]$cluster.size.mean = mean(clust.size) 
+        simGrid[i,]$cluster.size.sd = sd(clust.size)
+        
+        cat ("|- cluster.size.mean =  ",as.character(simGrid[i,]$cluster.size.mean), " - cluster.size.sd = ",as.character(simGrid[i,]$cluster.size.sd)," \n")
+      }
     }
     
   }
@@ -139,7 +157,7 @@ predictNumCentrioidsFromGrid = function(data , simGrid) {
 }
 
 generateData = function(vars = 2 , centroids = 4 , obs = 200 , range = 0:10 , centroids.sep.fact = 1 
-                        , var1.dummy = F) {
+                        , var1.dummy = F , var.dummy.dis = 3) {
   
   centroids.sep = (2*centroids+2) / centroids.sep.fact
   
@@ -155,7 +173,7 @@ generateData = function(vars = 2 , centroids = 4 , obs = 200 , range = 0:10 , ce
   } else {
     for (cen in (1:centroids)) {
     #v1 = c(v1 , rnorm(n = obs , mean = ((max(range) - min(range))/2) , sd = ((max(range) - min(range))/3)) )
-      v1 = c(v1 , rnorm(n = centroids.obs , mean = centroids.center[cen] , sd = centroids.disp*2) )
+      v1 = c(v1 , rnorm(n = centroids.obs , mean = centroids.center[cen] , sd = centroids.disp*var.dummy.dis) )
     }
   }
   
@@ -286,5 +304,56 @@ pairs(data[,-1], main = "simulated data - basic scenario - ",
 
 simGrid = predictNumCentrioidsFromGrid (data , simGrid)
 storeGrid (simGrid , "scenario_smaller_dist_2_var1dummy")
+
+#####
+
+simGrid = loadGrid("scenario_smaller_dist_2_var1dummy")
+ok = simGrid$clust.num.true == simGrid$clust.num.pred
+simGrid = simGrid[ok,]
+simGrid$clust.num.pred = -1 
+simGrid[simGrid$agg.method=="ward",]$agg.method = "ward.D" ### PC 
+
+## 4 - simulated data - scenario - introducing a dummy features with greater dispersion  
+data = generateData(vars = vars , centroids = centroids , centroids.sep.fact = 2 , 
+                    var1.dummy = T , var.dummy.dis = 3)
+
+pairs(data[,-1], main = "simulated data - basic scenario - ", 
+      pch = 21, bg = MY_COLORS[ 1:centroids ]  [unclass(data$cluster)] )
+
+simGrid = predictNumCentrioidsFromGrid (data , simGrid)
+storeGrid (simGrid , "scenario_smaller_dist_4_var1dummy")
+
+
+simGrid = loadGrid("scenario_smaller_dist_4_var1dummy")
+ok = simGrid$clust.num.true == simGrid$clust.num.pred
+simGrid = simGrid[ok,]
+simGrid$clust.num.pred = -1 
+
+simGrid = predictNumCentrioidsFromGrid (data , simGrid , count.cluster.size = T)
+simGrid
+storeGrid (simGrid , "scenario_smaller_dist_3_var1dummy_advanced")
+
+### -------------------->> the winners are (cluster.num == 4 && cluster.size.sd == 0): 
+## ward.D / manhattan   (sia index = all  che alllong)
+## complete / manhattan (sia index = all  che alllong)
+## average / manhattan  (sia index = all  che alllong)
+# ward.D / maximum (index = all)
+
+## 5 - simulated data - scenario - further greater dispersion  
+data = generateData(vars = vars , centroids = centroids , centroids.sep.fact = 2 , 
+                    var1.dummy = T , var.dummy.dis = 3.5 )
+
+pairs(data[,-1], main = "simulated data - basic scenario - ", 
+      pch = 21, bg = MY_COLORS[ 1:centroids ]  [unclass(data$cluster)] )
+
+simGrid = predictNumCentrioidsFromGrid (data , simGrid , count.cluster.size = T)
+ok = simGrid$clust.num.true == simGrid$clust.num.pred
+simGrid = simGrid[ok,]
+simGrid
+storeGrid (simGrid , "final_scenario")
+
+### -------------------->> the winners are (cluster.num == 4 && cluster.size.sd == 0): 
+## ward.D / manhattan   (sia index = all  che alllong)
+## average / manhattan  (sia index = all  che alllong)
 
 

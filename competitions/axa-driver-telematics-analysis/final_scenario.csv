@@ -1,0 +1,8 @@
+dist,agg.method,index,clust.num.true,clust.num.pred,cluster.size.mean,cluster.size.sd
+maximum,ward.D,all,4,4,50,9.79795897113271
+manhattan,ward.D,all,4,4,50,0
+manhattan,complete,all,4,4,50,0.816496580927726
+manhattan,average,all,4,4,50,0
+manhattan,ward.D,alllong,4,4,50,0
+manhattan,complete,alllong,4,4,50,0.816496580927726
+manhattan,average,alllong,4,4,50,0
