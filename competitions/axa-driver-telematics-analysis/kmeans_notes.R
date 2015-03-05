@@ -223,7 +223,6 @@ df <- scale(wine[-1])
 wssplot(df)
 
 set.seed(1234)
-df <- scale(features.red[,-1])    
 
 ## kmeans - all 
 nc <- NbClust(df, min.nc=2, max.nc=15, method="kmeans")

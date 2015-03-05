@@ -216,22 +216,18 @@ logErrors = function (  feat.label ,
 ######################### settings ans constants 
 debug = F
 
-#RECOVER_FROM = 1875 ## <<<<<<<------------- attenzione session recovering in corso ... 
-ALL_ONES = c(1587,1634,1875)
+#RECOVER_FROM = 1894 ## <<<<<<<------------- attenzione session recovering in corso ... 
+##ALL_ONES = c(1587,1634,1875)
 
 ## do only these drivers (for testing)
 #DRIVERS = c(1634)
-
-## file types 
-ERROR_PREFIX = "error"
-SUBMISSION_PREFIX = "sub"
 
 ## digest types 
 FEAT_SET = "features_red_" ### reduced data set
 
 ## clustering algorithms 
-MAIN_CLUST_METH = "complete"
-SEC_CLUST_METH = "kmeans"
+MAIN_CLUST_METH = "average"
+SEC_CLUST_METH = "ward"
 
 ######################### main loop 
 
@@ -280,51 +276,52 @@ for ( drv in DIGESTED_DRIVERS  ) {
   nc = NULL
   
   nc = tryCatch ({
-    NbClust(df, distance = "euclidean", min.nc = 2, max.nc = 8, 
-                 method = MAIN_CLUST_METH , index = "alllong")
+    NbClust(df, distance = "manhattan", min.nc = 2, max.nc = 8, 
+            method = MAIN_CLUST_METH , index = "alllong")
   } , error = function(err) { 
     print(paste("ERROR:  ",err))
-    logErrors(FEAT_SET, MAIN_CLUST_METH , SEC_CLUST_METH , drv )
-      
     cat("|-------->>> trying with secondary method ... \n")  
-    tryCatch ({ NbClust(df, distance = "euclidean", min.nc = 2, max.nc = 8, 
-                 method = SEC_CLUST_METH )
+    tryCatch ({ 
+      NbClust(df, distance = "manhattan", min.nc = 2, max.nc = 8, 
+              method = SEC_CLUST_METH )
     } , error = function(err) { 
       print(paste("ERROR:  ",err))
-      
-      cat("|-------->>> trying with complete ... \n")  
-      NbClust(df, distance = "euclidean", min.nc = 2, max.nc = 8, 
-                          method = "complete" )
-      })
+      logErrors(FEAT_SET, MAIN_CLUST_METH , SEC_CLUST_METH , drv )
+      cat("|-------->>> setting all ones ... \n")  
+      NULL
+    })
   })
   
-  
-  ## analyzing results ...
-  part = as.numeric(nc$Best.partition)
-  part.val = unique(part)
-  cluster.perc = as.numeric(lapply(part.val,function(x) sum(part==x)/length(part)) )
-  dominant.index = which(cluster.perc == max(cluster.perc))
-  dominant.partition = part.val[dominant.index]
-  
-  cat("|-------->>> found ",length(part.val)," clusters ..\n") 
-  for (c in part.val) {
-    dominat.msg = ""
-    if (c == dominant.index) dominat.msg = " --> DOMINANT PARTITION"
-    cat("|----->>> cluster <<",as.character(cluster.perc[c]), ">> ", dominat.msg ,  " \n")
-  }
-  
-  data$clust = part
-  data$pred = ifelse(part == dominant.partition , 1 , 0)
-  
-  if (debug) {
-#     pairs(df[,sample(1:(dim(df)[2]),size=(dim(df)[2]/2))], 
-#           main = paste(FEAT_SET,MAIN_CLUST_METH,"_",SEC_CLUST_METH,sep="") 
-#           , pch = 21, bg = c("red", "green3", "blue")[unclass(part)] )
+  if (! is.null(nc) ) {
+    ## analyzing results ...
+    part = as.numeric(nc$Best.partition)
+    part.val = unique(part)
+    cluster.perc = as.numeric(lapply(part.val,function(x) sum(part==x)/length(part)) )
+    dominant.index = which(cluster.perc == max(cluster.perc))
+    dominant.partition = part.val[dominant.index]
     
-    pairs(df[,sample(1:(dim(df)[2]),size=(dim(df)[2]/2))], 
-          main = paste(FEAT_SET,MAIN_CLUST_METH,"_",SEC_CLUST_METH,sep="") 
-          , pch = 21, bg = colors()[sample(1:(length(colors())),length(part.val))]  [unclass(part)] )
+    cat("|-------->>> found ",length(part.val)," clusters ..\n") 
+    for (c in part.val) {
+      dominat.msg = ""
+      if (c == dominant.index) dominat.msg = " --> DOMINANT PARTITION"
+      cat("|----->>> cluster <<",as.character(cluster.perc[c]), ">> ", dominat.msg ,  " \n")
+    }
     
+    data$clust = part
+    data$pred = ifelse(part == dominant.partition , 1 , 0)
+    
+    if (debug) {
+      #     pairs(df[,sample(1:(dim(df)[2]),size=(dim(df)[2]/2))], 
+      #           main = paste(FEAT_SET,MAIN_CLUST_METH,"_",SEC_CLUST_METH,sep="") 
+      #           , pch = 21, bg = c("red", "green3", "blue")[unclass(part)] )
+      
+      pairs(df[,sample(1:(dim(df)[2]),size=(dim(df)[2]/2))], 
+            main = paste(FEAT_SET,MAIN_CLUST_METH,"_",SEC_CLUST_METH,sep="") 
+            , pch = 21, bg = colors()[sample(1:(length(colors())),length(part.val))]  [unclass(part)] )
+      
+    }
+  } else {
+    data$pred = 1
   }
 
   ### update submission 
