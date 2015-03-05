@@ -153,7 +153,10 @@ generateData = function(vars = 2 , centroids = 4 , obs = 200 , range = 0:10 , ce
       v1 = c(v1 , rnorm(n = centroids.obs , mean = centroids.center[cen] , sd = centroids.disp) )
     }
   } else {
-    v1 = c(v1 , rnorm(n = obs , mean = ((max(range) - min(range))/2) , sd = ((max(range) - min(range))/3)) )
+    for (cen in (1:centroids)) {
+    #v1 = c(v1 , rnorm(n = obs , mean = ((max(range) - min(range))/2) , sd = ((max(range) - min(range))/3)) )
+      v1 = c(v1 , rnorm(n = centroids.obs , mean = centroids.center[cen] , sd = centroids.disp*2) )
+    }
   }
   
   
