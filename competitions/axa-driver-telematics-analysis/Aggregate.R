@@ -216,8 +216,8 @@ logErrors = function (  feat.label ,
 ######################### settings ans constants 
 debug = F
 
-#RECOVER_FROM = 1047 ## <<<<<<<------------- attenzione session recovering in corso ... 
-ALL_ONES = c(1587,1634)
+#RECOVER_FROM = 1875 ## <<<<<<<------------- attenzione session recovering in corso ... 
+ALL_ONES = c(1587,1634,1875)
 
 ## do only these drivers (for testing)
 #DRIVERS = c(1634)
@@ -230,7 +230,7 @@ SUBMISSION_PREFIX = "sub"
 FEAT_SET = "features_red_" ### reduced data set
 
 ## clustering algorithms 
-MAIN_CLUST_METH = "mcquitty"
+MAIN_CLUST_METH = "complete"
 SEC_CLUST_METH = "kmeans"
 
 ######################### main loop 
