@@ -216,8 +216,11 @@ logErrors = function (  feat.label ,
 ######################### settings ans constants 
 debug = F
 
-#RECOVER_FROM = 1385 ## <<<<<<<------------- attenzione session recovering in corso ... 
-ALL_ONES = c(1634)
+#RECOVER_FROM = 1047 ## <<<<<<<------------- attenzione session recovering in corso ... 
+ALL_ONES = c(1587,1634)
+
+## do only these drivers (for testing)
+#DRIVERS = c(1634)
 
 ## file types 
 ERROR_PREFIX = "error"
@@ -237,11 +240,10 @@ sub$prob = -1
 if (exists("RECOVER_FROM") && RECOVER_FROM > -1) {
   cat("|--------------------------------->>> recovering session [data set:",FEAT_SET,"][main clust alg:",
       MAIN_CLUST_METH,"][secondary clust alg:",SEC_CLUST_METH,"] from driver ",RECOVER_FROM," ... \n")
-  sub = recoverSubmission  (FEAT_SET , MAIN_CLUST_METH , "centroid")
-  print(head(sub))
+  sub = recoverSubmission  (FEAT_SET , MAIN_CLUST_METH , SEC_CLUST_METH)
+  print(head(sub[sub$drv == (unique(sub$drv)[which(unique((sub$drv)) == RECOVER_FROM) -1]),]))
+  print(head(sub[sub$drv == (RECOVER_FROM),]))
 }
-
-#DRIVERS = c(1634)
 
 ALL_DRIVERS_ORIG = getDrivers() 
 if (exists("DRIVERS")) 
@@ -285,8 +287,15 @@ for ( drv in DIGESTED_DRIVERS  ) {
     logErrors(FEAT_SET, MAIN_CLUST_METH , SEC_CLUST_METH , drv )
       
     cat("|-------->>> trying with secondary method ... \n")  
-    NbClust(df, distance = "euclidean", min.nc = 2, max.nc = 8, 
+    tryCatch ({ NbClust(df, distance = "euclidean", min.nc = 2, max.nc = 8, 
                  method = SEC_CLUST_METH )
+    } , error = function(err) { 
+      print(paste("ERROR:  ",err))
+      
+      cat("|-------->>> trying with complete ... \n")  
+      NbClust(df, distance = "euclidean", min.nc = 2, max.nc = 8, 
+                          method = "complete" )
+      })
   })
   
   
