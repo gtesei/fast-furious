@@ -40,8 +40,8 @@ getSampleSubmission = function () {
 storeSubmission = function (data , feat.label , main.clust.alg , sec.clust.alg) {
   ret = ""
   
-  base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/axa-driver-telematics-analysis/submission"
-  base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/axa-driver-telematics-analysis/submission/"
+  base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/axa-driver-telematics-analysis/submission_supervised"
+  base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/axa-driver-telematics-analysis/submission_supervised/"
   
   if (file.exists(base.path1))  {
     ret = base.path1
@@ -253,6 +253,11 @@ if (exists("DRIVERS"))
 
 cat("|--------------------------------->>> found ",length(DIGESTED_DRIVERS)," drivers in digested datasets [",FEAT_SET,"]... \n")
 
+controlObject <- trainControl(method = "boot", number = 30 , 
+                              summaryFunction = twoClassSummary , classProbs = TRUE)
+
+error.num = 0
+ 
 for ( drv in DIGESTED_DRIVERS  ) { 
   
   cat("|---------------->>> processing driver:  [",FEAT_SET,"] <<",drv,">>  ..\n")
@@ -270,59 +275,53 @@ for ( drv in DIGESTED_DRIVERS  ) {
   
   data = getDigestedDriverData (FEAT_SET,drv)
   df <- scale(data[,-1]) 
+  df.initial = df 
   #df = preProcess(as.matrix(data[,-1]),method = c("center","scale"))
   
-  ## clustering ..
-  nc = NULL
-  
-  nc = tryCatch ({
-    NbClust(df, distance = "euclidean", min.nc = 2, max.nc = 8, 
-            method = MAIN_CLUST_METH , index = "alllong")
-  } , error = function(err) { 
-    print(paste("ERROR:  ",err))
-    cat("|-------->>> trying with secondary method ... \n")  
-    tryCatch ({ 
-      NbClust(df, distance = "manhattan", min.nc = 2, max.nc = 8, 
-              method = SEC_CLUST_METH )
+  ## predicting  
+  ##data$pred = 1 ## dummy 
+  label = rep(1,dim(df)[1])
+  drvs = sample(DIGESTED_DRIVERS[-which(drv == DIGESTED_DRIVERS)],100) 
+  old.size = dim(df)[1]
+  new.size = old.size
+  for (ds in drvs ) {
+    
+    if ( new.size >= (5*old.size) ) break
+      
+    datas = getDigestedDriverData (FEAT_SET,ds)
+    dfs <- scale(datas[,-1]) 
+    df.tmp = tryCatch({
+      rbind(df,dfs)
     } , error = function(err) { 
       print(paste("ERROR:  ",err))
-      logErrors(FEAT_SET, MAIN_CLUST_METH , SEC_CLUST_METH , drv )
-      cat("|-------->>> setting all ones ... \n")  
       NULL
     })
-  })
-  
-  if (! is.null(nc) ) {
-    ## analyzing results ...
-    part = as.numeric(nc$Best.partition)
-    part.val = unique(part)
-    cluster.perc = as.numeric(lapply(part.val,function(x) sum(part==x)/length(part)) )
-    dominant.index = which(cluster.perc == max(cluster.perc))
-    dominant.partition = part.val[dominant.index]
-    
-    cat("|-------->>> found ",length(part.val)," clusters ..\n") 
-    for (c in part.val) {
-      dominat.msg = ""
-      if (c == dominant.index) dominat.msg = " --> DOMINANT PARTITION"
-      cat("|----->>> cluster <<",as.character(cluster.perc[c]), ">> ", dominat.msg ,  " \n")
+    if(! is.null(df.tmp)) {
+      new.size = dim(df.tmp)[1]
+      cat ("old df was ",as.character(old.size) , " rows ... new is ",as.character(new.size) ,"\n")
+      df = df.tmp
     }
-    
-    data$clust = part
-    data$pred = ifelse(part == dominant.partition , 1 , 0)
-    
-    if (debug) {
-      #     pairs(df[,sample(1:(dim(df)[2]),size=(dim(df)[2]/2))], 
-      #           main = paste(FEAT_SET,MAIN_CLUST_METH,"_",SEC_CLUST_METH,sep="") 
-      #           , pch = 21, bg = c("red", "green3", "blue")[unclass(part)] )
-      
-      pairs(df[,sample(1:(dim(df)[2]),size=(dim(df)[2]/2))], 
-            main = paste(FEAT_SET,MAIN_CLUST_METH,"_",SEC_CLUST_METH,sep="") 
-            , pch = 21, bg = colors()[sample(1:(length(colors())),length(part.val))]  [unclass(part)] )
-      
-    }
-  } else {
-    data$pred = 1
   }
+  
+  if (new.size < (5*old.size) ) {
+    cat("impossible building train set ... setting all ones ... \n")
+    data$pred = 1 ## dummy 
+    error.num = error.num + 1 
+  } else {
+    cat("training ... \n")
+    label = factor(c(label,rep(0,(new.size-old.size))))
+    levels(label) = c("isOther","isTheDriver")
+    
+    sigmaRangeReduced <- sigest(as.matrix(df))
+    svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1], .C = 2^(seq(-4, 4)))
+    model <- train( x = df , y = label,  
+                    method = "svmRadial", tuneGrid = svmRGridReduced, 
+                    metric = "ROC", fit = FALSE, trControl = controlObject)
+    cat("predicting ... \n")
+    
+    data$pred = predict(model , df.initial , type = "prob") [,'isTheDriver'] 
+  }
+  
 
   ### update submission 
   cat("|----->>> updating submission ..  \n")
@@ -340,7 +339,7 @@ for ( drv in DIGESTED_DRIVERS  ) {
 ## store submission 
 cat("|----->>> storing submission ..  \n")
 storeSubmission (sub[,(grep(pattern = "driver_trip|prob"  , 
-                            x = colnames(sub)))] , FEAT_SET , MAIN_CLUST_METH , SEC_CLUST_METH)
+                            x = colnames(sub)))] , FEAT_SET , "__supervised_approach__" , "svm")
 
 ## some statistics ... 
 cat("|----------------------->>> some statistics ..  \n")
@@ -348,6 +347,7 @@ cat("|----------------------->>> correct == " , ifelse ( sum(sub$prob == -1) > 0
 p.mean = sum(sub$prob)/length(sub$prob)
 cat("|----------------------->>> [" ,paste(FEAT_SET,MAIN_CLUST_METH,"_",SEC_CLUST_METH,sep="") , "] AVERAGE PROB == ",
     p.mean," \n")
+cat("|----------------------->>>  number of errors  == ", as.character(error.num), " \n")
 
 
 
