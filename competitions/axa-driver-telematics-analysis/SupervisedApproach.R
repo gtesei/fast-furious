@@ -225,11 +225,20 @@ ALL_ONES = c(1634)
 ## digest types 
 FEAT_SET = "features_red_" ### reduced data set
 
-## clustering algorithms 
-MAIN_CLUST_METH = "kmeans"
-SEC_CLUST_METH = "ward"
+## models
+sup.model = NULL 
+
+SUP_SVM = "svm"
+SUP_LOG  = "logistic_regression"
+SUP_LDA = "lda"
+SUP_PLSDA = "plsda"
+SUP_NSC = "nsc"
+SUP_NN = "neural_networks"
+SUP_KNN = "knn"
 
 ######################### main loop 
+
+sup.model = SUP_KNN
 
 sub = getSampleSubmission()
 sub$prob = -1
@@ -312,13 +321,50 @@ for ( drv in DIGESTED_DRIVERS  ) {
     label = factor(c(label,rep(0,(new.size-old.size))))
     levels(label) = c("isOther","isTheDriver")
     
-    sigmaRangeReduced <- sigest(as.matrix(df))
-    svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1], .C = 2^(seq(-4, 4)))
-    model <- train( x = df , y = label,  
-                    method = "svmRadial", tuneGrid = svmRGridReduced, 
-                    metric = "ROC", fit = FALSE, trControl = controlObject)
-    cat("predicting ... \n")
+    model = NULL
+    if (sup.model == SUP_SVM) { ## svm 
+      sigmaRangeReduced <- sigest(as.matrix(df))
+      svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1], .C = 2^(seq(-4, 4)))
+      model <- train( x = df , y = label,  
+                      method = "svmRadial", tuneGrid = svmRGridReduced, 
+                      metric = "ROC", fit = FALSE, trControl = controlObject)
+      
+      #     model <- train( x = df , y = label,  
+      #                     method = "svmRadial", tuneLength = 15 , 
+      #                     metric = "ROC", fit = FALSE, trControl = controlObject)
+      
+    } else if (sup.model == SUP_LOG) { ## logistic_regression
+      model <- train( x = df , y = label , 
+                      method = "glm", metric = "ROC", trControl = controlObject)
+    } else if (sup.model == SUP_LDA) { ## lda
+      model <- train( x = df , y = label,  
+                      method = "lda", metric = "ROC" , trControl = controlObject)
+    } else if (sup.model == SUP_PLSDA) { ## plsda
+      model <- train( x = df , y = label,  
+                      method = "pls", tuneGrid = expand.grid(.ncomp = 1:10), 
+                      metric = "ROC" , trControl = controlObject)
+    } else if (sup.model == SUP_NSC) { ## nsc
+      nscGrid <- data.frame(.threshold = 0:25)
+      model <- train( x = df , y = label,  
+                      method = "pam", tuneGrid = nscGrid, 
+                      metric = "ROC", trControl = controlObject)
+    } else if (sup.model == SUP_NN) { ## nn
+      nnetGrid <- expand.grid(.size = 1:10, .decay = c(0, .1, 1, 2))
+      maxSize <- max(nnetGrid$.size)
+      numWts <- 1*(maxSize * ( (dim(df)[2]) + 1) + maxSize + 1)
+      model <- train( x = df , y = label,  
+                      method = "nnet", metric = "ROC", 
+                      preProc = c( "spatialSign") , 
+                      tuneGrid = nnetGrid , trace = FALSE , maxit = 2000 , 
+                      MaxNWts = numWts, trControl = controlObject)
+    } else if (sup.model == SUP_KNN) { ## knn
+      model <- train( x = df , y = label,  
+                      method = "knn", 
+                      tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
+                      metric = "ROC",  trControl = controlObject)
+    }
     
+    cat("predicting ... \n")
     data$pred = predict(model , df.initial , type = "prob") [,'isTheDriver'] 
   }
   
@@ -339,19 +385,13 @@ for ( drv in DIGESTED_DRIVERS  ) {
 ## store submission 
 cat("|----->>> storing submission ..  \n")
 storeSubmission (sub[,(grep(pattern = "driver_trip|prob"  , 
-                            x = colnames(sub)))] , FEAT_SET , "__supervised_approach__" , "svm")
+                            x = colnames(sub)))] , FEAT_SET , "__supervised_approach__" , sup.model)
 
 ## some statistics ... 
 cat("|----------------------->>> some statistics ..  \n")
 cat("|----------------------->>> correct == " , ifelse ( sum(sub$prob == -1) > 0  , "NO" , "YES" ) , " \n" ) 
 p.mean = sum(sub$prob)/length(sub$prob)
-cat("|----------------------->>> [" ,paste(FEAT_SET,MAIN_CLUST_METH,"_",SEC_CLUST_METH,sep="") , "] AVERAGE PROB == ",
+cat("|----------------------->>> [" ,paste(sup.model,sep="") , "] AVERAGE 1s == ",
     p.mean," \n")
 cat("|----------------------->>>  number of errors  == ", as.character(error.num), " \n")
-
-
-
-
-
-
 
