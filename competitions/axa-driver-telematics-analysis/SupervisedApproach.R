@@ -235,20 +235,22 @@ SUP_PLSDA = "plsda"
 SUP_NSC = "nsc"
 SUP_NN = "neural_networks"
 SUP_KNN = "knn"
+SUP_CLASS_TREE = "class_tree"
+SUP_BOOSTED_TREE = "boosted_tree"
+SUP_BAGGED_TREE = "bagged_tree"
 
 ######################### main loop 
 
-sup.model = SUP_KNN
+sup.model = SUP_BAGGED_TREE
 
 sub = getSampleSubmission()
 sub$prob = -1
-if (exists("RECOVER_FROM") && RECOVER_FROM > -1) {
-  cat("|--------------------------------->>> recovering session [data set:",FEAT_SET,"][main clust alg:",
-      MAIN_CLUST_METH,"][secondary clust alg:",SEC_CLUST_METH,"] from driver ",RECOVER_FROM," ... \n")
-  sub = recoverSubmission  (FEAT_SET , MAIN_CLUST_METH , SEC_CLUST_METH)
-  print(head(sub[sub$drv == (unique(sub$drv)[which(unique((sub$drv)) == RECOVER_FROM) -1]),]))
-  print(head(sub[sub$drv == (RECOVER_FROM),]))
-}
+# if (exists("RECOVER_FROM") && RECOVER_FROM > -1) {
+#   cat("|--------------------------------->>> recovering session [data set:",FEAT_SET,"] from driver ",RECOVER_FROM," ... \n")
+#   sub = recoverSubmission  (FEAT_SET , MAIN_CLUST_METH , SEC_CLUST_METH)
+#   print(head(sub[sub$drv == (unique(sub$drv)[which(unique((sub$drv)) == RECOVER_FROM) -1]),]))
+#   print(head(sub[sub$drv == (RECOVER_FROM),]))
+# }
 
 ALL_DRIVERS_ORIG = getDrivers() 
 if (exists("DRIVERS")) 
@@ -261,6 +263,7 @@ if (exists("DRIVERS"))
   DIGESTED_DRIVERS = intersect(DIGESTED_DRIVERS,DRIVERS)
 
 cat("|--------------------------------->>> found ",length(DIGESTED_DRIVERS)," drivers in digested datasets [",FEAT_SET,"]... \n")
+cat("|--------------------------------->>> SUPERVISED MODEL: ", sup.model , "... \n")
 
 controlObject <- trainControl(method = "boot", number = 30 , 
                               summaryFunction = twoClassSummary , classProbs = TRUE)
@@ -290,12 +293,12 @@ for ( drv in DIGESTED_DRIVERS  ) {
   ## predicting  
   ##data$pred = 1 ## dummy 
   label = rep(1,dim(df)[1])
-  drvs = sample(DIGESTED_DRIVERS[-which(drv == DIGESTED_DRIVERS)],100) 
+  drvs = sample(DIGESTED_DRIVERS[-which(drv == DIGESTED_DRIVERS)],1000) 
   old.size = dim(df)[1]
   new.size = old.size
   for (ds in drvs ) {
     
-    if ( new.size >= (5*old.size) ) break
+    if ( new.size >= (2*old.size) ) break
       
     datas = getDigestedDriverData (FEAT_SET,ds)
     dfs <- scale(datas[,-1]) 
@@ -312,7 +315,7 @@ for ( drv in DIGESTED_DRIVERS  ) {
     }
   }
   
-  if (new.size < (5*old.size) ) {
+  if (new.size < (2*old.size) ) {
     cat("impossible building train set ... setting all ones ... \n")
     data$pred = 1 ## dummy 
     error.num = error.num + 1 
@@ -362,6 +365,24 @@ for ( drv in DIGESTED_DRIVERS  ) {
                       method = "knn", 
                       tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
                       metric = "ROC",  trControl = controlObject)
+    } else if (sup.model == SUP_CLASS_TREE) { ## class trees 
+      model <- train( x = df , y = label,  
+                      method = "rpart", tuneLength = 30, 
+                      metric = "ROC", trControl = controlObject)
+      
+    } else if (sup.model == SUP_BOOSTED_TREE) { ## boosted_trees 
+      model <- train( x = df , y = label,  
+                      tuneGrid = expand.grid(.trials = c(1, (1:10)*10), .model = "tree", .winnow = c(TRUE, FALSE) ),
+                      method = "C5.0",  metric = "ROC", trControl = controlObject)
+      
+    } else if (sup.model == SUP_BAGGED_TREE) { ## boosted_trees 
+      model <- train( x = df , y = label,  
+                      method = "bag",  metric = "ROC", trControl = controlObject, 
+                      tuneGrid = data.frame(vars = seq(1, 15, by = 2)), 
+                      bagControl = bagControl(fit = plsBag$fit,
+                                              predict = plsBag$pred,
+                                              aggregate = plsBag$aggregate))
+      
     }
     
     cat("predicting ... \n")
