@@ -216,15 +216,22 @@ for ( drv in ALL_DRIVERS  ) {
       trips = intersect(trips,TRIPS)
     
     features = data.frame(trip = trips, 
-                          
-                          rho.mean = -1 , rho.std = -1 , rho.kur = -1, rho.skew =-1, 
-                          alpha.mean = -1 , alpha.std = -1 , alpha.kur = -1, alpha.skew =-1, 
+                          #### features eliminate perchè dipendenti dalla durata del sampling 
+                          #rho.mean = -1 , rho.std = -1 , rho.kur = -1, rho.skew =-1, 
+                          #alpha.mean = -1 , alpha.std = -1 , alpha.kur = -1, alpha.skew =-1, 
                           
                           V.mean = -1 , V.std = -1 , V.kur = -1, V.skew =-1, 
-                          V.msc = -1 , V.pow = -1 , V.pow25 = -1 , V.pow50 = -1 , V.pow75 = -1,
+                          V.msc = -1 , 
+                          #### features eliminate perchè dipendenti dalla durata del sampling 
+                          #V.pow = -1 , 
+                          V.pow25 = -1 , V.pow50 = -1 , V.pow75 = -1,
+                          V.30 = -1 , V.60 = -1 , V.90 = -1 , 
                           
                           A.mean =-1, A.std =-1, A.kur =-1, A.skew =-1, 
-                          A.msc = -1 , A.pow = -1 , A.pow25 = -1 , A.pow50 = -1 , A.pow75 = -1)
+                          A.msc = -1 , 
+                          #### features eliminate perchè dipendenti dalla durata del sampling 
+                          #A.pow = -1 , 
+                          A.pow25 = -1 , A.pow50 = -1 , A.pow75 = -1)
     
     cat("|---------------->>> found <<",length(trips),">>  trips for driver <<",drv,">> ..\n")
     for (trip in trips) {
@@ -276,17 +283,17 @@ for ( drv in ALL_DRIVERS  ) {
         trdata$A =  apply(trdata,1,function(x) {
           sqrt(x[8]^2 + x[9]^2)
         })
+        
         #### extract 2-tier features 
-        
-        rho.mean = mean(trdata$rho)
-        rho.std = sd(trdata$rho)
-        rho.skew = skewness(trdata$rho)
-        rho.kur = kurtosis(trdata$rho)
-        
-        alpha.mean = mean(trdata$alpha)
-        alpha.std = sd(trdata$alpha)
-        alpha.skew = skewness(trdata$alpha)
-        alpha.kur = kurtosis(trdata$alpha)
+#         rho.mean = mean(trdata$rho)
+#         rho.std = sd(trdata$rho)
+#         rho.skew = skewness(trdata$rho)
+#         rho.kur = kurtosis(trdata$rho)
+#         
+#         alpha.mean = mean(trdata$alpha)
+#         alpha.std = sd(trdata$alpha)
+#         alpha.skew = skewness(trdata$alpha)
+#         alpha.kur = kurtosis(trdata$alpha)
         
         ## V
         V.mean = mean(trdata$V)
@@ -298,7 +305,9 @@ for ( drv in ALL_DRIVERS  ) {
         V.msc = findMainFrequencyComponent(fs=1,Time=dim(trdata)[1],sign=trdata$V,doPlot=F)
         
         ## V.pow 
-        V.pow = powerSpect(fs=1,Time=dim(trdata)[1],sign=trdata$V) 
+        #V.pow = powerSpect(fs=1,Time=dim(trdata)[1],sign=trdata$V) 
+
+        V.quant = as.numeric(quantile(trdata$V, seq(0.3,1, by = 0.3)))
         
         edges = findSpectralEdges (fs=1,Time=dim(trdata)[1],sign=trdata$V)
         
@@ -316,7 +325,7 @@ for ( drv in ALL_DRIVERS  ) {
         A.msc = findMainFrequencyComponent(fs=1,Time=dim(trdata)[1],sign=trdata$A,doPlot=F)
         
         ## A.pow 
-        A.pow = powerSpect(fs=1,Time=dim(trdata)[1],sign=trdata$A) 
+        #A.pow = powerSpect(fs=1,Time=dim(trdata)[1],sign=trdata$A) 
         
         edges = findSpectralEdges (fs=1,Time=dim(trdata)[1],sign=trdata$A)
         
@@ -325,15 +334,16 @@ for ( drv in ALL_DRIVERS  ) {
         A.pow75 = edges[3]
         
         #### update featutures set   
-        features[features$trip == trip , ]$rho.mean = rho.mean
-        features[features$trip == trip , ]$rho.std = rho.std
-        features[features$trip == trip , ]$rho.skew = rho.skew
-        features[features$trip == trip , ]$rho.kur = rho.kur
-        
-        features[features$trip == trip , ]$alpha.mean = alpha.mean
-        features[features$trip == trip , ]$alpha.std = alpha.std
-        features[features$trip == trip , ]$alpha.skew = alpha.skew
-        features[features$trip == trip , ]$alpha.kur = alpha.kur
+#### features eliminate perchè dipendenti dalla durata del sampling 
+#         features[features$trip == trip , ]$rho.mean = rho.mean
+#         features[features$trip == trip , ]$rho.std = rho.std
+#         features[features$trip == trip , ]$rho.skew = rho.skew
+#         features[features$trip == trip , ]$rho.kur = rho.kur
+#         
+#         features[features$trip == trip , ]$alpha.mean = alpha.mean
+#         features[features$trip == trip , ]$alpha.std = alpha.std
+#         features[features$trip == trip , ]$alpha.skew = alpha.skew
+#         features[features$trip == trip , ]$alpha.kur = alpha.kur
         
         ## V 
         features[features$trip == trip , ]$V.mean = V.mean
@@ -342,11 +352,16 @@ for ( drv in ALL_DRIVERS  ) {
         features[features$trip == trip , ]$V.kur = V.kur
         
         features[features$trip == trip , ]$V.msc = V.msc
-        features[features$trip == trip , ]$V.pow = V.pow
+#### features eliminate perchè dipendenti dalla durata del sampling 
+        #features[features$trip == trip , ]$V.pow = V.pow
         
         features[features$trip == trip , ]$V.pow25 = V.pow25
         features[features$trip == trip , ]$V.pow50 = V.pow50
         features[features$trip == trip , ]$V.pow75 = V.pow75
+
+        features[features$trip == trip , ]$V.30 = V.quant[1]
+        features[features$trip == trip , ]$V.60 = V.quant[2]
+        features[features$trip == trip , ]$V.90 = V.quant[2]
         
         ## A
         features[features$trip == trip , ]$A.mean = A.mean
@@ -355,7 +370,8 @@ for ( drv in ALL_DRIVERS  ) {
         features[features$trip == trip , ]$A.kur = A.kur
         
         features[features$trip == trip , ]$A.msc = A.msc
-        features[features$trip == trip , ]$A.pow = A.pow
+#### features eliminate perchè dipendenti dalla durata del sampling 
+        #features[features$trip == trip , ]$A.pow = A.pow
         
         features[features$trip == trip , ]$A.pow25 = A.pow25
         features[features$trip == trip , ]$A.pow50 = A.pow50
