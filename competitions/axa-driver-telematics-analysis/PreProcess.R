@@ -216,20 +216,25 @@ for ( drv in ALL_DRIVERS  ) {
       trips = intersect(trips,TRIPS)
     
     features = data.frame(trip = trips, 
-                          #### features eliminate perchè dipendenti dalla durata del sampling 
+                          #### features eliminate perche dipendenti dalla durata del sampling 
                           #rho.mean = -1 , rho.std = -1 , rho.kur = -1, rho.skew =-1, 
                           #alpha.mean = -1 , alpha.std = -1 , alpha.kur = -1, alpha.skew =-1, 
                           
+                          alpha.speed.mean = -1, alpha.speed.std = -1 , alpha.speed.kur = -1, alpha.speed.skew =-1, 
+                          alpha.speed.msc = -1, 
+                          alpha.speed.pow25 = -1 , alpha.speed.pow50 = -1 , alpha.speed.pow75 = -1,
+                          alpha.speed.30 = -1 , alpha.speed.60 = -1 , alpha.speed.90 = -1 ,
+                          
                           V.mean = -1 , V.std = -1 , V.kur = -1, V.skew =-1, 
                           V.msc = -1 , 
-                          #### features eliminate perchè dipendenti dalla durata del sampling 
+                          #### features eliminate perche dipendenti dalla durata del sampling 
                           #V.pow = -1 , 
                           V.pow25 = -1 , V.pow50 = -1 , V.pow75 = -1,
                           V.30 = -1 , V.60 = -1 , V.90 = -1 , 
-                          
+                        
                           A.mean =-1, A.std =-1, A.kur =-1, A.skew =-1, 
                           A.msc = -1 , 
-                          #### features eliminate perchè dipendenti dalla durata del sampling 
+                          #### features eliminate perch? dipendenti dalla durata del sampling 
                           #A.pow = -1 , 
                           A.pow25 = -1 , A.pow50 = -1 , A.pow75 = -1)
     
@@ -257,6 +262,10 @@ for ( drv in ALL_DRIVERS  ) {
           else ret = atan(x[2]/x[1])
           ret
         })
+        
+        ## alpha.speed 
+        trdata$alpha.speed =  trdata$alpha - shift(trdata$alpha,1)
+        trdata$alpha.speed[1] = 0
         
         ## vx 
         trdata$vx =  trdata$x - shift(trdata$x,1)
@@ -295,6 +304,22 @@ for ( drv in ALL_DRIVERS  ) {
 #         alpha.skew = skewness(trdata$alpha)
 #         alpha.kur = kurtosis(trdata$alpha)
         
+        ## alpha.speed
+        alpha.speed.mean = mean(trdata$alpha.speed)
+        alpha.speed.std = sd(trdata$alpha.speed)
+        alpha.speed.skew = skewness(trdata$alpha.speed)
+        alpha.speed.kur = kurtosis(trdata$alpha.speed)
+
+        alpha.speed.msc = findMainFrequencyComponent(fs=1,Time=dim(trdata)[1],sign=trdata$alpha.speed,doPlot=F)
+
+        alpha.speed.quant = as.numeric(quantile(trdata$alpha.speed, seq(0.3,1, by = 0.3)))
+
+        alpha.speed.edges = findSpectralEdges (fs=1,Time=dim(trdata)[1],sign=trdata$alpha.speed)
+
+        alpha.speed.pow25 = alpha.speed.edges[1]
+        alpha.speed.pow50 = alpha.speed.edges[2]
+        alpha.speed.pow75 = alpha.speed.edges[3]
+
         ## V
         V.mean = mean(trdata$V)
         V.std = sd(trdata$V)
@@ -334,7 +359,7 @@ for ( drv in ALL_DRIVERS  ) {
         A.pow75 = edges[3]
         
         #### update featutures set   
-#### features eliminate perchè dipendenti dalla durata del sampling 
+#### features eliminate perch? dipendenti dalla durata del sampling 
 #         features[features$trip == trip , ]$rho.mean = rho.mean
 #         features[features$trip == trip , ]$rho.std = rho.std
 #         features[features$trip == trip , ]$rho.skew = rho.skew
@@ -344,7 +369,24 @@ for ( drv in ALL_DRIVERS  ) {
 #         features[features$trip == trip , ]$alpha.std = alpha.std
 #         features[features$trip == trip , ]$alpha.skew = alpha.skew
 #         features[features$trip == trip , ]$alpha.kur = alpha.kur
+
+
+        ## alpha.speed 
+        features[features$trip == trip , ]$alpha.speed.mean = alpha.speed.mean
+        features[features$trip == trip , ]$alpha.speed.std = alpha.speed.std
+        features[features$trip == trip , ]$alpha.speed.skew = alpha.speed.skew
+        features[features$trip == trip , ]$alpha.speed.kur = alpha.speed.kur
         
+        features[features$trip == trip , ]$alpha.speed.msc = alpha.speed.msc
+        
+        features[features$trip == trip , ]$alpha.speed.pow25 = alpha.speed.pow25
+        features[features$trip == trip , ]$alpha.speed.pow50 = alpha.speed.pow50
+        features[features$trip == trip , ]$alpha.speed.pow75 = alpha.speed.pow75
+        
+        features[features$trip == trip , ]$alpha.speed.30 = V.quant[1]
+        features[features$trip == trip , ]$alpha.speed.60 = alpha.speed.quant[2]
+        features[features$trip == trip , ]$alpha.speed.90 = alpha.speed.quant[3]
+
         ## V 
         features[features$trip == trip , ]$V.mean = V.mean
         features[features$trip == trip , ]$V.std = V.std
@@ -352,7 +394,7 @@ for ( drv in ALL_DRIVERS  ) {
         features[features$trip == trip , ]$V.kur = V.kur
         
         features[features$trip == trip , ]$V.msc = V.msc
-#### features eliminate perchè dipendenti dalla durata del sampling 
+#### features eliminate perch? dipendenti dalla durata del sampling 
         #features[features$trip == trip , ]$V.pow = V.pow
         
         features[features$trip == trip , ]$V.pow25 = V.pow25
@@ -370,7 +412,7 @@ for ( drv in ALL_DRIVERS  ) {
         features[features$trip == trip , ]$A.kur = A.kur
         
         features[features$trip == trip , ]$A.msc = A.msc
-#### features eliminate perchè dipendenti dalla durata del sampling 
+#### features eliminate perch? dipendenti dalla durata del sampling 
         #features[features$trip == trip , ]$A.pow = A.pow
         
         features[features$trip == trip , ]$A.pow25 = A.pow25

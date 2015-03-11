@@ -214,7 +214,7 @@ logErrors = function (  feat.label ,
 } 
 
 ######################### settings ans constants 
-debug = F
+debug = T
 
 #RECOVER_FROM = 1634 ## <<<<<<<------------- attenzione session recovering in corso ... 
 ALL_ONES = c(1634)
@@ -293,7 +293,7 @@ for ( drv in DIGESTED_DRIVERS  ) {
   ## predicting  
   ##data$pred = 1 ## dummy 
   label = rep(1,dim(df)[1])
-  drvs = sample(DIGESTED_DRIVERS[-which(drv == DIGESTED_DRIVERS)],2000)  
+  drvs = sample(DIGESTED_DRIVERS[-which(drv == DIGESTED_DRIVERS)])  
   old.size = dim(df)[1]
   new.size = old.size
   for (ds in drvs ) {
