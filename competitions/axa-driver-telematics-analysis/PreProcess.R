@@ -383,7 +383,7 @@ for ( drv in ALL_DRIVERS  ) {
         features[features$trip == trip , ]$alpha.speed.pow50 = alpha.speed.pow50
         features[features$trip == trip , ]$alpha.speed.pow75 = alpha.speed.pow75
         
-        features[features$trip == trip , ]$alpha.speed.30 = V.quant[1]
+        features[features$trip == trip , ]$alpha.speed.30 = alpha.speed.quant[1]
         features[features$trip == trip , ]$alpha.speed.60 = alpha.speed.quant[2]
         features[features$trip == trip , ]$alpha.speed.90 = alpha.speed.quant[3]
 
