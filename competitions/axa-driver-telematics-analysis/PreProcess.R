@@ -194,8 +194,8 @@ debug = F
 
 ######################### main loop 
 
-ALL_ONES = c(1634)
-FROM = 1634 
+## ALL_ONES = c(1634)
+## FROM = 1634 
 
 #DRIVERS = c(1634)
 ##TRIPS = c(1,26)

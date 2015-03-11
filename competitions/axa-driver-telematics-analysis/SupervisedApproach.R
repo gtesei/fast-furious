@@ -241,7 +241,7 @@ SUP_BAGGED_TREE = "bagged_tree"
 
 ######################### main loop 
 
-sup.model = SUP_BAGGED_TREE
+sup.model = SUP_KNN
 
 sub = getSampleSubmission()
 sub$prob = -1
@@ -293,17 +293,26 @@ for ( drv in DIGESTED_DRIVERS  ) {
   ## predicting  
   ##data$pred = 1 ## dummy 
   label = rep(1,dim(df)[1])
-  drvs = sample(DIGESTED_DRIVERS[-which(drv == DIGESTED_DRIVERS)],1000) 
+  drvs = sample(DIGESTED_DRIVERS[-which(drv == DIGESTED_DRIVERS)],2000)  
   old.size = dim(df)[1]
   new.size = old.size
   for (ds in drvs ) {
     
-    if ( new.size >= (2*old.size) ) break
+    if ( new.size >= (5*old.size) ) break
       
     datas = getDigestedDriverData (FEAT_SET,ds)
     dfs <- scale(datas[,-1]) 
     df.tmp = tryCatch({
-      rbind(df,dfs)
+      col.df = paste(colnames(df) , collapse="|" ) 
+      col.dfs = paste(colnames(dfs) , collapse="|" ) 
+      if (debug) cat ("colnames df : ",col.df,"\n")
+      if (debug) cat ("colnames dfs: ",col.dfs,"\n")
+      if (col.df == col.dfs) {
+        if (debug) cat ("equals ... trying rbind  ... \n")
+        rbind(df,dfs)
+      } else {
+        NULL
+      }
     } , error = function(err) { 
       print(paste("ERROR:  ",err))
       NULL
@@ -315,7 +324,7 @@ for ( drv in DIGESTED_DRIVERS  ) {
     }
   }
   
-  if (new.size < (2*old.size) ) {
+  if (new.size < (5*old.size) ) {
     cat("impossible building train set ... setting all ones ... \n")
     data$pred = 1 ## dummy 
     error.num = error.num + 1 
