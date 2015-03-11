@@ -361,7 +361,7 @@ for ( drv in ALL_DRIVERS  ) {
 
         features[features$trip == trip , ]$V.30 = V.quant[1]
         features[features$trip == trip , ]$V.60 = V.quant[2]
-        features[features$trip == trip , ]$V.90 = V.quant[2]
+        features[features$trip == trip , ]$V.90 = V.quant[3]
         
         ## A
         features[features$trip == trip , ]$A.mean = A.mean
