@@ -214,7 +214,7 @@ logErrors = function (  feat.label ,
 } 
 
 ######################### settings ans constants 
-debug = T
+debug = F
 
 #RECOVER_FROM = 1634 ## <<<<<<<------------- attenzione session recovering in corso ... 
 ALL_ONES = c(1634)
@@ -324,7 +324,7 @@ for ( drv in DIGESTED_DRIVERS  ) {
     }
   }
   
-  if (new.size < (5*old.size) ) {
+  if (new.size < (2*old.size) ) {
     cat("impossible building train set ... setting all ones ... \n")
     data$pred = 1 ## dummy 
     error.num = error.num + 1 
