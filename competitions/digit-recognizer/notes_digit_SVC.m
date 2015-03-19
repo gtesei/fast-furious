@@ -47,18 +47,18 @@ for label = 0:9
 
   ##model = svmtrain(ytrain, Xtrain, ['-s 4 -t 2 -g' gamma ' -c ' C ' -n ' nu ] );
   [pred_train, accuracy_train, probs_train] = svmpredict( double(ytrain == label) , Xtrain, model , '-b 1');
-  [pred_val, accuracy_xval, probs_xval] = svmpredict( double(yval == label) , Xval, model , '-b 1 ');
+  [pred_val, accuracy_xval, probs_val] = svmpredict( double(yval == label) , Xval, model , '-b 1 ');
 
-  probs_matrix_train(:,(label+1)) = probs_train;
-  probs_matrix_xval(:,(label+1)) = probs_val
+  probs_matrix_train(:,(label+1)) = probs_train(:,2);
+  probs_matrix_xval(:,(label+1)) = probs_val(:,2);
 
 endfor 
 
-[prob_min_train , ind_train_min] = min(probs_matrix_train);
-[prob_min_xval , ind_xval_min] = min(probs_matrix_xval);
+[prob_min_train , ind_train_min] = min(probs_matrix_train')';
+[prob_min_xval , ind_xval_min] = min(probs_matrix_xval')';
 
-pred_train = (ind_train_min - 1);
-pred_val = (ind_xval_min - 1);
+pred_train = (ind_train_min - 1)';
+pred_val = (ind_xval_min - 1)';
 
 acc_train = mean(double(pred_train == ytrain)) * 100;
 acc_val = mean(double(pred_val == yval)) * 100;
@@ -66,7 +66,7 @@ if (verbose)
   printf("*** TRAIN STATS ***\n");
   printf("|-->  Accuracy == %f \n",acc_train);
 endif
-grid(i,6) = acc_val;
+
 if (verbose)
   printf("*** CV STATS ***\n");
   printf("|-->  Accuracy == %f \n",acc_val);

@@ -241,7 +241,7 @@ SUP_BAGGED_TREE = "bagged_tree"
 
 ######################### main loop 
 
-sup.model = SUP_KNN
+sup.model = SUP_SVM
 
 sub = getSampleSubmission()
 sub$prob = -1
