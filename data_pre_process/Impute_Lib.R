@@ -1,5 +1,47 @@
 library(data.table) 
 
+
+getPvalueTypeIError = function(x,y) {
+  test = NA
+  pvalue = NA
+  
+  ## type casting and understanding stat test 
+  if (class(x) == "integer") x = as.numeric(x)
+  if (class(y) == "integer") y = as.numeric(y)
+  
+  if ( class(x) == "factor" & class(y) == "numeric" ) {
+    # C -> Q
+    test = "ANOVA"
+  } else if (class(x) == "factor" & class(y) == "factor" ) {
+    # C -> C
+    test = "CHI-SQUARE"
+  } else if (class(x) == "numeric" & class(y) == "numeric" ) {
+    test = "PEARSON"
+  }  else {
+    # Q -> C 
+    # it performs anova test x ~ y 
+    test = "ANOVA"
+    tmp = x 
+    x = y 
+    y = tmp 
+  }
+  
+  ## performing stat test and computing p-value
+  if (test == "ANOVA") {                
+    test.anova = aov(y~x)
+    pvalue = summary(test.anova)[[1]][["Pr(>F)"]][1]
+  } else if (test == "CHI-SQUARE") {    
+    test.chisq = chisq.test(x = x , y = y)
+    pvalue = test.chisq$p.value
+  } else {                             
+    ###  PEARSON
+    test.corr = cor.test(x =  x , y =  y)
+    pvalue = test.corr$p.value
+  }
+  
+  pvalue
+}
+
 buildDecisionMatrix = function (data) {
   predictors.name = colnames(data)
   DecisionMatrix = data.frame(predictor = predictors.name)
