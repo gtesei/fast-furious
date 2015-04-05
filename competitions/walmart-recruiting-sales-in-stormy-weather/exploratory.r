@@ -54,7 +54,7 @@ getTrain = function () {
   cat("loading train data ... ")
   trdata = as.data.frame(fread(path))
   cat("converting date ...")
-  train$date = as.Date(train$date,"%Y-%m-%d")
+  #trdata$date = as.Date(trdata$date,"%Y-%m-%d")
   trdata
 } 
 
@@ -134,77 +134,126 @@ getWeather = function () {
   ###
   weather$TS = 0
   weather[grep(x = weather$codesum , pattern = "TS"), ]$TS = 1
+  #weather$TS = factor(weather$TS)
   
   weather$GR = 0
   weather[grep(x = weather$codesum , pattern = "GR" , fixed = T), ]$GR = 1
+  #weather$GR = factor(weather$GR)
   
   weather$RA = 0
   weather[grep(x = weather$codesum , pattern = "RA" , fixed = T), ]$RA = 1
+  #weather$RA = factor(weather$RA)
   
   weather$DZ = 0
   weather[grep(x = weather$codesum , pattern = "DZ" , fixed = T), ]$DZ = 1
+  #weather$DZ = factor(weather$DZ)
   
   weather$SN = 0
   weather[grep(x = weather$codesum , pattern = "SN" , fixed = T), ]$SN = 1
+  #weather$SN = factor(weather$SN)
   
   weather$SG = 0
   weather[grep(x = weather$codesum , pattern = "SG" , fixed = T), ]$SG = 1
+  #weather$SG = factor(weather$SG)
   
   weather$GS = 0
   weather[grep(x = weather$codesum , pattern = "GS" , fixed = T), ]$GS = 1
+  #weather$GS = factor(weather$GS)
   
   weather$PL = 0
   weather[grep(x = weather$codesum , pattern = "PL" , fixed = T), ]$PL = 1
+  #weather$PL = factor(weather$PL)
   
   weather$FG_PLUS = 0
   weather[grep(x = weather$codesum , pattern = "FG+" , fixed = T), ]$FG_PLUS = 1
+  #weather$FG_PLUS = factor(weather$FG_PLUS)
   
   weather$FG = 0
   weather[grep(x = weather$codesum , pattern = "FG" , fixed = T), ]$FG = 1
+  #weather$FG = factor(weather$FG)
   
   weather$BR = 0
   weather[grep(x = weather$codesum , pattern = "BR" , fixed = T), ]$BR = 1
+  #weather$BR = factor(weather$BR)
   
   weather$UP = 0
   weather[grep(x = weather$codesum , pattern = "UP" , fixed = T), ]$UP = 1
+  #weather$UP = factor(weather$UP)
   
   weather$HZ = 0
   weather[grep(x = weather$codesum , pattern = "HZ" , fixed = T), ]$HZ = 1
+  #weather$HZ = factor(weather$HZ)
   
   weather$FU = 0
   weather[grep(x = weather$codesum , pattern = "FU" , fixed = T), ]$FU = 1
+  #weather$FU = factor(weather$FU)
   
   weather$DU = 0
   weather[grep(x = weather$codesum , pattern = "DU" , fixed = T), ]$DU = 1
+  #weather$DU = factor(weather$DU)
   
   weather$SS = 0
   weather[grep(x = weather$codesum , pattern = "SS" , fixed = T), ]$SS = 1
+  #weather$SS = factor(weather$SS)
   
   weather$SQ = 0
   weather[grep(x = weather$codesum , pattern = "SQ" , fixed = T), ]$SQ = 1
+  #weather$SQ = factor(weather$SQ)
   
   weather$FZ = 0
   weather[grep(x = weather$codesum , pattern = "FZ" , fixed = T), ]$FZ = 1
+  #weather$FZ = factor(weather$FZ)
   
   weather$MI = 0
   weather[grep(x = weather$codesum , pattern = "MI" , fixed = T), ]$MI = 1
+  #weather$MI = factor(weather$MI)
   
   weather$PR = 0
   weather[grep(x = weather$codesum , pattern = "PR" , fixed = T), ]$PR = 1
+  #weather$PR = factor(weather$PR)
   
   weather$BC = 0
   weather[grep(x = weather$codesum , pattern = "BC" , fixed = T), ]$BC = 1
+  #weather$BC = factor(weather$BC)
   
   weather$BL = 0
   weather[grep(x = weather$codesum , pattern = "BL" , fixed = T), ]$BL = 1
+  #weather$BL = factor(weather$BL)
   
   weather$VC = 0
   weather[grep(x = weather$codesum , pattern = "VC" , fixed = T), ]$VC = 1
+  #weather$VC = factor(weather$VC)
   
   weather = weather[, -(grep(x = colnames(weather) ,  pattern = "codesum" )) ]
   
   weather
 } 
+
+performBasicImputationOnWeather = function (weather) {
+  ## imputing tavg with the mean of tmax and tmin 
+  imp.cases = sum(! is.na(weather$tmax) &  ! is.na(weather$tmin) & is.na(weather$tavg))
+  cat("imputing missing tavgs as the mean of tmax and tmin [",imp.cases," cases ] ... ")
+  weather[  ! is.na(weather$tmax) &  ! is.na(weather$tmin) & is.na(weather$tavg) , ]$tavg = 
+    apply( weather[  ! is.na(weather$tmax) &  ! is.na(weather$tmin) & is.na(weather$tavg) , -c(1,2) ] , 1 
+           , function(x)  (x[1]+x[2])/2 )
+  imp.cases = sum(! is.na(weather$tmax) &  ! is.na(weather$tmin) & is.na(weather$tavg))
+  cat("checking after operation: ",imp.cases," cases ... \n")
+  
+  ## imputing tmax using same considerations ... but there're no cases 
+  imp.cases = sum( is.na(weather$tmax) &  !is.na(weather$tmin) & ! is.na(weather$tavg))
+  cat("imputing missing tmax with tavg and tmin [",imp.cases," cases ]... \n")
+  
+  ## imputing tmin using same considerations ... 
+  imp.cases = sum( ! is.na(weather$tmax) &  is.na(weather$tmin) & ! is.na(weather$tavg))
+  cat("imputing missing tmin with tavg and tmax [",imp.cases," cases ]... ")
+  weather[  ! is.na(weather$tmax) &  is.na(weather$tmin) & ! is.na(weather$tavg) , ]$tmin = 
+    apply( weather[  ! is.na(weather$tmax) &  is.na(weather$tmin) & ! is.na(weather$tavg) , -c(1,2) ] , 1 
+           , function(x)  ((2*x[3])-x[1])) 
+  imp.cases = sum( ! is.na(weather$tmax) &  is.na(weather$tmin) & ! is.na(weather$tavg))
+  cat("checking after operation: ",imp.cases," cases ... \n")
+  weather
+}
+
 
 ##################
 verbose = T 
@@ -215,16 +264,21 @@ source(paste0( getBasePath("preprocess") , "/Impute_Lib.R"))
 train = getTrain()
 weather = getWeather()
 
+weather = performBasicImputationOnWeather(weather)
 
-## imputing Xtest 
-l = imputeFastFurious (data = weather[,-c(1,2)] , verbose = T , debug = F)
+
+## imputing missing values 
+l = imputeFastFurious (data = weather[1:100,-c(1,2)] , verbose = T , debug = F)
 Xtest.imputed = l[[1]]
 ImputePredictors = l[[2]]
 DecisionMatrix = l[[3]]
 
+debugData = weather[1:100,-c(1,2)] 
 
-
-
+Nas = apply(debugData,1,function(x) sum(is.na(x)) > 0 )
+debugData[Nas,]
+cat ("******************************************** \n")
+Xtest.imputed[Nas,]
 
 
 

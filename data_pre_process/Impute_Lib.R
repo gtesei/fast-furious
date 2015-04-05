@@ -1,6 +1,14 @@
 library(data.table) 
 
+#### supported imputing models 
+All.RegModels = c("Average" , "Mode", "LinearReg","KNN_Reg", "PLS_Reg" , "Ridge_Reg" , "SVM_Reg", "Cubist_Reg") 
+All.ClassModels = c("Mode" , "SVMClass") 
 
+#####
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
 getPvalueTypeIError = function(x,y) {
   test = NA
   pvalue = NA
@@ -100,8 +108,8 @@ findImputePredictors = function(DecisionMatrix,data) {
   
   for (i in 1:pnum) {
     if(ImputePredictors[i,]$need.impute) {
-      candidates = which(DecisionMatrix[i,((pnum+3):(2*pnum+2)),] == 0)
-      stat.sign = which( DecisionMatrix[i,1+candidates,] < 0.05)
+      candidates = which(DecisionMatrix[i,((pnum+3):(2*pnum+2))] == 0)
+      stat.sign = which( DecisionMatrix[i,1+candidates ] < 0.05)
       predIdx = candidates[stat.sign] 
       ImputePredictors[i,]$predictors = paste(predictors.name[predIdx] , collapse = "-")
       ImputePredictors[i,]$predictorIndex = paste(predIdx , collapse = "-")
@@ -112,21 +120,65 @@ findImputePredictors = function(DecisionMatrix,data) {
   ImputePredictors
 }
 
-trainAndPredict = function( form , trainingSet , testSet , model ) {
-  pred = rep(NA,dim(testSet)[1])
+trainAndPredict = function( YtrainingSet , XtrainingSet , testSet , model ) {
+  pred = NULL
   
   ptm <- proc.time()
-  controlObject <- trainControl(method = "cv", number = 10)
-  if (model == "LinearReg") {
-    fit = linearReg <- train(form, data = trainingSet, method = "lm", trControl = controlObject)
+  controlObject <- trainControl(method = "repeatedcv", number = 10 , repeats = 5)
+  if (model == "LinearReg") {   ### LinearReg
+    fit <- train(y = YtrainingSet, x = XtrainingSet , method = "lm", trControl = controlObject)
     pred = as.numeric( predict(fit , testSet )  ) 
-  } else if (model == "KNN_Reg") {
-    fit <- train(form , data=trainingSet, method = "knn", preProc = c("center", "scale"), 
+  } else if (model == "KNN_Reg") {  ### KNN_Reg
+    fit <- train(y = YtrainingSet, x = XtrainingSet , method = "knn", preProc = c("center", "scale"), 
                  tuneGrid = data.frame(.k = 1:10),
                  trControl = controlObject)
     pred = as.numeric( predict(fit , testSet )  )
-  } else if (model == "SVMClass") {
-    fit <- train(form , data=trainingSet, method = "svmRadial", preProc = c("center", "scale"), 
+  } else if (model == "PLS_Reg") {  ### PLS_Reg
+    fit <- train(y = YtrainingSet, x = XtrainingSet ,
+                     method = "pls",
+                     ## The default tuning grid evaluates
+                     ## components 1... tuneLength
+                     tuneLength = 20,
+                     trControl = controlObject,
+                     preProc = c("center", "scale"))
+    pred = as.numeric( predict(fit , testSet )  )
+  } else if (model == "Ridge_Reg") {  ### Ridge_Reg
+    ridgeGrid <- data.frame(.lambda = seq(0, .1, length = 15))
+    fit <- train(y = YtrainingSet, x = XtrainingSet ,
+                           method = "ridge",
+                           ## Fir the model over many penalty values
+                           tuneGrid = ridgeGrid,
+                           trControl = controlObject,
+                           ## put the predictors on the same scale
+                           preProc = c("center", "scale"))
+    pred = as.numeric( predict(fit , testSet )  )
+  } else if (model == "SVM_Reg") {  ### SVM_Reg
+    fit <- train(y = YtrainingSet, x = XtrainingSet ,
+                       method = "svmRadial",
+                       tuneLength = 15,
+                       preProc = c("center", "scale"),
+                       trControl = controlObject)
+    pred = as.numeric( predict(fit , testSet )  )
+  } else if (model == "Cubist_Reg") {  ### Cubist_Reg
+    cubistGrid <- expand.grid(.committees = c(1, 5, 10, 50, 75, 100),
+                              .neighbors = c(0, 1, 3, 5, 7, 9))
+    fit <- train(y = YtrainingSet, x = XtrainingSet ,
+                 method = "cubist",
+                 tuneGrid = cubistGrid,
+                 trControl = controlObject)
+    pred = as.numeric( predict(fit , testSet )  )
+  } else if (model == "Average") {  ### Average 
+    
+    ltset = ifelse( ! is.null(dim(testSet)) , dim(testSet) , length(testSet) )
+    pred = rep(mean(YtrainingSet),ltset)
+    
+  } else if (model == "Mode") {  ### Mode 
+    
+    ltset = ifelse( ! is.null(dim(testSet)) , dim(testSet) , length(testSet) )
+    pred = rep(Mode(YtrainingSet),ltset)
+    
+  } else if (model == "SVMClass") { ###  SVMClass
+    fit <- train(y = YtrainingSet, x = XtrainingSet , method = "svmRadial", preProc = c("center", "scale"), 
                  tuneLength = 8 , trControl = controlObject)
     pred = predict(fit , testSet )
   } else {
@@ -139,7 +191,8 @@ trainAndPredict = function( form , trainingSet , testSet , model ) {
 }
 
 findBestImputeModel = function(data, ImputePredictors , 
-                               RegModels = c("LinearReg","KNN_Reg") , ClassModels = c("SVMClass") , 
+                               RegModels = All.RegModels, 
+                               ClassModels = All.ClassModels , 
                                verbose = T , debug = F  ) {
   ## completing matrix 
   pnum = dim(data)[2] 
@@ -155,28 +208,7 @@ findBestImputeModel = function(data, ImputePredictors ,
   
   ## sampling data 
   for (i in 1:pnum) {
-    ## TODO resempling 10 volte 
     if (ImputePredictors[i,]$need.impute) {
-      if (verbose) {
-        cat("processing " , as.character(ImputePredictors[i,]$predictor) , " ...\n")
-      }
-      ImputeTestIdx = which(is.na(data[,i])) 
-      ImputePredIdx = c(i, as.numeric(unlist( strsplit( ImputePredictors[i,]$predictorIndex , "-" ) ) ) )
-      ImputeXTest = data[ImputeTestIdx,ImputePredIdx]
-      ImputeXtrain = data[-ImputeTestIdx,ImputePredIdx]
-      ImputeXtrain = na.omit(ImputeXtrain)
-      
-      ## reduce train set in debug mode
-      if (debug) {
-        ImputeXtrain = ImputeXtrain[1:100,]
-      }
-      
-      ## split train set 
-      split = createDataPartition(y = ImputeXtrain[,1] , p = 0.6 , list = F)
-      ImputeXtrain.train = ImputeXtrain[split,]
-      ImputeXtrain.test = ImputeXtrain[-split,]
-      
-      modFormula = as.formula( paste0(ImputePredictors[i,]$predictor," ~ .") )
       models = NULL
       if (ImputePredictors[i,]$is.factor) {
         models = ClassModels
@@ -184,22 +216,127 @@ findBestImputeModel = function(data, ImputePredictors ,
         models = RegModels
       }
       
+      if (verbose) {
+        cat("processing " , as.character(ImputePredictors[i,]$predictor) , " ...\n")
+      }
+      ImputeTestIdx = which(is.na(data[,i])) 
+      ImputePredIdx = c(i, as.numeric(unlist( strsplit( ImputePredictors[i,]$predictorIndex , "-" ) ) ) )
+      
+      ImputeXTest = data[ImputeTestIdx,ImputePredIdx]
+      ImputeXtrain = data[-ImputeTestIdx,ImputePredIdx]
+      ImputeXtrain = na.omit(ImputeXtrain)
+      
+      if (length(ImputePredIdx) == 1) {
+        ## degenerate case, i.e. there're no predictors 
+        ## using average for regression and mode for classification 
+        cat("There're no predictors available ... using average/mode ... \n")
+        
+        ## split train set 
+        ImputeXtrain.train = NULL
+        ImputeXtrain.test = NULL
+        split = tryCatch({ createDataPartition(y = ImputeXtrain , p = 3/4 , list = F)
+                          } , error = function(err) { 
+                             print(paste("ERROR:  ",err))
+                             NULL
+                           })
+        if(! is.null(split)) { 
+          ImputeXtrain.train = ImputeXtrain[split]
+          ImputeXtrain.test = ImputeXtrain[-split]
+        } else {
+          split = sample(x = 1:length(ImputeXtrain) , length(ImputeXtrain) * 3 / 4 , replace = F)
+          ImputeXtrain.train = ImputeXtrain[split]
+          ImputeXtrain.test = ImputeXtrain[-split]
+        }
+        
+        ###
+        pred = -1
+        perf = -1
+        model.deg = ""
+        if (ImputePredictors[i,]$is.factor) {
+          model.deg = "Mode"
+          pred = rep(Mode(ImputeXtrain.train), length(ImputeXtrain.test))
+          perf = sum(pred == ImputeXtrain.test) / length(ImputeXtrain.test)
+          if (verbose) cat("Accuracy = ",perf,"\n")
+        } else {
+          model.deg = "Average"
+          pred = rep(mean(ImputeXtrain.train) , length(ImputeXtrain.test))
+          perf = RMSE(pred = pred, obs = ImputeXtrain.test)
+          if (verbose) cat("RMSE = ", perf , "\n")
+        }
+        
+        ###
+        for (m in 1:length(models)) { 
+          ImputePredictors[i,6+(m-1)*2+1] = model.deg
+          ImputePredictors[i,6+(m-1)*2+2] = perf
+        }
+        
+      } else {
+      ## ordinary case, i.e. predictors >= 1 
+        
+      ## split train set 
+      ImputeXtrain.train = NULL
+      ImputeXtrain.test = NULL
+      split = tryCatch({  createDataPartition(y = ImputeXtrain[,1] , p = 3/4 , list = F)
+                        } , error = function(err) { 
+                          print(paste("ERROR:  ",err))
+                          NULL
+                        })  
+      if(! is.null(split)) { 
+        ImputeXtrain.train = ImputeXtrain[split,]
+        ImputeXtrain.test = ImputeXtrain[-split,]
+      } else {
+        split = sample(x = 1:length(ImputeXtrain[,1]) , length(ImputeXtrain[,1]) * 3 / 4 , replace = F)
+        ImputeXtrain.train = ImputeXtrain[split,]
+        ImputeXtrain.test = ImputeXtrain[-split,]
+      }                    
+      
+      y.ImputeXtrain.train = ImputeXtrain.train[,1]
+      train.ImputeXtrain.train = ImputeXtrain.train[,-1]
+      
+      y.ImputeXtrain.test = ImputeXtrain.test[,1]
+      test.ImputeXtrain.test = ImputeXtrain.test[,-1]
+      
       for (m in 1:length(models)) {
         if (verbose) {
-          cat("trying " , models[m] , " ...\n")
+          cat("trying " , models[m] , " ... ")
         }
-        pred = trainAndPredict ( modFormula , ImputeXtrain.train , ImputeXtrain.test , models[m] )
-        perf = -1
-        if (ImputePredictors[i,]$is.factor) {
-          perf = sum(pred == ImputeXtrain.test[,1]) / length(pred)
+        
+        ##### trying models 
+        pred = tryCatch({ 
+          trainAndPredict ( y.ImputeXtrain.train , train.ImputeXtrain.train , test.ImputeXtrain.test , models[m] )
+        } , error = function(err) { 
+          print(paste("ERROR:  ",err))
+          NULL
+        })
+        if(! is.null(pred)) { 
+          perf = -1
+          if (ImputePredictors[i,]$is.factor) {
+            perf = sum(pred == y.ImputeXtrain.test) / length(pred)
+            if (verbose) cat("Accuracy = ",perf,"\n")
+          } else {
+            perf = RMSE(pred = pred, obs = y.ImputeXtrain.test)
+            if (verbose) cat("RMSE = ", perf , "\n")
+          }
+          ImputePredictors[i,6+(m-1)*2+1] = models[m]
+          ImputePredictors[i,6+(m-1)*2+2] = perf
         } else {
-          perf = RMSE(pred = pred, obs = ImputeXtrain.test[,1])
+          ### setting fake performances 
+          ImputePredictors[i,6+(m-1)*2+1] = models[m]
+          if (ImputePredictors[i,]$is.factor) {
+            perf = 0 ## 0 accuracy 
+            ImputePredictors[i,6+(m-1)*2+2] = perf
+            if (verbose) cat("setting (fake) Accuracy = ", perf , "\n")
+          } else {
+            perf = 1000000000 ## RMSE
+            ImputePredictors[i,6+(m-1)*2+2] =  perf
+            if (verbose) cat("setting (fake)  RMSE = ", perf , "\n")
+          }
         }
-        ImputePredictors[i,6+(m-1)*2+1] = models[m]
-        ImputePredictors[i,6+(m-1)*2+2] = perf
-      }
+      }  #### end trying models 
+      
+     } ## end case >= 1 predictors 
     }
-  }
+  }  #### end predictors 
   
   ## the winner is ... 
   for (i in 1:pnum) {
@@ -213,7 +350,8 @@ findBestImputeModel = function(data, ImputePredictors ,
       bestModel = ""
       bestPerf = -1
       for (m in 1:length(models)) {
-        model = models[m]
+        #model = models[m]
+        model = ImputePredictors[i,6+2*(m-1)+1]
         perf = ImputePredictors[i,6+2*(m-1)+2]
         if (bestPerf == -1) {
           bestModel = model
@@ -242,23 +380,38 @@ predictAndImpute = function(data,ImputePredictors,
   for (i in 1:pnum) {
     if (ImputePredictors[i,]$need.impute) {
       if (verbose) {
-        cat("predicting on " , as.character(ImputePredictors[i,]$predictor) , " ...\n")
+        cat("predicting on " , as.character(ImputePredictors[i,]$predictor) , " with "
+            , ImputePredictors[i,]$winner, " ...\n")
       }
       ImputeTestIdx = which(is.na(data[,i])) 
-      ImputePredIdx = c(i, as.numeric(unlist( strsplit( ImputePredictors[i,]$predictorIndex , "," ) ) ) )
+      ImputePredIdx = c(i, as.numeric(unlist( strsplit( ImputePredictors[i,]$predictorIndex , "-" ) ) ) )
       ImputeXtest = data[ImputeTestIdx,ImputePredIdx]
       ImputeXtrain = data[-ImputeTestIdx,ImputePredIdx]
       ImputeXtrain = na.omit(ImputeXtrain)
       
-      ## reduce train set in debug mode
-      if (debug) {
-        ImputeXtrain = ImputeXtrain[1:100,]
-      }
+      y.ImputeXtrain = NULL
+      train.ImputeXtrain = NULL
+      test.ImputeXtest = NULL
+      
+      if (length(ImputePredIdx) > 1) {
+        y.ImputeXtrain = ImputeXtrain[,1]
+        train.ImputeXtrain = ImputeXtrain[,-1]
+        test.ImputeXtest = ImputeXtest[,-1]
+      } else {
+          y.ImputeXtrain = ImputeXtrain
+          train.ImputeXtrain = ImputeXtrain 
+          test.ImputeXtest = ImputeXtest
+        }
       
       ## predicting 
       bestModel = ImputePredictors[i,]$winner
-      modFormula = as.formula( paste0(ImputePredictors[i,]$predictor," ~ .") )
-      pred = trainAndPredict ( modFormula , ImputeXtrain , ImputeXtest , bestModel )
+      #modFormula = as.formula( paste0(ImputePredictors[i,]$predictor," ~ .") )
+      #pred = trainAndPredict ( modFormula , ImputeXtrain , ImputeXtest , bestModel )
+      cat("test.ImputeXtest:",dim(test.ImputeXtest),"\n")
+      cat("train.ImputeXtrain:",dim(train.ImputeXtrain),"\n")
+      cat("test.ImputeXtest:",dim(test.ImputeXtest),"\n")
+      
+      pred = trainAndPredict ( y.ImputeXtrain , train.ImputeXtrain , test.ImputeXtest , bestModel )
       
       ## imputing 
       data[ImputeTestIdx,i] = pred 
@@ -268,7 +421,11 @@ predictAndImpute = function(data,ImputePredictors,
   data
 }
 
-imputeFastFurious = function(data , verbose = T , debug = F ) {
+imputeFastFurious = function(data , 
+                             RegModels = All.RegModels, 
+                             ClassModels = All.ClassModels , 
+                             verbose = T , 
+                             debug = F ) {
   if (verbose) {
     cat("building decision matrix ... \n")
   }
@@ -286,7 +443,7 @@ imputeFastFurious = function(data , verbose = T , debug = F ) {
   
   ## finding best models ...
   ImputePredictors = findBestImputeModel (data, ImputePredictors , 
-                                          RegModels = c("LinearReg","KNN_Reg") , ClassModels = c("SVMClass") , 
+                                          #RegModels = c("LinearReg","KNN_Reg") , ClassModels = c("SVMClass") , 
                                           verbose = verbose , debug = debug  )
   
   if (verbose) {
