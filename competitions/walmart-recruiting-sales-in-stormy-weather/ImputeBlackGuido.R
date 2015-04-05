@@ -278,16 +278,18 @@ weather.imputed = l[[1]]
 ImputePredictors = l[[2]]
 DecisionMatrix = l[[3]]
 
+weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
+
 ## measuring mean imputing performance 
 mean.prf = mean(ImputePredictors[ImputePredictors$need.impute,]$best_perf)
 cat(">>>>>> Mean imputing performance (RMSE):",mean.prf," <<<<<<<<<<<<< \n")
 
 ## saving 
 write.csv(weather.imputed,quote=FALSE, 
-          file=paste(getBasePath("data"),"weather.imputed.all.",format(mean.prf, digits = 3),".csv",sep='') ,
+          file=paste(getBasePath("data"),"weather.imputed.full.",format(mean.prf, digits = 3),".csv",sep='') ,
           row.names=FALSE)
 write.csv(ImputePredictors,quote=FALSE, 
-          file=paste(getBasePath("data"),"weather.imputed.matrix.all.",format(mean.prf, digits = 3),".csv",sep='') ,
+          file=paste(getBasePath("data"),"weather.imputed.full.matrix.",format(mean.prf, digits = 3),".csv",sep='') ,
           row.names=FALSE)
 
 
