@@ -403,17 +403,10 @@ predictAndImpute = function(data,ImputePredictors,
           test.ImputeXtest = ImputeXtest
         }
       
-      ## predicting 
-      bestModel = ImputePredictors[i,]$winner
-      #modFormula = as.formula( paste0(ImputePredictors[i,]$predictor," ~ .") )
-      #pred = trainAndPredict ( modFormula , ImputeXtrain , ImputeXtest , bestModel )
-      cat("test.ImputeXtest:",dim(test.ImputeXtest),"\n")
-      cat("train.ImputeXtrain:",dim(train.ImputeXtrain),"\n")
-      cat("test.ImputeXtest:",dim(test.ImputeXtest),"\n")
+      ## predicting ...
+      pred = trainAndPredict ( y.ImputeXtrain , train.ImputeXtrain , test.ImputeXtest , ImputePredictors[i,]$winner )
       
-      pred = trainAndPredict ( y.ImputeXtrain , train.ImputeXtrain , test.ImputeXtest , bestModel )
-      
-      ## imputing 
+      ## imputing ...
       data[ImputeTestIdx,i] = pred 
     }
   }
@@ -421,9 +414,9 @@ predictAndImpute = function(data,ImputePredictors,
   data
 }
 
-imputeFastFurious = function(data , 
+blackGuido = function(data , 
                              RegModels = All.RegModels, 
-                             ClassModels = All.ClassModels , 
+                             ClassModels = All.ClassModels, 
                              verbose = T , 
                              debug = F ) {
   if (verbose) {
@@ -443,7 +436,8 @@ imputeFastFurious = function(data ,
   
   ## finding best models ...
   ImputePredictors = findBestImputeModel (data, ImputePredictors , 
-                                          #RegModels = c("LinearReg","KNN_Reg") , ClassModels = c("SVMClass") , 
+                                          RegModels = RegModels , 
+                                          ClassModels = ClassModels , 
                                           verbose = verbose , debug = debug  )
   
   if (verbose) {

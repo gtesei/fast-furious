@@ -53,7 +53,7 @@ getTrain = function () {
   
   cat("loading train data ... ")
   trdata = as.data.frame(fread(path))
-  cat("converting date ...")
+  #cat("converting date ...")
   #trdata$date = as.Date(trdata$date,"%Y-%m-%d")
   trdata
 } 
@@ -72,7 +72,7 @@ getWeather = function () {
     stop('impossible load train.csv')
   }
   
-  cat("loading weather data ...")
+  cat("loading weather data ... \n")
   weather = as.data.frame(fread(path))
   
   ####
@@ -264,21 +264,33 @@ source(paste0( getBasePath("preprocess") , "/Impute_Lib.R"))
 train = getTrain()
 weather = getWeather()
 
+## performing basic imputation ...
 weather = performBasicImputationOnWeather(weather)
 
-
-## imputing missing values 
-l = imputeFastFurious (data = weather[1:100,-c(1,2)] , verbose = T , debug = F)
-Xtest.imputed = l[[1]]
+## imputing missing values ...
+l = blackGuido (data = weather[,-c(1,2)] , 
+                #RegModels = c("Average" , "Mode", "LinearReg") , 
+                RegModels = All.RegModels , 
+                ClassModels = All.ClassModels , 
+                verbose = T , 
+                debug = F)
+weather.imputed = l[[1]]
 ImputePredictors = l[[2]]
 DecisionMatrix = l[[3]]
 
-debugData = weather[1:100,-c(1,2)] 
+## measuring mean imputing performance 
+mean.prf = mean(ImputePredictors[ImputePredictors$need.impute,]$best_perf)
+cat(">>>>>> Mean imputing performance (RMSE):",mean.prf," <<<<<<<<<<<<< \n")
 
-Nas = apply(debugData,1,function(x) sum(is.na(x)) > 0 )
-debugData[Nas,]
-cat ("******************************************** \n")
-Xtest.imputed[Nas,]
+## saving 
+write.csv(weather.imputed,quote=FALSE, 
+          file=paste(getBasePath("data"),"weather.imputed.all.",format(mean.prf, digits = 3),".csv",sep='') ,
+          row.names=FALSE)
+write.csv(ImputePredictors,quote=FALSE, 
+          file=paste(getBasePath("data"),"weather.imputed.matrix.all.",format(mean.prf, digits = 3),".csv",sep='') ,
+          row.names=FALSE)
+
+
 
 
 
