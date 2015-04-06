@@ -45,7 +45,7 @@ kfolds = function(k,data.length) {
   folds
 }
 
-trainAndPredict.kfold.reg = function(k,traindata,traindata.y,RegModels) {
+trainAndPredict.kfold.reg = function(k,traindata,traindata.y,RegModels,controlObject) {
   source(paste0( getBasePath("process") , "/Regression_Lib.R"))
   
   .grid = data.frame(store = c(st) , 
@@ -75,15 +75,27 @@ trainAndPredict.kfold.reg = function(k,traindata,traindata.y,RegModels) {
     for ( mo in 1:length(RegModels))  {
       if (verbose) cat("Trying ", RegModels[mo] , " ... ")
       model.label = RegModels[mo]
-      pred = reg.trainAndPredict( traindata.y.train , 
-                                  traindata.train , 
-                                  traindata.xval , 
-                                  model.label , 
-                                  controlObject, 
-                                  best.tuning = F)
       
-      perf.kfold[j,mo] = RMSE(pred = pred, obs = traindata.y.xval)
-      if (verbose) cat("RMSE = ", perf.kfold[j,mo] , "\n")
+      pred = tryCatch({ 
+        reg.trainAndPredict( traindata.y.train , 
+                             traindata.train , 
+                             traindata.xval , 
+                             model.label , 
+                             controlObject, 
+                             best.tuning = F)
+      } , error = function(err) { 
+        print(paste("ERROR:  ",err))
+        NULL
+      })
+      
+      if(! is.null(pred)) { 
+        perf.kfold[j,mo] = RMSE(pred = pred, obs = traindata.y.xval)
+        if (verbose) cat("RMSE = ", perf.kfold[j,mo] , "\n")
+      } else {
+        perf.kfold[j,mo] = 1000000000 ## RMSE
+        if (verbose) cat("(fake) RMSE = ", perf.kfold[j,mo] , "\n")
+      }
+      
     } ### end of model shot    
   } ### end of k-fold 
   

@@ -20,7 +20,7 @@ featureSelect <- function(traindata,testdata,featureScaling = T) {
     data  =  data  [,-PredToDel]
   }
   
-  # rmoving high correlated predictors on Xtrain_quant
+  # removing high correlated predictors 
   PredToDel = findCorrelation(cor( data )) 
   if (length(PredToDel) > 0) {
     cat("removing ",length(PredToDel), " predictors: ",

@@ -109,7 +109,8 @@ RegModels = c("Average" , "Mode",
 ###
 sub = NULL
 grid = NULL
-controlObject <- trainControl(method = "boot", number = 30)
+controlObject <- trainControl(method = "boot", number = 100)
+#controlObject <- trainControl(method = "repeatedcv" , repeats = 5 , number = 10)
 
 ###
 stores.test = sort(unique(test$store_nbr))
@@ -163,7 +164,7 @@ for (st in stores.test) {
         testdata = l[[2]]
         
         ### k-fold 
-        l = trainAndPredict.kfold.reg (k = 5,traindata,traindata.y,RegModels)
+        l = trainAndPredict.kfold.reg (k = 5,traindata,traindata.y,RegModels,controlObject)
         model.winner = l[[1]]
         .grid = l[[2]]
         perf.kfold = l[[3]]
