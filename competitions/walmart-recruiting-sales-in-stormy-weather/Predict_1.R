@@ -162,53 +162,11 @@ for (st in stores.test) {
         traindata = l[[1]]
         testdata = l[[2]]
         
-        ####### building grid 
-        .grid = data.frame(store = c(st) , 
-                           item = c(it) , 
-                           test.num = c(dim(testdata)[1]),
-                           all0s=c(F) )
-        tmp = data.frame(matrix( 0 , 1 ,  length(RegModels) ))
-        colnames(tmp) = RegModels
-        .grid = cbind(.grid , tmp)
-        
-        ####### training and predicting <<<<<<<<<<<<<<
-        k = 5
-        folds = kfolds(k,dim(traindata)[1])
-        
-        perf.kfold = data.frame(matrix(rep(-1,(k*length(RegModels))),k,length(RegModels)))
-        colnames(perf.kfold) = RegModels
-        
-        for(j in 1:k) {  
-          if (verbose) cat("--k-fold:: ",j, "/",k , "\n")
-          traindata.train <- traindata[ folds != j,]
-          traindata.y.train = traindata.y[folds != j]
-          
-          traindata.xval <- traindata[folds == j,]
-          traindata.y.xval = traindata.y[folds == j]
-          
-          ###
-          for ( mo in 1:length(RegModels))  {
-            if (verbose) cat("Trying ", RegModels[mo] , " ... ")
-            model.label = RegModels[mo]
-            pred = reg.trainAndPredict( traindata.y.train , 
-                                        traindata.train , 
-                                        traindata.xval , 
-                                        model.label , 
-                                        controlObject, 
-                                        best.tuning = F)
-            
-            perf.kfold[j,mo] = RMSE(pred = pred, obs = traindata.y.xval)
-            if (verbose) cat("RMSE = ", perf.kfold[j,mo] , "\n")
-          } ### end of model shot    
-        } ### end of k-fold 
-        
-        #### results 
-        for ( mo in 1:length(RegModels))  {
-          .grid[1,(4+mo)] = mean(perf.kfold[,mo])
-        }
-        .grid$best.perf = min(.grid[1,(4+(1:length(RegModels)))])
-        model.idx = which(.grid[1,(4+(1:length(RegModels)))] == .grid$best.perf)
-        .grid$best.model = RegModels[model.idx]
+        ### k-fold 
+        l = trainAndPredict.kfold.reg (k = 5,traindata,traindata.y,RegModels)
+        model.winner = l[[1]]
+        .grid = l[[2]]
+        perf.kfold = l[[3]]
         
         #### updating grid 
         if(is.null(grid)) grid = .grid 
