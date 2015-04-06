@@ -20,9 +20,9 @@ getBasePath = function (type = "data") {
   } else if (type == "code") {
     base.path1 = "C:/docs/ff/gitHub/fast-furious/competitions/walmart-recruiting-sales-in-stormy-weather"
     base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/competitions/walmart-recruiting-sales-in-stormy-weather/"
-  } else if (type == "preprocess") {
-    base.path1 = "C:/docs/ff/gitHub/fast-furious/data_pre_process"
-    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/data_pre_process/"
+  } else if (type == "process") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/data_process"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/data_process/"
   } else {
     stop("unrecognized type.")
   }
@@ -80,7 +80,9 @@ getTest = function () {
 
 ##################
 verbose = T 
-source(paste0( getBasePath("preprocess") , "/FeatureSelection_Lib.R"))
+source(paste0( getBasePath("process") , "/FeatureSelection_Lib.R"))
+source(paste0( getBasePath("process") , "/Resample_Lib.R"))
+source(paste0( getBasePath("process") , "/Regression_Lib.R"))
 
 ##################
 train = getTrain()
@@ -94,8 +96,16 @@ weather = as.data.frame( fread(paste(getBasePath("data") ,
                                      "weather.imputed.basic.17.9.csv" , sep=''))) ## <<<< TODO use weather.imputed.all.<perf>.csv
 
 ######
-##All.RegModels = c("Average" , "Mode", "LinearReg","KNN_Reg", "PLS_Reg" , "Ridge_Reg" , "SVM_Reg", "Cubist_Reg")
-RegModels = c("Average" , "Mode", "LinearReg")
+RegModels = c("Average" , "Mode",  
+  "LinearReg", "RobustLinearReg", 
+  "PLS_Reg" , "Ridge_Reg" , "Enet_Reg" , 
+  "KNN_Reg", 
+  #"SVM_Reg", 
+  "BaggedTree_Reg"
+  #, "RandomForest_Reg"
+  #, "Cubist_Reg"
+  ) 
+
 ###
 sub = NULL
 grid = NULL
@@ -141,6 +151,7 @@ for (st in stores.test) {
         colnames(tmp) = RegModels
         .grid = cbind(.grid , tmp)
         .grid$best.perf = 0
+        .grid$best.model = "Average"
         
         if(is.null(grid)) grid = .grid 
         else grid = rbind(grid,.grid)
@@ -151,12 +162,69 @@ for (st in stores.test) {
         traindata = l[[1]]
         testdata = l[[2]]
         
-        ####### training and predicting <<<<<<<<<<<<<<
-        stop("here!!")
+        ####### building grid 
+        .grid = data.frame(store = c(st) , 
+                           item = c(it) , 
+                           test.num = c(dim(testdata)[1]),
+                           all0s=c(F) )
+        tmp = data.frame(matrix( 0 , 1 ,  length(RegModels) ))
+        colnames(tmp) = RegModels
+        .grid = cbind(.grid , tmp)
         
+        ####### training and predicting <<<<<<<<<<<<<<
+        k = 5
+        folds = kfolds(k,dim(traindata)[1])
+        
+        perf.kfold = data.frame(matrix(rep(-1,(k*length(RegModels))),k,length(RegModels)))
+        colnames(perf.kfold) = RegModels
+        
+        for(j in 1:k) {  
+          if (verbose) cat("--k-fold:: ",j, "/",k , "\n")
+          traindata.train <- traindata[ folds != j,]
+          traindata.y.train = traindata.y[folds != j]
+          
+          traindata.xval <- traindata[folds == j,]
+          traindata.y.xval = traindata.y[folds == j]
+          
+          ###
+          for ( mo in 1:length(RegModels))  {
+            if (verbose) cat("Trying ", RegModels[mo] , " ... ")
+            model.label = RegModels[mo]
+            pred = reg.trainAndPredict( traindata.y.train , 
+                                        traindata.train , 
+                                        traindata.xval , 
+                                        model.label , 
+                                        controlObject, 
+                                        best.tuning = F)
+            
+            perf.kfold[j,mo] = RMSE(pred = pred, obs = traindata.y.xval)
+            if (verbose) cat("RMSE = ", perf.kfold[j,mo] , "\n")
+          } ### end of model shot    
+        } ### end of k-fold 
+        
+        #### results 
+        for ( mo in 1:length(RegModels))  {
+          .grid[1,(4+mo)] = mean(perf.kfold[,mo])
+        }
+        .grid$best.perf = min(.grid[1,(4+(1:length(RegModels)))])
+        model.idx = which(.grid[1,(4+(1:length(RegModels)))] == .grid$best.perf)
+        .grid$best.model = RegModels[model.idx]
+        
+        #### updating grid 
+        if(is.null(grid)) grid = .grid 
+        else grid = rbind(grid,.grid)
+        
+        ### making prediction on test set with winner model 
+        if (verbose) cat("Training on test data and making prediction w/ winner model ", .grid$best.model , " ... \n")
+        pred = reg.trainAndPredict( traindata.y , 
+                                    traindata , 
+                                    testdata , 
+                                    .grid$best.model , 
+                                    controlObject, 
+                                    best.tuning = T)
       }
-      
       ## building submission 
+      if (verbose) cat("Updating submission ... \n")
       id = apply(testdata.header,1,function(x) as.character(paste(x[3],"_",x[4],"_",x[2],sep='')) )  
       sub.chunck = data.frame(id = id , units = pred)
       if (is.null(sub)) {

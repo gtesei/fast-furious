@@ -1,4 +1,5 @@
 library(data.table) 
+library(caret)
 
 #### supported imputing models 
 All.RegModels.impute = c("Average" , "Mode", "LinearReg","KNN_Reg", "PLS_Reg" , "Ridge_Reg" , "SVM_Reg", "Cubist_Reg") 

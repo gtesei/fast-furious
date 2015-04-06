@@ -21,9 +21,9 @@ getBasePath = function (type = "data") {
   } else if (type == "code") {
     base.path1 = "C:/docs/ff/gitHub/fast-furious/competitions/walmart-recruiting-sales-in-stormy-weather"
     base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/competitions/walmart-recruiting-sales-in-stormy-weather/"
-  } else if (type == "preprocess") {
-    base.path1 = "C:/docs/ff/gitHub/fast-furious/data_pre_process"
-    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/data_pre_process/"
+  } else if (type == "process") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/data_process"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/data_process/"
   } else {
     stop("unrecognized type.")
   }
@@ -257,7 +257,7 @@ performBasicImputationOnWeather = function (weather) {
 
 ##################
 verbose = T 
-source(paste0( getBasePath("preprocess") , "/Impute_Lib.R"))
+source(paste0( getBasePath("process") , "/Impute_Lib.R"))
 
 
 ##################
