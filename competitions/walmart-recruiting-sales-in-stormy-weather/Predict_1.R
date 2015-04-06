@@ -80,6 +80,7 @@ getTest = function () {
 
 ##################
 verbose = T 
+source(paste0( getBasePath("preprocess") , "/FeatureSelection_Lib.R"))
 
 ##################
 train = getTrain()
@@ -134,55 +135,24 @@ for (st in stores.test) {
         ### grid 
         .grid = data.frame(store = c(st) , 
                            item = c(it) , 
-                           num = c(dim(testdata)[1]),
+                           test.num = c(dim(testdata)[1]),
                            all0s=c(T) )
         tmp = data.frame(matrix( 0 , 1 ,  length(RegModels) ))
         colnames(tmp) = RegModels
         .grid = cbind(.grid , tmp)
-        .grid$perf = 0
+        .grid$best.perf = 0
         
         if(is.null(grid)) grid = .grid 
         else grid = rbind(grid,.grid)
         
       } else {
-        stop("here!!")
         ####### feature selection <<<<<<<<<<<<<<
-        data = rbind(testdata,traindata)
-        
-        ### removing predictors that make ill-conditioned square matrix
-        PredToDel = trim.matrix( cov( data ) )
-        if (length(PredToDel$numbers.discarded) > 0) {
-          cat("removing ",length(PredToDel$numbers.discarded)," predictors that make ill-conditioned square matrix: ", 
-              paste(colnames(data) [PredToDel$numbers.discarded] , collapse=" " ) , " ... \n ")
-          data  =  data  [,-PredToDel$numbers.discarded]
-        }
-        
-        ### removing near zero var predictors 
-        PredToDel = nearZeroVar(data)
-        if (length(PredToDel) > 0) {
-          cat("removing ",length(PredToDel)," nearZeroVar predictors: ", 
-              paste(colnames(data) [PredToDel] , collapse=" " ) , " ... \n ")
-          data  =  data  [,-PredToDel]
-        }
-        
-        # rmoving high correlated predictors on Xtrain_quant
-        PredToDel = findCorrelation(cor( data )) 
-        if (length(PredToDel) > 0) {
-          cat("removing ",length(PredToDel), " predictors: ",
-              paste(colnames(data) [PredToDel] , collapse=" " ) , " ... \n ")
-          data =  data  [,-PredToDel]
-        }
-        
-        ## feature scaling 
-        scaler = preProcess(data,method = c("center","scale"))
-        data = predict(scaler,data)
-        
-        ## reassembling 
-        testdata = data[1:(dim(testdata)[1]),]
-        traindata = data[((dim(testdata)[1])+1):(dim(data)[1]),]
+        l = featureSelect (traindata,testdata,featureScaling = T)
+        traindata = l[[1]]
+        testdata = l[[2]]
         
         ####### training and predicting <<<<<<<<<<<<<<
-        
+        stop("here!!")
         
       }
       
