@@ -270,8 +270,8 @@ weather = performBasicImputationOnWeather(weather)
 ## imputing missing values ...
 l = blackGuido (data = weather[,-c(1,2)] , 
                 #RegModels = c("Average" , "Mode", "LinearReg") , 
-                RegModels = All.RegModels , 
-                ClassModels = All.ClassModels , 
+                RegModels = All.RegModels.impute , 
+                ClassModels = All.ClassModels.impute , 
                 verbose = T , 
                 debug = F)
 weather.imputed = l[[1]]

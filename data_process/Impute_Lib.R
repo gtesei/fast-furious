@@ -1,8 +1,8 @@
 library(data.table) 
 
 #### supported imputing models 
-All.RegModels = c("Average" , "Mode", "LinearReg","KNN_Reg", "PLS_Reg" , "Ridge_Reg" , "SVM_Reg", "Cubist_Reg") 
-All.ClassModels = c("Mode" , "SVMClass") 
+All.RegModels.impute = c("Average" , "Mode", "LinearReg","KNN_Reg", "PLS_Reg" , "Ridge_Reg" , "SVM_Reg", "Cubist_Reg") 
+All.ClassModels.impute = c("Mode" , "SVMClass") 
 
 #####
 Mode <- function(x) {
@@ -191,8 +191,8 @@ trainAndPredict = function( YtrainingSet , XtrainingSet , testSet , model ) {
 }
 
 findBestImputeModel = function(data, ImputePredictors , 
-                               RegModels = All.RegModels, 
-                               ClassModels = All.ClassModels , 
+                               RegModels = All.RegModels.impute, 
+                               ClassModels = All.ClassModels.impute , 
                                verbose = T , debug = F  ) {
   ## completing matrix 
   pnum = dim(data)[2] 
@@ -415,8 +415,8 @@ predictAndImpute = function(data,ImputePredictors,
 }
 
 blackGuido = function(data , 
-                             RegModels = All.RegModels, 
-                             ClassModels = All.ClassModels, 
+                             RegModels = All.RegModels.impute, 
+                             ClassModels = All.ClassModels.impute, 
                              verbose = T , 
                              debug = F ) {
   if (verbose) {
