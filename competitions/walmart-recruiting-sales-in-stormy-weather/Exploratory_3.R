@@ -1,3 +1,4 @@
+
 library(caret)
 library(Hmisc)
 library(data.table)
@@ -8,7 +9,6 @@ library(subselect)
 library(plyr)
 library(binhf)
 library(fBasics)
-library(corrplot)
 
 getBasePath = function (type = "data") {
   ret = ""
@@ -78,16 +78,6 @@ getTest = function () {
   trdata
 } 
 
-#################
-col1 <- colorRampPalette(c("#7F0000", "red", "#FF7F00", "yellow", "white", "cyan", 
-                           "#007FFF", "blue", "#00007F"))
-col2 <- colorRampPalette(c("#67001F", "#B2182B", "#D6604D", "#F4A582", "#FDDBC7", 
-                           "#FFFFFF", "#D1E5F0", "#92C5DE", "#4393C3", "#2166AC", "#053061"))
-col3 <- colorRampPalette(c("red", "white", "blue"))
-col4 <- colorRampPalette(c("#7F0000", "red", "#FF7F00", "yellow", "#7FFF7F", 
-                           "cyan", "#007FFF", "blue", "#00007F"))
-wb <- c("white", "black")
-
 
 ##################
 verbose = T 
@@ -106,74 +96,6 @@ sampleSubmission = as.data.frame( fread(paste(getBasePath("data") ,
 weather = as.data.frame( fread(paste(getBasePath("data") , 
                                      "weather.imputed.basic.17.9.csv" , sep=''))) ## <<<< TODO use weather.imputed.all.<perf>.csv
 
-###### correlation among products in the same store 
-stores = sort(unique(train$store_nbr))
-products = sort(unique(train$item_nbr))
 
-store_nbr = 45
-train.st = train[train$store_nbr == store_nbr , ]
-
-###
-corr.st = matrix(rep(0,length(products)*length(products)),length(products),length(products))
-colnames(corr.st) = as.character(products)
-rownames(corr.st) = as.character(products)
-
-pval.st = matrix(rep(NA,length(products)*length(products)),length(products),length(products))
-colnames(pval.st) = as.character(products)
-rownames(pval.st) = as.character(products)
-
-###
-for (i in 1:length(products)) {
-  for (j in 1:length(products)) {
-    if (i >= j) next 
-    train.st.i = train.st[train.st$item_nbr == i,]
-    train.st.j = train.st[train.st$item_nbr == j,]
-    mat = merge(x = train.st.i,y = train.st.j, by=c("store_nbr","date") , all.x=F, all.y=F)
-    cov = cov(mat$units.x,mat$units.y)
-    if (cov == 0) {
-      corr.st[i,j] = 0
-      corr.st[j,i] = 0
-    } else {
-      corr.st[i,j] = cor(mat$units.x,mat$units.y)
-      corr.st[j,i] = cor(mat$units.x,mat$units.y)
-      
-      pval.st[i,j] = cor.test(mat$units.x,mat$units.y, conf.level = 0.95)$p.value
-      pval.st[j,i] = cor.test(mat$units.x,mat$units.y, conf.level = 0.95)$p.value
-    }
-  }
-}
-
-sold.cols = sort(unique(which(corr.st > 0) %% 111))
-#corrplot(corr.st[sold.cols,sold.cols], order = "hclust", addrect = 2, 
-#         col = col1(200) , type = "lower"    )
-
-cat(">>>>>>>> sold products: ",sold.cols," \n")
-
-cat(">>>>>>>> statistic significant product pairs: ",sold.cols," \n")
-for (i in sold.cols) {
-  for (j in sold.cols) {
-    if ( i != j & pval.st[i,j] < 0.05 ) cat(">>>>>>>> ",i," ",j,"\n")
-  }
-}
-
-mm = corr.st[sold.cols,sold.cols]
-corrplot.mixed( mm , col = col4(100))
-
-###
-# train.st.88 = train.st[train.st$item_nbr == 88,]
-# train.st.9 = train.st[train.st$item_nbr == 9,]
-# cor(train.st.88$units,train.st.9$units)
-# cor.test(train.st.88$units, train.st.9$units, conf.level = 0.99)
-# 
-# 
-# train.st.14.it.9 = train.st[train.st$item_nbr == 9,]
-# 
-# cor.test(train.st.14.it.9$units, train.st.9$units, conf.level = 0.95)
-
-
-
-
-
-
-
-
+#### checking date between train/test set 
+is_in_train_set = apply(test , 1 , function(x) ifelse(x[1] %in% train$date , 1 , 0) )
