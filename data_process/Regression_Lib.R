@@ -30,7 +30,6 @@ reg.trainAndPredict = function( YtrainingSet , XtrainingSet ,
     pred = as.numeric( predict(fit , testSet )  )
   } else if (model.label == "PLS_Reg") {  ### PLS_Reg
     .tuneGrid = expand.grid(.ncomp = 1:10)
-    if (best.tuning)  .tuneGrid = expand.grid(.ncomp = 1:30)
     
     fit <- train(y = YtrainingSet, x = XtrainingSet ,
                  method = "pls",
