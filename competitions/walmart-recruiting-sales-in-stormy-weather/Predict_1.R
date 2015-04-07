@@ -175,12 +175,28 @@ for (st in stores.test) {
         
         ### making prediction on test set with winner model 
         if (verbose) cat("Training on test data and making prediction w/ winner model ", .grid$best.model , " ... \n")
-        pred = reg.trainAndPredict( traindata.y , 
+        
+        pred = tryCatch({ reg.trainAndPredict( traindata.y , 
                                     traindata , 
                                     testdata , 
                                     .grid$best.model , 
                                     controlObject, 
                                     best.tuning = T)
+        } , error = function(err) { 
+          print(paste("ERROR:  ",err))
+          NULL
+        })
+        
+        if(is.null(pred)) {
+          if (verbose) cat("Unexpected error: training on test data and making prediction w/ Average ... \n")
+          pred = reg.trainAndPredict( traindata.y , 
+                                                 traindata , 
+                                                 testdata , 
+                                                 "Average" , 
+                                                 controlObject, 
+                                                 best.tuning = T)
+        } 
+        
       }
       ## building submission 
       if (verbose) cat("Updating submission ... \n")
