@@ -51,7 +51,7 @@ getTrain = function () {
     stop('impossible load train.csv')
   }
   
-  cat("loading train data ... ")
+  cat("loading train data ... \n")
   trdata = as.data.frame(fread(path))
   #cat("converting date ...")
   #trdata$date = as.Date(trdata$date,"%Y-%m-%d")
@@ -71,7 +71,7 @@ getTest = function () {
     stop('impossible load train.csv')
   }
   
-  cat("loading train data ... ")
+  cat("loading test data ... \n")
   trdata = as.data.frame(fread(path))
   #cat("converting date ...")
   #trdata$date = as.Date(trdata$date,"%Y-%m-%d")
@@ -98,4 +98,6 @@ weather = as.data.frame( fread(paste(getBasePath("data") ,
 
 
 #### checking date between train/test set 
+cat("checking date between train/test set \n")
 is_in_train_set = apply(test , 1 , function(x) ifelse(x[1] %in% train$date , 1 , 0) )
+sum(is_in_train_set > 0)
