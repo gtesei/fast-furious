@@ -77,6 +77,53 @@ getTest = function () {
   trdata
 } 
 
+getTrainClosestDates.fast = function (testdata.header , traindata.header) {
+  train.date = traindata.header$as.date
+  test.date = testdata.header$as.date
+  
+  train.closesest = rep(as.Date("1900-01-01", "%Y-%m-%d"),length(testdata.header$as.date))
+  min.diff = rep(-1,length(testdata.header$as.date))
+  
+  i = 1 
+  while (i <= length(train.closesest) ) {
+    td = test.date[i]
+    
+    md = min( abs(td - train.date) )
+    while (! ((td-md) %in% train.date) ) md = md - 1 
+    train.closesest[i] = td-md
+    min.diff[i] = md
+    
+    i = i + 1 
+    while ( (i <= length(train.closesest)) 
+            & (test.date[i] == (test.date[i-1]+1))  ) {
+      train.closesest[i] = train.closesest[i-1]
+      min.diff[i] = min.diff[i-1]+1
+      i = i + 1 
+    }
+  }
+ list(train.closesest,min.diff)
+}
+
+getTrainClosestDates = function (testdata.header , traindata.header) {
+  train.date = traindata.header$as.date
+  test.date = testdata.header$as.date
+  
+  train.closesest = rep(as.Date("1900-01-01", "%Y-%m-%d"),length(testdata.header$as.date))
+  min.diff = rep(-1,length(testdata.header$as.date))
+  
+  i = 1 
+  while (i <= length(train.closesest) ) {
+    td = test.date[i]
+    
+    md = min( abs(td - train.date) )
+    while (! ((td-md) %in% train.date) ) md = md - 1 
+    train.closesest[i] = td-md
+    min.diff[i] = md
+    
+    i = i + 1 
+  }
+  list(train.closesest,min.diff)
+}
 
 ##################
 verbose = T 
@@ -227,4 +274,38 @@ for (i in 1:(ww-2)) {
 }
 candidates
 corr[candidates]
+
+##
+l = getTrainClosestDates.fast (testdata.header , traindata.header)
+train.closesest = l[[1]] 
+min.diff = l[[2]]
+
+l = getTrainClosestDates (testdata.header , traindata.header)
+train.closesest.2 = l[[1]] 
+min.diff.2 = l[[2]]
+
+train.closesest-train.closesest.2
+min.diff-min.diff.2
+
+
+##
+pi = 0.1
+piT = 200
+C = data.frame( date = traindata.header$as.date , val = rep(NA,length(traindata.header$as.date)) )
+for (u in 1:length(traindata.header$as.date)) {
+  cat("u:",u,"\n")
+  dd = traindata.header[u,]$as.date
+  
+  ok = T
+  ok = ok & (length(traindata.header[traindata.header$as.date == dd,]$units) > 0)
+  ok = ok & (length(traindata.header[traindata.header$as.date == (dd-1),]$units) > 0)
+  ok = ok & (length(traindata.header[traindata.header$as.date == (dd-1-piT),]$units) > 0)
+
+  if (! ok ) next 
+  
+  C[dd-1,]$val =   (  traindata.header[traindata.header$as.date == dd,]$units + pi * (traindata.header[traindata.header$as.date == (dd-1),]$units -  traindata.header[traindata.header$as.date == (dd-1-piT),]$units ) ) / pi
+}
+
+
+
 
