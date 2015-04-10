@@ -196,6 +196,8 @@ for (st in stores.test) {
                                                  controlObject, 
                                                  best.tuning = T)
         } 
+        ## fix negatives 
+        pred = ifelse(pred >= 0, pred , 0 )
         
       }
       ## building submission 
@@ -230,3 +232,10 @@ write.csv(sub,quote=FALSE,
           row.names=FALSE)
 
 cat("<<<<< submission correctly stored on disk >>>>>\n") 
+
+## grid 
+head(grid)
+write.csv(grid,quote=FALSE, 
+          file=paste(getBasePath("data"),"mySub_grid.csv",sep='') ,
+          row.names=FALSE)
+cat("<<<<< performance grid correctly stored on disk >>>>>\n") 

@@ -142,6 +142,8 @@ sampleSubmission = as.data.frame( fread(paste(getBasePath("data") ,
 weather = as.data.frame( fread(paste(getBasePath("data") , 
                                      "weather.imputed.basic.17.9.csv" , sep=''))) ## <<<< TODO use weather.imputed.all.<perf>.csv
 
+winner.model = as.data.frame( fread(paste(getBasePath("data") , 
+                                          "mySub_grid.csv" , sep='')))
 ######
 RegModels = c("Average" , "Mode",  
               "LinearReg", "RobustLinearReg", 
@@ -163,9 +165,15 @@ controlObject <- trainControl(method = "boot", number = 100)
 stores.test = sort(unique(test$store_nbr))
 items.test = sort(unique(test$item_nbr))
 
-st = 1
-it = 9 
+st = 33 ## store 33/ item 44 is the best selling combination 
+it = 44 ## store 33/ item 44 is the best selling combination 
+
 stat = keys[keys$store_nbr == st,]$station_nbr 
+
+cat ("winner model for store",st," - item", it, "is ",
+     winner.model[winner.model$store == st & winner.model$item == it, ]$best.model,"with RMSE on test set",
+     winner.model[winner.model$store == st & winner.model$item == it, ]$best.perf," \n")
+winner.model[winner.model$store == st & winner.model$item == it, ]
 ##############
 pred = NULL
 
@@ -195,7 +203,6 @@ data = rbind(traindata.header[,-5],testdata.header)
 
 par(mfrow=c(1,1))
 plot(data$as.date,data$data_type , xlab = "date", ylab = "1 = train / 2 = test") 
-
 ####
 train.st = train[train$store_nbr == st , ]
 is_in_train_set = apply(testdata.header , 1 , function(x) ifelse(x[2] %in% train$date , 1 , 0) )
@@ -251,7 +258,7 @@ for (w in win){
   cat("processing moving average " , w , " ... ")
   f.w <- rep(1/w,w)
   y.w <- filter(traindata.header$units, f.w, sides=2)
-  el = c(c(1:floor(w/2)),c((929-floor(w/2)):929))
+  el = c(c(1:ceil(w/2)),c((length(y.w)-ceil(w/2)):length(y.w)))
   c.w = cor(traindata.y[-el],y.w[-el]) 
   pval.w = cor.test(traindata.y[-el], y.w[-el], conf.level = 0.95)$p.value
   cat("cor=" , c.w , " - pval=", pval.w,"  \n")
@@ -288,24 +295,24 @@ train.closesest-train.closesest.2
 min.diff-min.diff.2
 
 
-##
-pi = 0.1
-piT = 200
-C = data.frame( date = traindata.header$as.date , val = rep(NA,length(traindata.header$as.date)) )
-for (u in 1:length(traindata.header$as.date)) {
-  cat("u:",u,"\n")
-  dd = traindata.header[u,]$as.date
-  
-  ok = T
-  ok = ok & (length(traindata.header[traindata.header$as.date == dd,]$units) > 0)
-  ok = ok & (length(traindata.header[traindata.header$as.date == (dd-1),]$units) > 0)
-  ok = ok & (length(traindata.header[traindata.header$as.date == (dd-1-piT),]$units) > 0)
-
-  if (! ok ) next 
-  
-  C[dd-1,]$val =   (  traindata.header[traindata.header$as.date == dd,]$units + pi * (traindata.header[traindata.header$as.date == (dd-1),]$units -  traindata.header[traindata.header$as.date == (dd-1-piT),]$units ) ) / pi
-}
-
+################################## model 
+# pi = 0.1
+# piT = 200
+# C = data.frame( date = traindata.header$as.date , val = rep(NA,length(traindata.header$as.date)) )
+# for (u in 1:length(traindata.header$as.date)) {
+#   cat("u:",u,"\n")
+#   dd = traindata.header[u,]$as.date
+#   
+#   ok = T
+#   ok = ok & (length(traindata.header[traindata.header$as.date == dd,]$units) > 0)
+#   ok = ok & (length(traindata.header[traindata.header$as.date == (dd-1),]$units) > 0)
+#   ok = ok & (length(traindata.header[traindata.header$as.date == (dd-1-piT),]$units) > 0)
+# 
+#   if (! ok ) next 
+#   
+#   C[dd-1,]$val =   (  traindata.header[traindata.header$as.date == dd,]$units + pi * (traindata.header[traindata.header$as.date == (dd-1),]$units -  traindata.header[traindata.header$as.date == (dd-1-piT),]$units ) ) / pi
+# }
+################################## end model 
 
 
 
