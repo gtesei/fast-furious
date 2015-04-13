@@ -77,33 +77,6 @@ getTest = function () {
   trdata
 } 
 
-getTrainClosestDates.fast = function (testdata.header , traindata.header) {
-  train.date = traindata.header$as.date
-  test.date = testdata.header$as.date
-  
-  train.closesest = rep(as.Date("1900-01-01", "%Y-%m-%d"),length(testdata.header$as.date))
-  min.diff = rep(-1,length(testdata.header$as.date))
-  
-  i = 1 
-  while (i <= length(train.closesest) ) {
-    td = test.date[i]
-    
-    md = min( abs(td - train.date) )
-    while (! ((td-md) %in% train.date) ) md = md - 1 
-    train.closesest[i] = td-md
-    min.diff[i] = md
-    
-    i = i + 1 
-    while ( (i <= length(train.closesest)) 
-            & (test.date[i] == (test.date[i-1]+1))  ) {
-      train.closesest[i] = train.closesest[i-1]
-      min.diff[i] = min.diff[i-1]+1
-      i = i + 1 
-    }
-  }
- list(train.closesest,min.diff)
-}
-
 getTrainClosestDates = function (testdata.header , traindata.header) {
   train.date = traindata.header$as.date
   test.date = testdata.header$as.date
@@ -116,14 +89,21 @@ getTrainClosestDates = function (testdata.header , traindata.header) {
     td = test.date[i]
     
     md = min( abs(td - train.date) )
-    while (! ((td-md) %in% train.date) ) md = md - 1 
+    while (! ((td-md) %in% train.date) ) md = md + 1 
     train.closesest[i] = td-md
-    min.diff[i] = md
+    min.diff[i] = -1 * md
     
     i = i + 1 
+    while ( (i <= length(train.closesest)) 
+            & (test.date[i] == (test.date[i-1]+1))  ) {
+      train.closesest[i] = train.closesest[i-1]
+      min.diff[i] = min.diff[i-1]-1
+      i = i + 1 
+    }
   }
-  list(train.closesest,min.diff)
+ list(train.closesest,min.diff)
 }
+
 
 ##################
 verbose = T 
@@ -140,7 +120,7 @@ sampleSubmission = as.data.frame( fread(paste(getBasePath("data") ,
                                               "sampleSubmission.csv" , sep='')))
 
 weather = as.data.frame( fread(paste(getBasePath("data") , 
-                                     "weather.imputed.basic.17.9.csv" , sep=''))) ## <<<< TODO use weather.imputed.all.<perf>.csv
+                                     "weather.imputed.full.17.8.csv" , sep=''))) 
 
 winner.model = as.data.frame( fread(paste(getBasePath("data") , 
                                           "mySub_grid.csv" , sep='')))
@@ -283,16 +263,22 @@ candidates
 corr[candidates]
 
 ##
-l = getTrainClosestDates.fast (testdata.header , traindata.header)
+l = getTrainClosestDates (testdata.header , traindata.header)
 train.closesest = l[[1]] 
 min.diff = l[[2]]
 
-l = getTrainClosestDates (testdata.header , traindata.header)
-train.closesest.2 = l[[1]] 
-min.diff.2 = l[[2]]
+date.struct = data.frame(test.data = testdata.header$as.date,train.closesest=train.closesest,min.diff=min.diff) 
+xd = date.struct[date.struct$min.diff == -1,]$train.closesest
+y = traindata.header[traindata.header$as.date <= xd[1],]$units
 
-train.closesest-train.closesest.2
-min.diff-min.diff.2
+library(zoo)
+u.z = zoo(x=y,order.by=traindata.header[traindata.header$as.date <= xd[1],]$as.date)
+u.z
+plot(u.z)
+index(u.z)
+coredata(u.z)
+start(u.z)
+end(u.z)
 
 
 ################################## model 
