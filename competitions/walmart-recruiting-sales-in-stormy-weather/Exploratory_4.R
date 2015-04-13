@@ -9,6 +9,28 @@ library(plyr)
 library(binhf)
 library(fBasics)
 
+
+buildLinearRegSeas = function(myts) {
+  Time = time(myts)
+  Seas = cycle(myts)
+  lm = lm(myts ~ Time)
+  lmSeas = lm(myts ~ 0 + Time + factor(Seas))
+  list(lmSeas, lm)
+}
+predictLinearRegSeas = function(valts, regBoundle, freq = 12) {
+  lm = regBoundle[[2]]
+  lmSeas = regBoundle[[1]]
+  
+  new.t = as.vector(time(valts))
+  
+  pred.lm = lm$coeff[1] + lm$coeff[2] * new.t
+  beta = c(rep(coef(lmSeas)[2:13], floor(length(valts)/freq)), coef(lmSeas)[2:((length(valts)%%freq) + 
+                                                                                 1)])
+  pred.lmSeas = lmSeas$coeff[1] * new.t + beta
+  
+  list(pred.lmSeas, pred.lm)
+}
+
 getBasePath = function (type = "data") {
   ret = ""
   base.path1 = ""
@@ -104,6 +126,58 @@ getTrainClosestDates = function (testdata.header , traindata.header) {
  list(train.closesest,min.diff)
 }
 
+getPerformance = function(pred, val) {
+  res = pred - val
+  MAE = sum(abs(res))/length(val)
+  RSS = sum(res^2)
+  MSE = RSS/length(val)
+  RMSE = sqrt(MSE)
+  perf = data.frame(MAE, RSS, MSE, RMSE)
+}
+
+
+splitTrainXvat = function(tser, perc_train) {
+  ntrain = floor(length(as.vector(tser)) * perc_train)
+  nval = length(as.vector(tser)) - ntrain
+  
+  ttrain = ts(as.vector(tser[1:ntrain]), start = start(tser), frequency = frequency(tser))
+  tval = ts(as.vector(tser[ntrain + 1:nval]), start = end(ttrain) + deltat(tser), 
+            frequency = frequency(tser))
+  
+  stopifnot(length(ttrain) == ntrain)
+  stopifnot(length(tval) == nval)
+  
+  list(ttrain, tval)
+}
+
+get.best.arima <- function(x.ts, maxord = c(1, 1, 1, 1, 1, 1)) {
+  best.aic <- 1e+08
+  n <- length(x.ts)
+  for (p in 0:maxord[1]) 
+    for (d in 0:maxord[2]) 
+      for (q in 0:maxord[3]) 
+        for (P in 0:maxord[4]) 
+          for (D in 0:maxord[5]) 
+            for (Q in 0:maxord[6]) {
+              
+              tryCatch({
+                fit <- arima(x.ts, order = c(p, d, q), seas = list(order = c(P, 
+                                                                             D, Q), frequency(x.ts)), method = "CSS")
+                fit.aic <- -2 * fit$loglik + (log(n) + 1) * length(fit$coef)
+                if (fit.aic < best.aic) {
+                  best.aic <- fit.aic
+                  best.fit <- fit
+                  best.model <- c(p, d, q, P, D, Q)
+                }
+                
+              }, error = function(e) {
+                
+              })
+            }
+  list(best.aic, best.fit, best.model)
+}
+
+
 
 ##################
 verbose = T 
@@ -120,7 +194,7 @@ sampleSubmission = as.data.frame( fread(paste(getBasePath("data") ,
                                               "sampleSubmission.csv" , sep='')))
 
 weather = as.data.frame( fread(paste(getBasePath("data") , 
-                                     "weather.imputed.full.17.8.csv" , sep=''))) 
+                                     "weather.imputed.basic.17.9.csv" , sep=''))) 
 
 winner.model = as.data.frame( fread(paste(getBasePath("data") , 
                                           "mySub_grid.csv" , sep='')))
@@ -271,14 +345,55 @@ date.struct = data.frame(test.data = testdata.header$as.date,train.closesest=tra
 xd = date.struct[date.struct$min.diff == -1,]$train.closesest
 y = traindata.header[traindata.header$as.date <= xd[1],]$units
 
-library(zoo)
-u.z = zoo(x=y,order.by=traindata.header[traindata.header$as.date <= xd[1],]$as.date)
-u.z
-plot(u.z)
-index(u.z)
-coredata(u.z)
-start(u.z)
-end(u.z)
+my.ts = ts(y, frequency = 365, start = c(2012,1))
+
+data = splitTrainXvat(my.ts, 0.7)
+ts.train = data[[1]]
+ts.val = data[[2]]
+
+
+## REG 
+regBoundle = buildLinearRegSeas(ts.train)
+mod.reg = regBoundle[[1]]
+mod.reg.2 = regBoundle[[2]]
+
+predRegBoundle = predictLinearRegSeas(ts.val, regBoundle , freq = 365)
+pred.reg = predRegBoundle[[2]]
+pred.reg.2 = predRegBoundle[[1]]
+
+## AR
+mod.ar = ar(ts.train)
+pred.ar = predict(mod.ar, n.ahead = length(ts.val))
+
+## ARIMA
+mod.arima <- get.best.arima(ts.train, maxord = c(2, 2, 2, 2, 2, 2))[[2]]
+pred.arima <- predict(mod.arima, n.ahead = length(ts.val))$pred
+
+## ARIMA LOG 
+mod.arima.log <- get.best.arima(log(ts.train), maxord = c(2, 2, 2, 2, 2, 2))[[2]]
+pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts.val))$pred)
+
+ts.plot(my.ts, 
+        ts(pred.reg, start = start(ts.val) , frequency = frequency(ts.train)) , 
+        ts(pred.reg.2, start = start(ts.val) , frequency = frequency(ts.train)) , 
+        ts(as.numeric(pred.ar$pred), start = start(ts.val) , frequency = frequency(ts.train)) ,
+        ts(as.numeric(pred.arima), start = start(ts.val) , frequency = frequency(ts.train)) ,
+        ts(as.numeric(pred.arima.log), start = start(ts.val) , frequency = frequency(ts.train)) ,
+        col = 1:7, lty = 1:7)
+legend("topleft", c("original serie", "Reg", "Reg.2", "AR" , "ARIMA" , "ARIMA.LOG"), lty = 1:7, 
+       col = 1:7 , cex=.5)
+
+perf = cbind(data.frame(model="Reg") , getPerformance(pred = pred.reg, val = ts.val))
+perf = rbind (perf , cbind(data.frame(model="Reg.2") , getPerformance(pred = pred.reg.2, val = ts.val)) )
+perf = rbind (perf , cbind(data.frame(model="AR") , getPerformance(pred = as.numeric(pred.ar$pred), val = ts.val)) )
+perf = rbind (perf , cbind(data.frame(model="ARIMA") , getPerformance(pred = as.numeric(pred.arima), val = ts.val)) )
+perf = rbind (perf , cbind(data.frame(model="ARIMA.LOG") , getPerformance(pred = as.numeric(pred.arima.log), val = ts.val)) )
+perf = rbind (perf , cbind(data.frame(model="MEAN") , getPerformance(pred = as.numeric(mean(ts.train)), val = ts.val)) )
+
+perf
+
+
+
 
 
 ################################## model 
