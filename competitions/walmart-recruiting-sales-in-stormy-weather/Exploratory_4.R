@@ -429,5 +429,9 @@ print(perf[perf$RMSE == min(perf$RMSE), ])
 # }
 ################################## end model 
 
+mySub_grid <- read.csv("~/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySub_grid.csv")
+mySub <- read.csv("~/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySub.csv")
+
+head(mySub_grid[order(mySub_grid$best.perf , decreasing = T),] , 30)
 
 
