@@ -161,8 +161,8 @@ get.best.arima <- function(x.ts, maxord = c(1, 1, 1, 1, 1, 1)) {
             for (Q in 0:maxord[6]) {
               
               tryCatch({
-                fit <- arima(x.ts, order = c(p, d, q), seas = list(order = c(P, 
-                                                                             D, Q), frequency(x.ts)), method = "CSS")
+                fit <- arima(x.ts, order = c(p, d, q), seas = 
+                               list(order = c(P, D, Q), frequency(x.ts)), method = "CSS")
                 fit.aic <- -2 * fit$loglik + (log(n) + 1) * length(fit$coef)
                 if (fit.aic < best.aic) {
                   best.aic <- fit.aic
@@ -219,8 +219,8 @@ controlObject <- trainControl(method = "boot", number = 100)
 stores.test = sort(unique(test$store_nbr))
 items.test = sort(unique(test$item_nbr))
 
-st = 33 ## store 33/ item 44 is the best selling combination 
-it = 44 ## store 33/ item 44 is the best selling combination 
+st = 37 ## store 33/ item 44 is the best selling combination 
+it = 5 ## store 33/ item 44 is the best selling combination 
 
 stat = keys[keys$store_nbr == st,]$station_nbr 
 
@@ -343,55 +343,69 @@ min.diff = l[[2]]
 
 date.struct = data.frame(test.data = testdata.header$as.date,train.closesest=train.closesest,min.diff=min.diff) 
 xd = date.struct[date.struct$min.diff == -1,]$train.closesest
-y = traindata.header[traindata.header$as.date <= xd[1],]$units
 
-my.ts = ts(y, frequency = 365, start = c(2012,1))
+perf = NULL
+for (ww in 1:100) {
+  cat ("moving average <<",ww,">> \n")
+  y = traindata.header[traindata.header$as.date <= xd[1],]$units
+  
+  my.ts = ts(y, frequency = 365, start = c(2012,1))
+  
+  data = splitTrainXvat(my.ts, 0.7)
+  ts.train = data[[1]]
+  ts.val = data[[2]]
+  
+  fma <- rep(1/ww,ww)
+  fma
+  y_ma <- filter(ts.train, fma, sides=1)
+  ts.train = na.omit(y_ma)
+  
+  ## REG 
+  regBoundle = buildLinearRegSeas(ts.train)
+  mod.reg = regBoundle[[1]]
+  mod.reg.2 = regBoundle[[2]]
+  
+  predRegBoundle = predictLinearRegSeas(ts.val, regBoundle , freq = 365)
+  pred.reg = predRegBoundle[[2]]
+  pred.reg.2 = predRegBoundle[[1]]
+  
+  ## AR
+  mod.ar = ar(ts.train)
+  pred.ar = predict(mod.ar, n.ahead = length(ts.val))
+  
+  ## ARIMA
+  mod.arima <- get.best.arima(ts.train, maxord = c(2, 2, 2, 2, 2, 2))[[2]]
+  pred.arima <- predict(mod.arima, n.ahead = length(ts.val))$pred
+  
+  ## ARIMA LOG 
+  mod.arima.log <- get.best.arima(ifelse( log(ts.train) >= 0 , log(ts.train) , 0) , maxord = c(2, 2, 2, 2, 2, 2))[[2]]
+  pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts.val))$pred)
+  
+  ts.plot(my.ts, 
+          ts(pred.reg, start = start(ts.val) , frequency = frequency(ts.train)) , 
+          ts(pred.reg.2, start = start(ts.val) , frequency = frequency(ts.train)) , 
+          ts(as.numeric(pred.ar$pred), start = start(ts.val) , frequency = frequency(ts.train)) ,
+          ts(as.numeric(pred.arima), start = start(ts.val) , frequency = frequency(ts.train)) ,
+          ts(as.numeric(pred.arima.log), start = start(ts.val) , frequency = frequency(ts.train)) ,
+          col = 1:7, lty = 1:7)
+  legend("topleft", c("original serie", "Reg", "Reg.2", "AR" , "ARIMA" , "ARIMA.LOG"), lty = 1:7, 
+         col = 1:7 , cex=.5)
+  
+  perf = rbind (perf , cbind(data.frame(ma=ww) , data.frame(model="Reg") , getPerformance(pred = pred.reg, val = ts.val)) )
+  perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="Reg.2") , getPerformance(pred = pred.reg.2, val = ts.val)) )
+  perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="AR") , getPerformance(pred = as.numeric(pred.ar$pred), val = ts.val)) )
+  perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="ARIMA") , getPerformance(pred = as.numeric(pred.arima), val = ts.val)) )
+  perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="ARIMA.LOG") , getPerformance(pred = as.numeric(pred.arima.log), val = ts.val)) )
+  perf = rbind (perf , cbind(data.frame(ma=ww) , data.frame(model="MEAN") , getPerformance(pred = as.numeric(mean(ts.train)), val = ts.val)) )
+  
+  print(perf)
+  
+}
 
-data = splitTrainXvat(my.ts, 0.7)
-ts.train = data[[1]]
-ts.val = data[[2]]
+print(perf)
 
-
-## REG 
-regBoundle = buildLinearRegSeas(ts.train)
-mod.reg = regBoundle[[1]]
-mod.reg.2 = regBoundle[[2]]
-
-predRegBoundle = predictLinearRegSeas(ts.val, regBoundle , freq = 365)
-pred.reg = predRegBoundle[[2]]
-pred.reg.2 = predRegBoundle[[1]]
-
-## AR
-mod.ar = ar(ts.train)
-pred.ar = predict(mod.ar, n.ahead = length(ts.val))
-
-## ARIMA
-mod.arima <- get.best.arima(ts.train, maxord = c(2, 2, 2, 2, 2, 2))[[2]]
-pred.arima <- predict(mod.arima, n.ahead = length(ts.val))$pred
-
-## ARIMA LOG 
-mod.arima.log <- get.best.arima(log(ts.train), maxord = c(2, 2, 2, 2, 2, 2))[[2]]
-pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts.val))$pred)
-
-ts.plot(my.ts, 
-        ts(pred.reg, start = start(ts.val) , frequency = frequency(ts.train)) , 
-        ts(pred.reg.2, start = start(ts.val) , frequency = frequency(ts.train)) , 
-        ts(as.numeric(pred.ar$pred), start = start(ts.val) , frequency = frequency(ts.train)) ,
-        ts(as.numeric(pred.arima), start = start(ts.val) , frequency = frequency(ts.train)) ,
-        ts(as.numeric(pred.arima.log), start = start(ts.val) , frequency = frequency(ts.train)) ,
-        col = 1:7, lty = 1:7)
-legend("topleft", c("original serie", "Reg", "Reg.2", "AR" , "ARIMA" , "ARIMA.LOG"), lty = 1:7, 
-       col = 1:7 , cex=.5)
-
-perf = cbind(data.frame(model="Reg") , getPerformance(pred = pred.reg, val = ts.val))
-perf = rbind (perf , cbind(data.frame(model="Reg.2") , getPerformance(pred = pred.reg.2, val = ts.val)) )
-perf = rbind (perf , cbind(data.frame(model="AR") , getPerformance(pred = as.numeric(pred.ar$pred), val = ts.val)) )
-perf = rbind (perf , cbind(data.frame(model="ARIMA") , getPerformance(pred = as.numeric(pred.arima), val = ts.val)) )
-perf = rbind (perf , cbind(data.frame(model="ARIMA.LOG") , getPerformance(pred = as.numeric(pred.arima.log), val = ts.val)) )
-perf = rbind (perf , cbind(data.frame(model="MEAN") , getPerformance(pred = as.numeric(mean(ts.train)), val = ts.val)) )
-
-perf
-
+cat(">>>>>>>>>>>>>>>>>>> The winner is ....... \n")
+print(perf[perf$RMSE == min(perf$RMSE), ])
 
 
 
