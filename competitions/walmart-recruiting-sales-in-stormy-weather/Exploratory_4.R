@@ -196,8 +196,8 @@ sampleSubmission = as.data.frame( fread(paste(getBasePath("data") ,
 weather = as.data.frame( fread(paste(getBasePath("data") , 
                                      "weather.imputed.basic.17.9.csv" , sep=''))) 
 
-winner.model = as.data.frame( fread(paste(getBasePath("data") , 
-                                          "mySub_grid.csv" , sep='')))
+# winner.model = as.data.frame( fread(paste(getBasePath("data") , 
+#                                           "mySub_grid.csv" , sep='')))
 ######
 RegModels = c("Average" , "Mode",  
               "LinearReg", "RobustLinearReg", 
@@ -219,15 +219,15 @@ controlObject <- trainControl(method = "boot", number = 100)
 stores.test = sort(unique(test$store_nbr))
 items.test = sort(unique(test$item_nbr))
 
-st = 37 ## store 33/ item 44 is the best selling combination 
-it = 5 ## store 33/ item 44 is the best selling combination 
+st = 33 ## store 33/ item 44 is the best selling combination 
+it = 44 ## store 33/ item 44 is the best selling combination 
 
 stat = keys[keys$store_nbr == st,]$station_nbr 
 
-cat ("winner model for store",st," - item", it, "is ",
-     winner.model[winner.model$store == st & winner.model$item == it, ]$best.model,"with RMSE on test set",
-     winner.model[winner.model$store == st & winner.model$item == it, ]$best.perf," \n")
-winner.model[winner.model$store == st & winner.model$item == it, ]
+# cat ("winner model for store",st," - item", it, "is ",
+#      winner.model[winner.model$store == st & winner.model$item == it, ]$best.model,"with RMSE on test set",
+#      winner.model[winner.model$store == st & winner.model$item == it, ]$best.perf," \n")
+# winner.model[winner.model$store == st & winner.model$item == it, ]
 ##############
 pred = NULL
 
@@ -306,7 +306,7 @@ legend("topleft", cex=.5 , legend = c("units sold in train set", "mean as predic
 
 ## 
 corr = rep(NA,100)
-ww = 100
+ww = 20
 win = 1:ww
 for (w in win){
   cat("processing moving average " , w , " ... ")
@@ -336,7 +336,8 @@ for (i in 1:(ww-2)) {
 candidates
 corr[candidates]
 
-##
+#######################################################################################
+sub = NULL
 l = getTrainClosestDates (testdata.header , traindata.header)
 train.closesest = l[[1]] 
 min.diff = l[[2]]
@@ -344,71 +345,153 @@ min.diff = l[[2]]
 date.struct = data.frame(test.data = testdata.header$as.date,train.closesest=train.closesest,min.diff=min.diff) 
 xd = date.struct[date.struct$min.diff == -1,]$train.closesest
 
-perf = NULL
-for (ww in 1:100) {
-  cat ("moving average <<",ww,">> \n")
-  y = traindata.header[traindata.header$as.date <= xd[1],]$units
-  
-  my.ts = ts(y, frequency = 365, start = c(2012,1))
-  
-  data = splitTrainXvat(my.ts, 0.7)
-  ts.train = data[[1]]
-  ts.val = data[[2]]
-  
-  fma <- rep(1/ww,ww)
-  fma
-  y_ma <- filter(ts.train, fma, sides=1)
-  ts.train = na.omit(y_ma)
-  
-  ## REG 
-  regBoundle = buildLinearRegSeas(ts.train)
-  mod.reg = regBoundle[[1]]
-  mod.reg.2 = regBoundle[[2]]
-  
-  predRegBoundle = predictLinearRegSeas(ts.val, regBoundle , freq = 365)
-  pred.reg = predRegBoundle[[2]]
-  pred.reg.2 = predRegBoundle[[1]]
-  
-  ## AR
-  mod.ar = ar(ts.train)
-  pred.ar = predict(mod.ar, n.ahead = length(ts.val))
-  
-  ## ARIMA
-  mod.arima <- get.best.arima(ts.train, maxord = c(2, 2, 2, 2, 2, 2))[[2]]
-  pred.arima <- predict(mod.arima, n.ahead = length(ts.val))$pred
-  
-  ## ARIMA LOG 
-  mod.arima.log <- get.best.arima(ifelse( log(ts.train) >= 0 , log(ts.train) , 0) , maxord = c(2, 2, 2, 2, 2, 2))[[2]]
-  pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts.val))$pred)
-  
-  ts.plot(my.ts, 
-          ts(pred.reg, start = start(ts.val) , frequency = frequency(ts.train)) , 
-          ts(pred.reg.2, start = start(ts.val) , frequency = frequency(ts.train)) , 
-          ts(as.numeric(pred.ar$pred), start = start(ts.val) , frequency = frequency(ts.train)) ,
-          ts(as.numeric(pred.arima), start = start(ts.val) , frequency = frequency(ts.train)) ,
-          ts(as.numeric(pred.arima.log), start = start(ts.val) , frequency = frequency(ts.train)) ,
-          col = 1:7, lty = 1:7)
-  legend("topleft", c("original serie", "Reg", "Reg.2", "AR" , "ARIMA" , "ARIMA.LOG"), lty = 1:7, 
-         col = 1:7 , cex=.5)
-  
-  perf = rbind (perf , cbind(data.frame(ma=ww) , data.frame(model="Reg") , getPerformance(pred = pred.reg, val = ts.val)) )
-  perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="Reg.2") , getPerformance(pred = pred.reg.2, val = ts.val)) )
-  perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="AR") , getPerformance(pred = as.numeric(pred.ar$pred), val = ts.val)) )
-  perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="ARIMA") , getPerformance(pred = as.numeric(pred.arima), val = ts.val)) )
-  perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="ARIMA.LOG") , getPerformance(pred = as.numeric(pred.arima.log), val = ts.val)) )
-  perf = rbind (perf , cbind(data.frame(ma=ww) , data.frame(model="MEAN") , getPerformance(pred = as.numeric(mean(ts.train)), val = ts.val)) )
+##
+y = traindata.header[traindata.header$as.date <= xd[1],]$units
+
+for (ii in 2:length(xd) ) {
+  cat ("iteration <<",ii,"/ ",length(xd),">> \n")
+  perf = NULL
+  if (ii > 2) {
+    more = traindata.header[traindata.header$as.date <= xd[ii] & traindata.header$as.date > xd[ii-1],]$units
+    y = c(y,more)
+  } 
+  for (ww in 1:8) {
+    
+    cat ("moving average <<",ww,">> \n")
+    
+    my.ts = ts(y, frequency = 365, start = c(2012,1))
+    test.dates = testdata.header[testdata.header$as.date <= xd[ii] & testdata.header$as.date > xd[ii-1],]
+    my.ts.test = ts(rep(0,length(test.dates)), frequency = 365, start = (end(my.ts)+deltat(my.ts))  )
+    
+    data = splitTrainXvat(my.ts, 0.7)
+    ts.train = data[[1]]
+    ts.val = data[[2]]
+    
+    fma <- rep(1/ww,ww)
+    fma
+    y_ma <- filter(ts.train, fma, sides=1)
+    ts.train = na.omit(y_ma)
+    
+    ## REG 
+    regBoundle = buildLinearRegSeas(ts.train)
+    mod.reg = regBoundle[[1]]
+    mod.reg.2 = regBoundle[[2]]
+    
+    predRegBoundle = predictLinearRegSeas(ts.val, regBoundle , freq = 365)
+    pred.reg = predRegBoundle[[2]]
+    pred.reg.2 = predRegBoundle[[1]]
+    
+    ## AR
+    mod.ar = ar(ts.train)
+    pred.ar = predict(mod.ar, n.ahead = length(ts.val))
+    
+    ## ARIMA
+    mod.arima <- get.best.arima(ts.train, maxord = c(2, 2, 2, 2, 2, 2))[[2]]
+    pred.arima <- predict(mod.arima, n.ahead = length(ts.val))$pred
+    
+    ## ARIMA LOG 
+    mod.arima.log <- get.best.arima(ifelse( log(ts.train) >= 0 , log(ts.train) , 0) , maxord = c(2, 2, 2, 2, 2, 2))[[2]]
+    pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(ts.val))$pred)
+    
+#     ts.plot(my.ts, 
+#             ts(pred.reg, start = start(ts.val) , frequency = frequency(ts.train)) , 
+#             ts(pred.reg.2, start = start(ts.val) , frequency = frequency(ts.train)) , 
+#             ts(as.numeric(pred.ar$pred), start = start(ts.val) , frequency = frequency(ts.train)) ,
+#             ts(as.numeric(pred.arima), start = start(ts.val) , frequency = frequency(ts.train)) ,
+#             ts(as.numeric(pred.arima.log), start = start(ts.val) , frequency = frequency(ts.train)) ,
+#             col = 1:7, lty = 1:7)
+#     legend("topleft", c("original serie", "Reg", "Reg.2", "AR" , "ARIMA" , "ARIMA.LOG"), lty = 1:7, 
+#            col = 1:7 , cex=.5)
+#     title( paste("Prediction on cross validation set (ma=",ww,")",sep='')  )
+    
+    perf = rbind (perf , cbind(data.frame(ma=ww) , data.frame(model="Reg") , getPerformance(pred = pred.reg, val = ts.val)) )
+    perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="Reg.2") , getPerformance(pred = pred.reg.2, val = ts.val)) )
+    perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="AR") , getPerformance(pred = as.numeric(pred.ar$pred), val = ts.val)) )
+    perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="ARIMA") , getPerformance(pred = as.numeric(pred.arima), val = ts.val)) )
+    perf = rbind (perf , cbind(data.frame(ma=ww) ,data.frame(model="ARIMA.LOG") , getPerformance(pred = as.numeric(pred.arima.log), val = ts.val)) )
+    perf = rbind (perf , cbind(data.frame(ma=ww) , data.frame(model="MEAN") , getPerformance(pred = as.numeric(mean(ts.train)), val = ts.val)) )
+    
+    print(perf)
+    
+  }
   
   print(perf)
   
+  cat(">>>>>>>>>>>>>>>>>>> The winner is ....... \n")
+  print(perf[perf$RMSE == min(perf$RMSE), ])
+  winner.model = as.character(perf[perf$RMSE == min(perf$RMSE), ]$model)
+  cat(">>  updating serie ....... \n")
+  cat(">>  length before update =  ",length(y)," \n")
+  
+  ww.win = as.numeric(perf[perf$RMSE == min(perf$RMSE), ]$ma)
+  fma <- rep(1/ww.win,ww.win)
+  fma
+  y_ma <- filter(my.ts, fma, sides=1)
+  ts.train = na.omit(y_ma)
+  
+  pred.test = NULL
+  
+  if ( winner.model == "Reg" ) {
+    regBoundle = buildLinearRegSeas(ts.train)
+    mod.reg = regBoundle[[1]]
+    mod.reg.2 = regBoundle[[2]]
+    
+    predRegBoundle = predictLinearRegSeas(my.ts.test, regBoundle , freq = 365)
+    pred.reg = predRegBoundle[[2]]
+    pred.reg.2 = predRegBoundle[[1]]
+    
+    pred.test=pred.reg
+    y = c(y,pred.test)
+  } else if ( winner.model == "Reg.2" ) {
+    regBoundle = buildLinearRegSeas(ts.train)
+    mod.reg = regBoundle[[1]]
+    mod.reg.2 = regBoundle[[2]]
+    
+    predRegBoundle = predictLinearRegSeas(my.ts.test, regBoundle , freq = 365)
+    pred.reg = predRegBoundle[[2]]
+    pred.reg.2 = predRegBoundle[[1]]
+    
+    pred.test = pred.reg.2
+    y = c(y,pred.test)
+  } else if ( winner.model == "AR" ) {
+    mod.ar = ar(ts.train)
+    pred.ar = predict(mod.ar, n.ahead = length(my.ts.test))
+    
+    pred.test = as.numeric(pred.ar$pred)
+    y = c(y,pred.test)
+  } else if ( winner.model == "ARIMA" ) {
+    mod.arima <- get.best.arima(my.ts, maxord = c(2, 2, 2, 2, 2, 2))[[2]]
+    pred.arima <- predict(mod.arima, n.ahead = length(my.ts.test))$pred
+    
+    pred.test = as.numeric(pred.arima)
+    y = c(y,pred.test)
+  } else if ( winner.model == "ARIMA.LOG" ) {
+    mod.arima.log <- get.best.arima(ifelse( log(ts.train) >= 0 , log(ts.train) , 0) , maxord = c(2, 2, 2, 2, 2, 2))[[2]]
+    pred.arima.log <- exp(predict(mod.arima.log, n.ahead = length(my.ts.test))$pred)
+    
+    pred.test = as.numeric(pred.arima.log)
+    y = c(y,pred.test)
+  } else {  ## MEAN 
+    
+    pred.test = rep(as.numeric(mean(ts.train)),length(my.ts.test))
+    y = c(y,pred.test) 
+  }
+  cat(">>  length after update =  ",length(y)," \n")
+  
+#   ts.plot(my.ts, ts(as.numeric(pred.test), start = start(my.ts.test) , frequency = frequency(ts.train)) ,
+#           col = 1:2, lty = 1:2)
+#   legend("topleft", c("train", "pred.test"), lty = 1:2, col = 1:2 , cex=.5)
+#   title("Prediction on test set")
+  #pacf(pred.test)
+  if (is.null(sub) ) {
+    sub = pred.test
+  } else {
+    sub = c(sub,pred.test)
+  }
 }
 
-print(perf)
-
-cat(">>>>>>>>>>>>>>>>>>> The winner is ....... \n")
-print(perf[perf$RMSE == min(perf$RMSE), ])
-
-
-
+cat ("check: length sub == length test data:",(length(sub) == dim(testdata.header)[1]),"\n")
+cat ("check: length y == length train data:",(length(y) == dim(traindata.header)[1]),"\n")
 
 ################################## model 
 # pi = 0.1
@@ -428,6 +511,32 @@ print(perf[perf$RMSE == min(perf$RMSE), ])
 #   C[dd-1,]$val =   (  traindata.header[traindata.header$as.date == dd,]$units + pi * (traindata.header[traindata.header$as.date == (dd-1),]$units -  traindata.header[traindata.header$as.date == (dd-1-piT),]$units ) ) / pi
 # }
 ################################## end model 
+y = traindata.header[traindata.header$as.date <= xd[1],]$units
+my.ts = ts(y, frequency = 365, start = c(2012,1))
+test.dates = testdata.header[testdata.header$as.date <= xd[2] & testdata.header$as.date > xd[1],]
+my.ts.test = ts(rep(NA,length(test.dates)), frequency = 365, start = (end(my.ts)+deltat(my.ts))  )
+myzoo = ts(c(my.ts,my.ts.test) , frequency = 365, start = c(2012,1) )
+x <- ts(myzoo,f=4)
+fit <- ts(rowSums(tsSmooth(StructTS(x))[,-2]))
+tsp(fit) <- tsp(x)
+plot(x)
+lines(fit,col=2)
+
+### >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> sembra ok e veloce 
+train.chunk = traindata.header[,c(5,6,7)]
+test.chunk = testdata.header[,c(5,6)]
+test.chunk$units = NA
+data.chucks = rbind(train.chunk,test.chunk)
+data.chucks = data.chucks[order(data.chucks$as.date,decreasing = T),]
+test.idx = which(  is.na(data.chucks)   )
+ts.all = ts(data.chucks$units ,frequency = 365, start = c(2012,1) )
+x <- ts(ts.all,f=4)
+fit <- ts(rowSums(tsSmooth(StructTS(x))[,-2]))
+tsp(fit) <- tsp(x)
+plot(x)
+lines(fit,col=2)
+sub = fit[test.idx]
+
 
 mySub_grid <- read.csv("~/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySub_grid.csv")
 mySub <- read.csv("~/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySub.csv")
