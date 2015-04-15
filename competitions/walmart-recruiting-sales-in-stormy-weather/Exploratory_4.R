@@ -522,25 +522,42 @@ tsp(fit) <- tsp(x)
 plot(x)
 lines(fit,col=2)
 
+
+
 ### >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> sembra ok e veloce 
-train.chunk = traindata.header[,c(5,6,7)]
-test.chunk = testdata.header[,c(5,6)]
-test.chunk$units = NA
-data.chucks = rbind(train.chunk,test.chunk)
-data.chucks = data.chucks[order(data.chucks$as.date,decreasing = T),]
-test.idx = which(  is.na(data.chucks)   )
-ts.all = ts(data.chucks$units ,frequency = 365, start = c(2012,1) )
-x <- ts(ts.all,f=4)
-fit <- ts(rowSums(tsSmooth(StructTS(x))[,-2]))
-tsp(fit) <- tsp(x)
-plot(x)
-lines(fit,col=2)
-sub = fit[test.idx]
+intrapolatePredTS <- function(traindata.header, testdata.header,doPlot=F) {
+  train.chunk = traindata.header[,c(5,6,7)]
+  test.chunk = testdata.header[,c(5,6)]
+  test.chunk$units = NA
+  data.chucks = rbind(train.chunk,test.chunk)
+  data.chucks = data.chucks[order(data.chucks$as.date,decreasing = T),]
+  test.idx = which(  is.na(data.chucks)   )
+  ts.all = ts(data.chucks$units ,frequency = 365, start = c(2012,1) )
+  x <- ts(ts.all,f=4)
+  fit <- ts(rowSums(tsSmooth(StructTS(x))[,-2]))
+  tsp(fit) <- tsp(x)
+  if (doPlot) {
+    plot(x)
+    lines(fit,col=2)
+  }
+  pred = fit[test.idx]
+}
+
+sub = intrapolatePredTS (traindata.header, testdata.header,doPlot=T)
+
+##### stima RMSE
+l = getTrainClosestDates (testdata.header , traindata.header)
+train.closesest = l[[1]] 
+min.diff = l[[2]]
+date.struct = data.frame(test.data = testdata.header$as.date,train.closesest=train.closesest,min.diff=min.diff) 
+xd = date.struct[date.struct$min.diff == -1,]$train.closesest
+y = traindata.header[traindata.header$as.date <= xd[1],]$units
+my.ts = ts(y, frequency = 365, start = c(2012,1))
+data = splitTrainXvat(my.ts, 0.7)
+ts.train = data[[1]]
+ts.val = data[[2]]
+xval = intrapolatePredTS (traindata.header, testdata.header,doPlot=T)
 
 
-mySub_grid <- read.csv("~/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySub_grid.csv")
-mySub <- read.csv("~/Documents/Kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySub.csv")
-
-head(mySub_grid[order(mySub_grid$best.perf , decreasing = T),] , 30)
 
 
