@@ -169,7 +169,7 @@ for (st in stores.test) {
         .grid = data.frame(store = c(st) , 
                            item = c(it) , 
                            test.num = c(dim(testdata)[1]),
-                           all0s=c(T) )
+                           all0s=c(F) )
         tmp = data.frame(matrix( 0 , 1 ,  length(Models) ))
         colnames(tmp) = Models
         .grid = cbind(.grid , tmp)
@@ -186,17 +186,33 @@ for (st in stores.test) {
         test.chunk = testdata.header[,c(5,6)]
         test.chunk$units = NA
         
-        l = intrapolatePredTS (train.chunk, test.chunk,doPlot=T)
-        pred = l[[1]]
+        l = pred = tryCatch({ 
+          intrapolatePredTS (train.chunk, test.chunk,doPlot=T)
+        } , error = function(err) { 
+          print(paste("ERROR:  ",err))
+          NULL
+        })
+        
+        if (! is.null(l) ) {
+          pred = l[[1]]
+          
+          ### completing grid 
+          .grid$best.perf = l[[2]]
+          .grid$best.model = "TS"
+          
+          if(is.null(grid)) grid = .grid 
+          else grid = rbind(grid,.grid)
+        } else {
+          pred = rep(mean(train.chunk$units),dim(testdata.header)[1])
+          
+          .grid$best.perf = RMSE(obs = train.chunk$units , pred = rep(mean(train.chunk$units),dim(traindata.header)[1]))
+          .grid$best.model = "Average"
+          
+          if(is.null(grid)) grid = .grid 
+          else grid = rbind(grid,.grid)
+        }
+        
         pred = ifelse(pred >= 0, pred , 0 )
-        
-        ### completing grid 
-        .grid$best.perf = l[[2]]
-        .grid$best.model = "TS"
-        
-        if(is.null(grid)) grid = .grid 
-        else grid = rbind(grid,.grid)
-        
         ## some checks
         if (length(pred) != dim(testdata.header)[1]) 
           stop("length of pred != num rows of test set!!")
