@@ -36,6 +36,29 @@ getBasePath = function (type = "data") {
   ret
 } 
 
+trendTS <- function(train.chunk, test.chunk,doPlot=F) {
+  data.chucks = rbind(train.chunk,test.chunk)
+  data.chucks = data.chucks[order(data.chucks$as.date,decreasing = F),]
+  test.idx = which(  is.na(data.chucks$units)   )
+  train.idx = which( ! is.na(data.chucks$units)   )
+  ts.all = ts(data.chucks$units ,frequency = 365, start = c(2012,1) )
+  x <- ts(ts.all,f=4)
+  fit <- ts(rowSums(tsSmooth(StructTS(x))[,-2]))
+  tsp(fit) <- tsp(x)
+  if (doPlot) {
+    plot(x)
+    lines(fit,col=2)
+  }
+  
+  fit = ifelse(fit >= 0, fit , 0 )
+  
+  test.trend = fit[test.idx]
+  train.trend = fit[train.idx]
+  
+  list(train.trend,test.trend)
+}
+
+
 getTrain = function () {
   path = ""
   
@@ -77,27 +100,9 @@ getTest = function () {
   trdata
 } 
 
-intrapolatePredTS <- function(train.chunk, test.chunk,doPlot=F) {
-  data.chucks = rbind(train.chunk,test.chunk)
-  data.chucks = data.chucks[order(data.chucks$as.date,decreasing = F),]
-  test.idx = which(  is.na(data.chucks)   )
-  ts.all = ts(data.chucks$units ,frequency = 365, start = c(2012,1) )
-  x <- ts(ts.all,f=4)
-  fit <- ts(rowSums(tsSmooth(StructTS(x))[,-2]))
-  tsp(fit) <- tsp(x)
-  if (doPlot) {
-    plot(x)
-    lines(fit,col=2)
-  }
-  pred = fit[test.idx]
-  rmse = RMSE(pred = as.numeric(fit[!is.na(x)]) , obs = train.chunk$units)
-  list(pred,rmse)
-}
 
-Models = c("Average" , "TS") 
 ##################
 verbose = T 
-doPlot = T
 source(paste0( getBasePath("process") , "/FeatureSelection_Lib.R"))
 source(paste0( getBasePath("process") , "/Resample_Lib.R"))
 source(paste0( getBasePath("process") , "/Regression_Lib.R"))
@@ -114,10 +119,21 @@ weather = as.data.frame( fread(paste(getBasePath("data") ,
                                      "weather.imputed.basic.17.9.csv" , sep=''))) ## <<<< TODO use weather.imputed.all.<perf>.csv
 
 ######
+RegModels = c("Average" , "Mode",  
+  "LinearReg", "RobustLinearReg", 
+  "PLS_Reg" , "Ridge_Reg" , "Enet_Reg" , 
+  "KNN_Reg", 
+  #"SVM_Reg", 
+  "BaggedTree_Reg"
+  #, "RandomForest_Reg"
+  #, "Cubist_Reg"
+  ) 
 
 ###
 sub = NULL
 grid = NULL
+controlObject <- trainControl(method = "boot", number = 100)
+#controlObject <- trainControl(method = "repeatedcv" , repeats = 5 , number = 10)
 
 ###
 stores.test = sort(unique(test$store_nbr))
@@ -141,7 +157,7 @@ for (st in stores.test) {
       traindata = train[train$store_nbr == st & train$item_nbr == it ,  ]
       traindata$station_nbr = stat
       traindata = merge(x = traindata,y = weather, by=c("station_nbr","date"))
-      traindata.header = traindata[,c(1,2,3,4,5)]
+      traindata.header = traindata[,c(1,2,3,4)]
       traindata.y = traindata[,5]
       traindata = traindata[,-c(1,2,3,4,5)]
       
@@ -155,8 +171,8 @@ for (st in stores.test) {
                            item = c(it) , 
                            test.num = c(dim(testdata)[1]),
                            all0s=c(T) )
-        tmp = data.frame(matrix( 0 , 1 ,  length(Models) ))
-        colnames(tmp) = Models
+        tmp = data.frame(matrix( 0 , 1 ,  length(RegModels) ))
+        colnames(tmp) = RegModels
         .grid = cbind(.grid , tmp)
         .grid$best.perf = 0
         .grid$best.model = "Average"
@@ -165,57 +181,75 @@ for (st in stores.test) {
         else grid = rbind(grid,.grid)
         
       } else {
-        ### grid 
-        .grid = data.frame(store = c(st) , 
-                           item = c(it) , 
-                           test.num = c(dim(testdata)[1]),
-                           all0s=c(F) )
-        tmp = data.frame(matrix( 0 , 1 ,  length(Models) ))
-        colnames(tmp) = Models
-        .grid = cbind(.grid , tmp)
-        
-        
-        ### prediction 
+        ####### include trend feature <<<<<<<<<<<<<<
         traindata.header$as.date = as.Date(traindata.header$date, "%Y-%m-%d")
         traindata.header$data_type = 1
         
         testdata.header$as.date = as.Date(testdata.header$date, "%Y-%m-%d")
         testdata.header$data_type = 2 
-
-        train.chunk = traindata.header[,c(5,6,7)]
-        test.chunk = testdata.header[,c(5,6)]
+        
+        train.chunk = traindata.header[,c(4,5)]
+        train.chunk$units = traindata.y
+        
+        test.chunk = testdata.header[,c(4,5)]
         test.chunk$units = NA
         
         l = tryCatch({ 
-          intrapolatePredTS (train.chunk, test.chunk,doPlot=T)
+          trendTS (train.chunk, test.chunk,doPlot=T)
         } , error = function(err) { 
           print(paste("ERROR:  ",err))
           NULL
         })
         
-        if (! is.null(l) ) {
-          pred = l[[1]]
+        if (! is.null(l) ) { 
+          train.trend = l[[1]]
+          test.trend = l[[2]]
           
-          ### completing grid 
-          .grid$best.perf = l[[2]]
-          .grid$best.model = "TS"
-          
-          if(is.null(grid)) grid = .grid 
-          else grid = rbind(grid,.grid)
-        } else {
-          pred = rep(mean(train.chunk$units),dim(testdata.header)[1])
-          
-          .grid$best.perf = RMSE(obs = train.chunk$units , pred = rep(mean(train.chunk$units),dim(traindata.header)[1]))
-          .grid$best.model = "Average"
-          
-          if(is.null(grid)) grid = .grid 
-          else grid = rbind(grid,.grid)
+          traindata$trend = train.trend
+          testdata$trend = test.trend 
         }
         
+        ####### feature selection <<<<<<<<<<<<<<
+        l = featureSelect (traindata,testdata,featureScaling = T)
+        traindata = l[[1]]
+        testdata = l[[2]]
+        
+        ### k-fold 
+        l = trainAndPredict.kfold.reg (k = 5,traindata,traindata.y,RegModels,controlObject)
+        model.winner = l[[1]]
+        .grid = l[[2]]
+        perf.kfold = l[[3]]
+        
+        #### updating grid 
+        if(is.null(grid)) grid = .grid 
+        else grid = rbind(grid,.grid)
+        
+        ### making prediction on test set with winner model 
+        if (verbose) cat("Training on test data and making prediction w/ winner model ", .grid$best.model , " ... \n")
+        
+        pred = tryCatch({ reg.trainAndPredict( traindata.y , 
+                                    traindata , 
+                                    testdata , 
+                                    .grid$best.model , 
+                                    controlObject, 
+                                    best.tuning = T)
+        } , error = function(err) { 
+          print(paste("ERROR:  ",err))
+          NULL
+        })
+        
+        if(is.null(pred)) {
+          if (verbose) cat("Unexpected error: training on test data and making prediction w/ Average ... \n")
+          pred = reg.trainAndPredict( traindata.y , 
+                                                 traindata , 
+                                                 testdata , 
+                                                 "Average" , 
+                                                 controlObject, 
+                                                 best.tuning = T)
+        } 
+        ## fix negatives 
         pred = ifelse(pred >= 0, pred , 0 )
-        ## some checks
-        if (length(pred) != dim(testdata.header)[1]) 
-          stop("length of pred != num rows of test set!!")
+        
       }
       ## building submission 
       if (verbose) cat("Updating submission ... \n")
@@ -245,7 +279,7 @@ if ( sum(!(sampleSubmission$id %in% sub$id)) > 0 )
 
 ### storing on disk 
 write.csv(sub,quote=FALSE, 
-          file=paste(getBasePath("data"),"mySubTS.csv",sep='') ,
+          file=paste(getBasePath("data"),"mySub_trend_included.csv",sep='') ,
           row.names=FALSE)
 
 cat("<<<<< submission correctly stored on disk >>>>>\n") 
@@ -253,6 +287,6 @@ cat("<<<<< submission correctly stored on disk >>>>>\n")
 ## grid 
 head(grid)
 write.csv(grid,quote=FALSE, 
-          file=paste(getBasePath("data"),"mySubTS_grid.csv",sep='') ,
+          file=paste(getBasePath("data"),"mySub_grid_trend_included.csv",sep='') ,
           row.names=FALSE)
 cat("<<<<< performance grid correctly stored on disk >>>>>\n") 
