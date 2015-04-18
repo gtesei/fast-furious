@@ -1,0 +1,40 @@
+
+getBasePath = function (type = "data") {
+  ret = ""
+  base.path1 = ""
+  base.path2 = ""
+  
+  if(type == "data") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/restaurant-revenue-prediction"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/restaurant-revenue-prediction/"
+  } else if (type == "code") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/competitions/restaurant-revenue-prediction"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/competitions/restaurant-revenue-prediction/"
+  } else if (type == "process") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/data_process"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/data_process/"
+  } else {
+    stop("unrecognized type.")
+  }
+  
+  if (file.exists(base.path1))  {
+    ret = paste0(base.path1,"/")
+  } else {
+    ret = base.path2
+  }
+  
+  ret
+} 
+
+source(paste0( getBasePath("process") , "/o_sommatore_a_posteriori.R"))
+
+model.average (submissions = data.frame(path = 
+                                                     c("/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/restaurant-revenue-prediction/mySub_basic.csv", 
+                                                       "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/restaurant-revenue-prediction/mySub_basic_more_predictors.csv") , 
+                                                   weigth = c(  10^(1/1855273) , 10^(1/1798733) )) , 
+                          sub.col = 2 , 
+                          submission.final.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/restaurant-revenue-prediction/mySub_model_avg.csv"
+)
+
+
+
