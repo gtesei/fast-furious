@@ -45,7 +45,7 @@ kfolds = function(k,data.length) {
   folds
 }
 
-trainAndPredict.kfold.reg = function(k,traindata,traindata.y,RegModels,controlObject) {
+trainAndPredict.kfold.reg.wallmart = function(k,traindata,traindata.y,RegModels,controlObject) {
   source(paste0( getBasePath("process") , "/Regression_Lib.R"))
   
   .grid = data.frame(store = c(st) , 
@@ -58,6 +58,67 @@ trainAndPredict.kfold.reg = function(k,traindata,traindata.y,RegModels,controlOb
   
   ####### training and predicting <<<<<<<<<<<<<<
   k = 5
+  folds = kfolds(k,dim(traindata)[1])
+  
+  perf.kfold = data.frame(matrix(rep(-1,(k*length(RegModels))),k,length(RegModels)))
+  colnames(perf.kfold) = RegModels
+  
+  for(j in 1:k) {  
+    if (verbose) cat("--k-fold:: ",j, "/",k , "\n")
+    traindata.train <- traindata[ folds != j,]
+    traindata.y.train = traindata.y[folds != j]
+    
+    traindata.xval <- traindata[folds == j,]
+    traindata.y.xval = traindata.y[folds == j]
+    
+    ###
+    for ( mo in 1:length(RegModels))  {
+      if (verbose) cat("Trying ", RegModels[mo] , " ... ")
+      model.label = RegModels[mo]
+      
+      pred = tryCatch({ 
+        reg.trainAndPredict( traindata.y.train , 
+                             traindata.train , 
+                             traindata.xval , 
+                             model.label , 
+                             controlObject, 
+                             best.tuning = F)
+      } , error = function(err) { 
+        print(paste("ERROR:  ",err))
+        NULL
+      })
+      
+      if(! is.null(pred)) { 
+        perf.kfold[j,mo] = RMSE(pred = pred, obs = traindata.y.xval)
+        if (verbose) cat("RMSE = ", perf.kfold[j,mo] , "\n")
+      } else {
+        perf.kfold[j,mo] = 1000000000 ## RMSE
+        if (verbose) cat("(fake) RMSE = ", perf.kfold[j,mo] , "\n")
+      }
+      
+    } ### end of model shot    
+  } ### end of k-fold 
+  
+  #### results 
+  for ( mo in 1:length(RegModels))  {
+    .grid[1,(4+mo)] = mean(perf.kfold[,mo])
+  }
+  .grid$best.perf = min(.grid[1,(4+(1:length(RegModels)))])
+  model.idx = which(.grid[1,(4+(1:length(RegModels)))] == .grid$best.perf)
+  .grid$best.model = RegModels[model.idx]
+  
+  list(RegModels[model.idx],.grid,perf.kfold)
+}
+
+trainAndPredict.kfold.reg = function(k,traindata,traindata.y,RegModels,controlObject) {
+  source(paste0( getBasePath("process") , "/Regression_Lib.R"))
+  
+  .grid = data.frame( train.num = c(dim(traindata)[1])  )
+  tmp = data.frame(matrix( 0 , 1 ,  length(RegModels) ))
+  colnames(tmp) = RegModels
+  .grid = cbind(.grid , tmp)
+  
+  ####### training and predicting <<<<<<<<<<<<<<
   folds = kfolds(k,dim(traindata)[1])
   
   perf.kfold = data.frame(matrix(rep(-1,(k*length(RegModels))),k,length(RegModels)))

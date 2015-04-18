@@ -164,7 +164,7 @@ for (st in stores.test) {
         testdata = l[[2]]
         
         ### k-fold 
-        l = trainAndPredict.kfold.reg (k = 5,traindata,traindata.y,RegModels,controlObject)
+        l = trainAndPredict.kfold.reg.wallmart (k = 5,traindata,traindata.y,RegModels,controlObject)
         model.winner = l[[1]]
         .grid = l[[2]]
         perf.kfold = l[[3]]

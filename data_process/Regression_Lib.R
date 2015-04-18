@@ -4,7 +4,7 @@ library(caret)
 All.RegModels = c("Average" , "Mode",  
                   "LinearReg", "RobustLinearReg", 
                   "PLS_Reg" , "Ridge_Reg" , "Enet_Reg" , 
-                  "KNN_Reg", "SVM_Reg", "BaggedTree_Reg", "RandomForest_Reg", "Cubist_Reg") 
+                  "KNN_Reg", "SVM_Reg", "BaggedTree_Reg", "RandomForest_Reg", "Cubist_Reg" , "NNet") 
 
 reg.trainAndPredict = function( YtrainingSet , XtrainingSet , 
                             testSet , 
@@ -101,6 +101,20 @@ reg.trainAndPredict = function( YtrainingSet , XtrainingSet ,
     ltset = ifelse( ! is.null(dim(testSet)) , dim(testSet) , length(testSet) )
     pred = rep(Mode(YtrainingSet),ltset)
     
+  } else if (model.label == "NNet") {  ### Neural Networks 
+    nnetGrid <- expand.grid(.decay = c(0.001, .01, .1),
+                              .size = seq(1, 27, by = 2),
+                              .bag = FALSE)
+    
+    fit <- train(y = YtrainingSet, x = XtrainingSet ,
+                         method = "avNNet",
+                         tuneGrid = nnetGrid,
+                         linout = TRUE,
+                         trace = FALSE,
+                         maxit = 1000,
+                         trControl = controlObject)
+    
+    pred = as.numeric( predict(fit , testSet )  )  
   } else {
     stop("unrecognized model.label.")
   }
