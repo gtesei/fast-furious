@@ -162,10 +162,10 @@ trainAndPredict.kfold.reg = function(k,traindata,traindata.y,RegModels,controlOb
   
   #### results 
   for ( mo in 1:length(RegModels))  {
-    .grid[1,(4+mo)] = mean(perf.kfold[,mo])
+    .grid[1,(1+mo)] = mean(perf.kfold[,mo])
   }
-  .grid$best.perf = min(.grid[1,(4+(1:length(RegModels)))])
-  model.idx = which(.grid[1,(4+(1:length(RegModels)))] == .grid$best.perf)
+  .grid$best.perf = min(.grid[1,(1+(1:length(RegModels)))])
+  model.idx = which(.grid[1,(1+(1:length(RegModels)))] == .grid$best.perf)
   .grid$best.model = RegModels[model.idx]
   
   list(RegModels[model.idx],.grid,perf.kfold)

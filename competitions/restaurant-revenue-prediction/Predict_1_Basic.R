@@ -136,10 +136,13 @@ RegModels = c("Average" , "Mode",
               "BaggedTree_Reg"
               , "RandomForest_Reg"
               , "Cubist_Reg" 
-              , "NNet"
+              #, "NNet"
 ) 
 
+removeOnlyZeroVariancePredictors = F
+
 controlObject <- trainControl(method = "boot", number = 200)
+
 #######
 sampleSubmission = as.data.frame( fread(paste(getBasePath("data") , 
                                               "sampleSubmission.csv" , sep='')))
@@ -150,7 +153,9 @@ train.raw = as.data.frame( fread(paste(getBasePath("data") ,
 test.raw = as.data.frame( fread(paste(getBasePath("data") , 
                                    "test.csv" , sep='')))
 
-
+cat("Basic model building [ removeOnlyZeroVariancePredictors =",removeOnlyZeroVariancePredictors,"] ... \n")
+cat("\nRegression models:\n")
+print(RegModels)
 ####### basic feature processing 
 l = buildData.basic(train.raw , test.raw)
 train = l[[1]]
@@ -158,7 +163,7 @@ y = l[[2]]
 test = l[[3]]
 
 ####### feature selection <<<<<<<<<<<<<<
-l = featureSelect (train,test,featureScaling = T)
+l = featureSelect (train,test,featureScaling = T , removeOnlyZeroVariacePredictors = removeOnlyZeroVariancePredictors)
 traindata = l[[1]]
 testdata = l[[2]]
 
@@ -170,9 +175,11 @@ perf.kfold = l[[3]]
 
 ### results 
 if (verbose) {
-  print(.grid)
+  cat("****** RMSE - each model/fold ****** \n")
   print(perf.kfold)
-  cat("The winner is ... ",model.winner,"\n")
+  cat("\n****** RMSE - mean ****** \n")
+  print(.grid)
+  cat("\n>>>>>>>>>>>> The winner is ... ",model.winner,"\n")
 }
 
 ### making prediction on test set with winner model 
@@ -187,12 +194,17 @@ pred = reg.trainAndPredict( y ,
 pred = ifelse(pred >= 1150 , pred , 1150) ## TODO better 
 
 ### storing on disk 
-sub = data.frame(Id = test.raw$Id , Prediction = pred)
-write.csv(sub,quote=FALSE, 
-          file=paste(getBasePath("data"),"mySub_feat_sel.csv",sep='') ,
+write.csv(data.frame(Id = test.raw$Id , Prediction = pred),
+          quote=FALSE, 
+          file=paste(getBasePath("data"),ifelse(removeOnlyZeroVariancePredictors,"mySub_basic_more_predictors.csv","mySub_basic.csv"),sep='') ,
           row.names=FALSE)
 
-cat("<<<<< submission correctly stored on disk >>>>>\n")
+write.csv(.grid,
+          quote=FALSE, 
+          file=paste(getBasePath("data"),ifelse(removeOnlyZeroVariancePredictors,"mySub_basic_more_predictors_grid.csv","mySub_basic_grid.csv"),sep='') ,
+          row.names=FALSE)
+
+cat("<<<<< submission/grid stored on disk >>>>>\n")
 
 
 
