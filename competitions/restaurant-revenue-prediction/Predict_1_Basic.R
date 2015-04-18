@@ -184,12 +184,12 @@ pred = reg.trainAndPredict( y ,
                            controlObject, 
                            best.tuning = T)
 
-pred = ifelse(pred >= 0 , pred , 1150) ## TODO better 
+pred = ifelse(pred >= 1150 , pred , 1150) ## TODO better 
 
 ### storing on disk 
 sub = data.frame(Id = test.raw$Id , Prediction = pred)
 write.csv(sub,quote=FALSE, 
-          file=paste(getBasePath("data"),"mySub.csv",sep='') ,
+          file=paste(getBasePath("data"),"mySub_feat_sel.csv",sep='') ,
           row.names=FALSE)
 
 cat("<<<<< submission correctly stored on disk >>>>>\n")

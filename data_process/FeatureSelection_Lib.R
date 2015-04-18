@@ -1,15 +1,25 @@
 library(subselect)
 library(caret)
 
-featureSelect <- function(traindata,testdata,featureScaling = T) {
+featureSelect <- function(traindata,testdata,featureScaling = T,removeOnlyZeroVariacePredictors=F) {
   data = rbind(testdata,traindata)
   
   ### removing near zero var predictors 
-  PredToDel = nearZeroVar(data)
-  if (length(PredToDel) > 0) {
-    cat("removing ",length(PredToDel)," nearZeroVar predictors: ", 
-        paste(colnames(data) [PredToDel] , collapse=" " ) , " ... \n ")
-    data  =  data  [,-PredToDel]
+  if (! removeOnlyZeroVariacePredictors ) { 
+    PredToDel = nearZeroVar(data)
+    if (length(PredToDel) > 0) {
+      cat("removing ",length(PredToDel)," nearZeroVar predictors: ", 
+          paste(colnames(data) [PredToDel] , collapse=" " ) , " ... \n ")
+      data  =  data  [,-PredToDel]
+    } 
+  } else {
+    card = apply(data,2,function(x)  length(unique(x))  )
+    PredToDel = as.numeric(which(card < 2))
+    if (length(PredToDel) > 0) {
+      cat("removing ",length(PredToDel)," ZeroVariacePredictors predictors: ", 
+          paste(colnames(data) [PredToDel] , collapse=" " ) , " ... \n ")
+      data  =  data  [,-PredToDel]
+    } 
   }
   
   ### removing predictors that make ill-conditioned square matrix
@@ -23,7 +33,7 @@ featureSelect <- function(traindata,testdata,featureScaling = T) {
   # removing high correlated predictors 
   PredToDel = findCorrelation(cor( data )) 
   if (length(PredToDel) > 0) {
-    cat("removing ",length(PredToDel), " predictors: ",
+    cat("removing ",length(PredToDel), " removing high correlated predictors: ",
         paste(colnames(data) [PredToDel] , collapse=" " ) , " ... \n ")
     data =  data  [,-PredToDel]
   }
