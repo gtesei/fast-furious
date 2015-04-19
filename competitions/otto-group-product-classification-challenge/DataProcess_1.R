@@ -138,6 +138,12 @@ for (i in 1:93) {
   test = test[ , -1]
 }
 
+####### feature selection <<<<<<<<<<<<<<
+cat(">>> feature selection ... \n")
+l = featureSelect (train,test)
+train.reduced = l[[1]]
+test.reduced = l[[2]]
+
 ########### store on disk 
 cat(">>> storing on disk ... \n")
 write.csv(data.frame(y = y),
@@ -152,6 +158,16 @@ write.csv(train,
 write.csv(test,
           quote=FALSE, 
           file=paste0(getBasePath("data"),"encoded_test.csv") ,
+          row.names=FALSE)
+
+write.csv(train.reduced,
+          quote=FALSE, 
+          file=paste0(getBasePath("data"),"encoded_train_reduced.csv") ,
+          row.names=FALSE)
+
+write.csv(test.reduced,
+          quote=FALSE, 
+          file=paste0(getBasePath("data"),"encoded_test_reduced.csv") ,
           row.names=FALSE)
 
 
@@ -172,5 +188,17 @@ write.table(train,
 write.table(test,
             quote=FALSE, 
             file=paste0(getBasePath("data"),"oct_test_encoded.csv") ,
+            row.names=FALSE,
+            col.names=FALSE)
+
+write.table(train.reduced,
+            quote=FALSE, 
+            file=paste0(getBasePath("data"),"oct_train_encoded_reduced.csv") ,
+            row.names=FALSE,
+            col.names=FALSE)
+
+write.table(test.reduced,
+            quote=FALSE, 
+            file=paste0(getBasePath("data"),"oct_test_encoded_reduced.csv") ,
             row.names=FALSE,
             col.names=FALSE)
