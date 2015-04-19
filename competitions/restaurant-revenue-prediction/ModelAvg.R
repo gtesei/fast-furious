@@ -31,7 +31,7 @@ source(paste0( getBasePath("process") , "/o_sommatore_a_posteriori.R"))
 model.average (submissions = data.frame(path = 
                                                      c("/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/restaurant-revenue-prediction/mySub_basic.csv", 
                                                        "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/restaurant-revenue-prediction/mySub_basic_more_predictors.csv") , 
-                                                   weigth = c(  10^(1/1855273) , 10^(1/1798733) )) , 
+                                                   weigth = c(  (1/1855273) , (1/1798733) )) , 
                           sub.col = 2 , 
                           submission.final.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/restaurant-revenue-prediction/mySub_model_avg.csv"
 )

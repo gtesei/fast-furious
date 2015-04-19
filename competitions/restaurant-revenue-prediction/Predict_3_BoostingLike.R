@@ -111,7 +111,7 @@ train = l[[1]]
 y = l[[2]]
 test = l[[3]]
 
-######## building first "tip" features, i.e. Enet_Reg applying  caret’s nearZeroVar function both in test set and training set 
+######## first build the "tip" features, i.e. Enet_Reg applying  caret’s nearZeroVar function both in test set and training set 
 #### feature selection <<<<<<<<<<<<<<
 l = featureSelect (train,test)
 traindata = l[[1]]
@@ -163,14 +163,14 @@ if (sum(is.na(tip.train)) > 0)
 
 train$tip = tip.train
 
-######## predicting w/ BaggedTree_Reg removing only zero variance predictors
+######## then predict w/ BaggedTree_Reg removing only zero variance predictors
 cat("predicting w/ BaggedTree_Reg removing only zero variance predictors ... \n")
 #### feature selection <<<<<<<<<<<<<<
 l = featureSelect (train,test,
                    removeOnlyZeroVariacePredictors=T,
-                   removePredictorsMakingIllConditionedSquareMatrix = F, 
-                   removeHighCorrelatedPredictors = F, 
-                   featureScaling = F)
+                   removePredictorsMakingIllConditionedSquareMatrix = T, 
+                   removeHighCorrelatedPredictors = T, 
+                   featureScaling = T)
 traindata = l[[1]]
 testdata = l[[2]]
 

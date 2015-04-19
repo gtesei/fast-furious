@@ -116,9 +116,9 @@ test = l[[3]]
 #### feature selection <<<<<<<<<<<<<<
 l = featureSelect (train,test,
                    removeOnlyZeroVariacePredictors=T,
-                   removePredictorsMakingIllConditionedSquareMatrix = F, 
-                   removeHighCorrelatedPredictors = F, 
-                   featureScaling = F)
+                   removePredictorsMakingIllConditionedSquareMatrix = T, 
+                   removeHighCorrelatedPredictors = T, 
+                   featureScaling = T)
 traindata = l[[1]]
 testdata = l[[2]]
 
@@ -164,7 +164,7 @@ for(j in 1:k) {
 if (sum(is.na(pred.1.train)) > 0)
   stop("something wrong (NAs) in tip.train")
 
-### we compute the residual, i.e. the difference between the observed value and such prediction in train set
+### then, we compute residuals, i.e. the difference between the observed value and the prediction in train set
 cat(">>> computing residuals in train set ... \n")
 res = (y - pred.1.train) 
 

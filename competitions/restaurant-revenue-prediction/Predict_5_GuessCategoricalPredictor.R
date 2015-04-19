@@ -93,13 +93,21 @@ source(paste0( getBasePath("process") , "/Resample_Lib.R"))
 source(paste0( getBasePath("process") , "/Regression_Lib.R"))
 source(paste0( getBasePath("process") , "/FeatureEncode_Lib.R"))
 
-RegModels = c("Average" , "Mode",  
-              "LinearReg",  
-              "PLS_Reg" , 
-              "BaggedTree_Reg" , 
-              "RandomForest_Reg") 
-
 controlObject <- trainControl(method = "boot", number = 200)
+
+RegModels = c("Average" , "Mode",  
+              "LinearReg", "RobustLinearReg", 
+              "PLS_Reg" , "Ridge_Reg" , "Enet_Reg" , 
+              "KNN_Reg", 
+              "SVM_Reg", 
+              "BaggedTree_Reg"
+              , "RandomForest_Reg"
+              , "Cubist_Reg" 
+              #, "NNet"
+) 
+
+cat("\nRegression models:\n")
+print(RegModels)
 
 #######
 sampleSubmission = as.data.frame( fread(paste(getBasePath("data") , 
@@ -111,45 +119,112 @@ train.raw = as.data.frame( fread(paste(getBasePath("data") ,
 test.raw = as.data.frame( fread(paste(getBasePath("data") , 
                                       "test.csv" , sep='')))
 
-cat("\nRegression models:\n")
-print(RegModels)
-
 ####### basic feature processing 
 l = buildData.basic(train.raw , test.raw)
 train = l[[1]]
 y = l[[2]]
 test = l[[3]]
 
+####### build the grid 
+grid = as.data.frame(matrix(rep(NA,37*5),nrow = 37,ncol = 5))
+colnames(grid) = c("predictor.cat","model.winner","best.perf","model.2","perf.2")
+grid$predictor.cat = paste("P",1:37,sep='')
+
+###### loop on P1-P37 
+
+for (i in 1:37) {
+  cat("********* Assuming categorical ",paste0("P",i)," ********* \n")
+  ## making Pi categorical 
+  l = encodeCategoricalFeature (train[,i] , test[,i] , colname.prefix = paste0("P",i) , asNumeric=F)
+  tr = l[[1]]
+  ts = l[[2]]
+  
+  train.mod = cbind(train,tr)
+  test.mod = cbind(test,ts)
+  
+  train.mod = train.mod[ , -i]
+  test.mod = test.mod[ , -i]
+  
+  ####### feature selection <<<<<<<<<<<<<<
+  l = featureSelect (train.mod,test.mod)
+  traindata = l[[1]]
+  testdata = l[[2]]
+  
+  ### k-fold 
+  l = trainAndPredict.kfold.reg (k = 6,traindata,y,RegModels,controlObject)
+  model.winner = l[[1]]
+  .grid = l[[2]]
+  perf.kfold = l[[3]]
+  
+  ## finding second model 
+  avg = apply(perf.kfold,2,function(x) mean(x))
+  avg.ord = sort(avg)
+  mod.2.idx = which(avg == avg.ord[2])
+  model.2 = colnames(perf.kfold)[mod.2.idx]
+  model.2.perf = avg[mod.2.idx]
+  
+  ### results 
+  if (verbose) {
+    cat("****** RMSE - each model/fold ****** \n")
+    print(perf.kfold)
+    cat("\n****** RMSE - mean ****** \n")
+    print(.grid)
+    cat("\n>>>>>>>>>>>> The winner is ... ",model.winner," [RMSE:",.grid$best.perf,"]\n")
+    cat(">>>>>>>>>>>> The second model is ... ",model.2," [RMSE:",model.2.perf,"]\n")
+    cat("\n >>> updating grid \n")
+  }
+  
+  grid[i,]$model.winner = model.winner
+  grid[i,]$best.perf = .grid$best.perf
+  grid[i,]$model.2 = model.2
+  grid[i,]$perf.2 = model.2.perf
+  
+  if (verbose) 
+    print(grid[i,])
+}
+
+## check 
+if (sum(is.na(grid)) > 0) {
+  print(grid)
+  stop("something wrong (NAs) in grid")
+}
+
+##### display results 
+grid = grid[order(grid$best.perf,decreasing = F),]
+print(grid)
+most.likely.cat = grid[1,]$predictor.cat
+most.likely.cat.idx = as.numeric(strsplit(x = most.likely.cat , "P")[[1]][[2]])
+most.likely.cat.mod = grid[1,]$model.winner
+
+cat("******* Predictor most likely categorical: ",most.likely.cat," - index:",most.likely.cat.idx," ******* \n") 
+cat("******* Winner model: ",most.likely.cat.mod," - RMSE:",grid[1,]$best.perf," ******* \n") 
+
+##### choice the best guess and making prediction on test set 
+if (verbose) 
+  cat(">>> making prediction on test set ... \n") 
+
+i = most.likely.cat.idx
+cat("********* Assuming categorical ",paste0("P",i)," ********* \n")
+## making Pi categorical 
+l = encodeCategoricalFeature (train[,i] , test[,i] , colname.prefix = paste0("P",i) , asNumeric=F)
+tr = l[[1]]
+ts = l[[2]]
+
+train.mod = cbind(train,tr)
+test.mod = cbind(test,ts)
+
+train.mod = train.mod[ , -i]
+test.mod = test.mod[ , -i]
+
 ####### feature selection <<<<<<<<<<<<<<
-l = featureSelect (train,test,
-                   removeOnlyZeroVariacePredictors=T,
-                   removePredictorsMakingIllConditionedSquareMatrix = F, 
-                   removeHighCorrelatedPredictors = F, 
-                   featureScaling = T)
+l = featureSelect (train.mod,test.mod)
 traindata = l[[1]]
 testdata = l[[2]]
 
-### k-fold 
-# l = trainAndPredict.kfold.reg (k = 6,traindata,y,RegModels,controlObject)
-# model.winner = l[[1]]
-# .grid = l[[2]]
-# perf.kfold = l[[3]]
-# 
-# ### results 
-# if (verbose) {
-#   cat("****** RMSE - each model/fold ****** \n")
-#   print(perf.kfold)
-#   cat("\n****** RMSE - mean ****** \n")
-#   print(.grid)
-#   cat("\n>>>>>>>>>>>> The winner is ... ",model.winner,"\n")
-# }
-
-### making prediction - bagged tree  
-if (verbose) cat("Training on test data and making prediction w/ bagged trees .. \n")
 pred = reg.trainAndPredict( y , 
                             traindata , 
                             testdata , 
-                            "BaggedTree_Reg" , 
+                            model.winner , 
                             controlObject, 
                             best.tuning = T)
 
@@ -158,22 +233,18 @@ pred = ifelse(pred >= 1150 , pred , 1150) ## TODO better
 ### storing on disk 
 write.csv(data.frame(Id = test.raw$Id , Prediction = pred),
           quote=FALSE, 
-          file=paste(getBasePath("data"),"mySub_bagged_tree.csv",sep='') ,
+          file=paste(getBasePath("data"),"mySub_cat_guess.csv") ,
           row.names=FALSE)
 
-### making prediction - random forest 
-if (verbose) cat("Training on test data and making prediction w/ random forest  .. \n")
-pred = reg.trainAndPredict( y , 
-                            traindata , 
-                            testdata , 
-                            "RandomForest_Reg" , 
-                            controlObject, 
-                            best.tuning = T)
-
-pred = ifelse(pred >= 1150 , pred , 1150) ## TODO better 
-
-### storing on disk 
-write.csv(data.frame(Id = test.raw$Id , Prediction = pred),
+write.csv(grid,
           quote=FALSE, 
-          file=paste(getBasePath("data"),"mySub_random_forest.csv",sep='') ,
+          file=paste(getBasePath("data"),"grid_cat_guess.csv") ,
           row.names=FALSE)
+
+cat("<<<<< submission/grid stored on disk >>>>>\n")
+
+
+
+
+
+
