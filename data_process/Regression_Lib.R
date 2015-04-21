@@ -128,3 +128,22 @@ Mode <- function(x) {
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
 }
+
+plotPerformance.reg <- function(observed,predicted) {
+  par(mfrow=c(1,2))
+  
+  residualValues <- observed - predicted
+   
+  # Observed values versus predicted values
+  # It is a good idea to plot the values on a common scale.
+  axisRange <- extendrange(c(observed, predicted))
+  plot(observed, predicted,
+         ylim = axisRange,
+         xlim = axisRange)
+  # Add a 45 degree reference line
+  abline(0, 1, col = "darkgrey", lty = 2)
+  
+  # Predicted values versus residuals
+  plot(predicted, residualValues, ylab = "residual")
+  abline(h = 0, col = "darkgrey", lty = 2)
+}

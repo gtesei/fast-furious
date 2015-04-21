@@ -29,9 +29,9 @@ getBasePath = function (type = "data") {
 source(paste0( getBasePath("process") , "/o_sommatore_a_posteriori.R"))
 
 model.average (submissions = data.frame(path = 
-                                                     c("/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySub.csv", 
-                                                       "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySubTS.csv") , 
-                                                   weigth = c(  10^(1/0.15193) , 10^(1/0.14692) )) , 
+                                                     c("/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySubTS.csv", 
+                                                       "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySub_trend_included.csv") , 
+                                                   weigth = c(  5^(1/0.10198) , 5^(1/0.10887) )) , 
                           sub.col = 2 , 
                           submission.final.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/walmart-recruiting-sales-in-stormy-weather/mySub_model_avg.csv"
 )

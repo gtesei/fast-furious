@@ -171,4 +171,95 @@ trainAndPredict.kfold.reg = function(k,traindata,traindata.y,RegModels,controlOb
   list(RegModels[model.idx],.grid,perf.kfold)
 }
 
+trainAndPredict.kfold.class = function(k,traindata,
+                                       traindata.y,
+                                       fact.sign = 'preict', 
+                                       ClassModels,controlObject, 
+                                       verbose = T , 
+                                       doPlot = F) {
+  
+  source(paste0( getBasePath("process") , "/Classification_Lib.R"))
+  
+  .grid = data.frame( train.num = c(dim(traindata)[1])  )
+  tmp = data.frame(matrix( 0 , 1 ,  length(ClassModels) ))
+  colnames(tmp) = ClassModels
+  .grid = cbind(.grid , tmp)
+  
+  ####### training and predicting <<<<<<<<<<<<<<
+  
+  folds = kfolds(k,dim(traindata)[1])
+  while ( ! verify.kfolds(k,folds,traindata.y,fact.sign) ) {
+    if (verbose) cat("--k-fold:: generated bad folds :: retrying ... \n")
+    folds = kfolds(k,dim(traindata)[1])
+  }
+  
+  perf.kfold = data.frame(matrix(rep(-1,(k*length(ClassModels))),k,length(ClassModels)))
+  colnames(perf.kfold) = ClassModels
+  
+  for(j in 1:k) {  
+    if (verbose) cat("--k-fold:: ",j, "/",k , "\n")
+    traindata.train <- traindata[ folds != j,]
+    traindata.y.train = traindata.y[folds != j]
+    
+    traindata.xval <- traindata[folds == j,]
+    traindata.y.xval = traindata.y[folds == j]
+    
+    ###
+    for ( mo in 1:length(ClassModels))  {
+      if (verbose) cat("Trying ", ClassModels[mo] , " ... ")
+      model.label = ClassModels[mo]
+      
+      l = tryCatch({ 
+        class.trainAndPredict ( traindata.y.train , 
+                                          traindata.train , 
+                                          traindata.xval , 
+                                          fact.sign = fact.sign , 
+                                          model.label , 
+                                          controlObject, 
+                                          best.tuning = F, 
+                                          verbose = verbose)
+        
+      } , error = function(err) { 
+        print(paste("ERROR:  ",err))
+        NULL
+      })
+      
+      if(! is.null(l)) {  
+        pred.prob.train = l[[1]]
+        pred.train = l[[2]] 
+        pred.prob.test = l[[3]]
+        pred.test = l[[4]]
+        
+        auc = measure.class ( pred.prob.train , 
+                              pred.prob.test , 
+                              pred.train , 
+                              pred.test,
+                              traindata.y.train, 
+                              traindata.y.xval,
+                              fact.sign = fact.sign , 
+                              verbose = verbose, 
+                              doPlot = doPlot,
+                              label = model.label)
+        
+        perf.kfold[j,mo] = auc
+        if (verbose) cat("AUC = ", perf.kfold[j,mo] , "\n")
+      } else {
+        perf.kfold[j,mo] = 0 ## AUC
+        if (verbose) cat("(fake) AUC = ", perf.kfold[j,mo] , "\n")
+      }
+      
+    } ### end of model shot    
+  } ### end of k-fold 
+  
+  #### results 
+  for ( mo in 1:length(RegModels))  {
+    .grid[1,(1+mo)] = mean(perf.kfold[,mo])
+  }
+  .grid$best.perf = max(.grid[1,(1+(1:length(RegModels)))])
+  model.idx = which(.grid[1,(1+(1:length(RegModels)))] == .grid$best.perf)
+  .grid$best.model = ClassModels[model.idx]
+  
+  list(ClassModels[model.idx],.grid,perf.kfold)
+}
+
 

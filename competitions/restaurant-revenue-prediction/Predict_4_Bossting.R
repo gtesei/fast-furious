@@ -86,6 +86,43 @@ buildData.basic = function(train.raw , test.raw) {
   list(train,y,test)
 }
 
+predict.train.k.folds = function (traindata , 
+                                  y , 
+                                  model.label = "RandomForest_Reg", 
+                                  k = 6 ) {
+  ### train set 
+  folds = kfolds(k,dim(traindata)[1])
+  
+  pred.1.train = rep(NA,dim(traindata)[1])
+  
+  for(j in 1:k) {  
+    if (verbose) cat("--k-fold:: ",j, "/",k , "\n")
+    traindata.train <- traindata[ folds != j,]
+    traindata.y.train = y[folds != j]
+    
+    traindata.xval <- traindata[folds == j,]
+    traindata.y.xval = y[folds == j]
+    
+    ###
+    pred.1.train.fold = reg.trainAndPredict( traindata.y.train , 
+                                             traindata.train , 
+                                             traindata.xval , 
+                                             model.label , 
+                                             controlObject, 
+                                             best.tuning = T)
+    
+    pred.1.train.fold = ifelse(pred.1.train.fold >= 1150 , pred.1.train.fold , 1150) 
+    
+    pred.1.train[folds == j] = pred.1.train.fold
+  } ### end of k-fold 
+  
+  ## check 
+  if (sum(is.na(pred.1.train)) > 0)
+    stop("something wrong (NAs) in tip.train")
+  
+  pred.1.train
+}
+
 #######
 verbose = T
 source(paste0( getBasePath("process") , "/FeatureSelection_Lib.R"))
@@ -105,6 +142,12 @@ train.raw = as.data.frame( fread(paste(getBasePath("data") ,
 test.raw = as.data.frame( fread(paste(getBasePath("data") , 
                                       "test.csv" , sep='')))
 
+
+####### SCHEMA 
+### 1- fitting y with BaggedTree_Reg,res (removeOnlyZeroVariacePredictors=T) 
+### 2- fitting res with Enet_Reg (applying caret nearZeroVar function)
+### 3- fitting resr res with  RandomForest_Reg (applying caret nearZeroVar function)
+
 ####### basic feature processing 
 l = buildData.basic(train.raw , test.raw)
 train = l[[1]]
@@ -115,15 +158,12 @@ test = l[[3]]
 ### w/ BaggedTree_Reg removing only zero variance predictors
 #### feature selection <<<<<<<<<<<<<<
 l = featureSelect (train,test,
-                   removeOnlyZeroVariacePredictors=T,
-                   removePredictorsMakingIllConditionedSquareMatrix = T, 
-                   removeHighCorrelatedPredictors = T, 
-                   featureScaling = T)
+                   removeOnlyZeroVariacePredictors=T)
 traindata = l[[1]]
 testdata = l[[2]]
 
 ### test set 
-if (verbose) cat("Training on test data and making prediction w/ bagged trees .. \n")
+if (verbose) cat("Making prediction w/ BaggedTree_Reg on test set .. \n")
 pred.1.test = reg.trainAndPredict( y , 
                             traindata , 
                             testdata , 
@@ -133,40 +173,15 @@ pred.1.test = reg.trainAndPredict( y ,
 
 pred.1.test = ifelse(pred.1.test >= 1150 , pred.1.test , 1150) 
 
-### train set 
-k = 6
-folds = kfolds(k,dim(traindata)[1])
-
-pred.1.train = rep(NA,dim(traindata)[1])
-
-for(j in 1:k) {  
-  if (verbose) cat("--k-fold:: ",j, "/",k , "\n")
-  traindata.train <- traindata[ folds != j,]
-  traindata.y.train = y[folds != j]
-  
-  traindata.xval <- traindata[folds == j,]
-  traindata.y.xval = y[folds == j]
-  
-  ###
-  pred.1.train.fold = reg.trainAndPredict( traindata.y.train , 
-                                        traindata.train , 
-                                        traindata.xval , 
-                                        "BaggedTree_Reg" , 
-                                        controlObject, 
-                                        best.tuning = T)
-  
-  pred.1.train.fold = ifelse(pred.1.train.fold >= 1150 , pred.1.train.fold , 1150) 
-  
-  pred.1.train[folds == j] = pred.1.train.fold
-} ### end of k-fold 
-
-## check 
-if (sum(is.na(pred.1.train)) > 0)
-  stop("something wrong (NAs) in tip.train")
+if (verbose) cat("Making prediction w/ BaggedTree_Reg  on train set (6-folds).. \n")
+pred.1.train = predict.train.k.folds (traindata , 
+                                      y , 
+                                      model.label = "BaggedTree_Reg",
+                                      k = 6 )
 
 ### then, we compute residuals, i.e. the difference between the observed value and the prediction in train set
 cat(">>> computing residuals in train set ... \n")
-res = (y - pred.1.train) 
+res.1 = (y - pred.1.train) 
 
 # we fit an Enet_Reg applying caret’s nearZeroVar function using the residuals as response and predict on test set 
 cat("predicting Enet_Reg applying caret’s nearZeroVar function using the residuals as response ... \n")
@@ -175,21 +190,48 @@ l = featureSelect (train,test)
 traindata = l[[1]]
 testdata = l[[2]]
 
-if (verbose) cat("Training on test data and making prediction w/ bagged trees .. \n")
-pred.res = reg.trainAndPredict( res , 
+if (verbose) cat("Making prediction of residuals w/ Enet_Reg .. \n")
+pred.res.1 = reg.trainAndPredict( res.1 , 
                             traindata , 
                             testdata , 
                             "Enet_Reg" , 
                             controlObject, 
                             best.tuning = T)
 
-### update the predicted value adding to the previous prediction (BaggedTree_Reg) to the predicted value of residuals
-pred = pred.1.test + pred.res
+
+## 
+if (verbose) cat("Making prediction of residuals w/ Enet_Reg  on train set (6-folds).. \n")
+pred.res.1.train = predict.train.k.folds (traindata , 
+                                          res.1 ,
+                                          model.label = "Enet_Reg",
+                                          k = 6 )
+
+## 
+cat(">>> computing residuals residuals in train set ... \n")
+res.2 = (y - pred.1.train) - pred.res.1.train
+
+##
+l = featureSelect (train,test)
+traindata = l[[1]]
+testdata = l[[2]]
+
+if (verbose) cat("Making prediction of residuals residuals w/ RandomForest_Reg .. \n")
+pred.res.2 = reg.trainAndPredict( res.2 , 
+                                  traindata , 
+                                  testdata , 
+                                  "RandomForest_Reg" , 
+                                  controlObject, 
+                                  best.tuning = T)
+
+
+
+### update the predicted values 
+pred = pred.1.test + pred.res.1 + pred.res.2
 
 pred = ifelse(pred >= 1150 , pred , 1150)
 
 ### storing on disk 
 write.csv(data.frame(Id = test.raw$Id , Prediction = pred),
           quote=FALSE, 
-          file=paste(getBasePath("data"),"mySub_boost_1.csv",sep='') ,
+          file=paste(getBasePath("data"),"mySub_boost_2.csv",sep='') ,
           row.names=FALSE)
