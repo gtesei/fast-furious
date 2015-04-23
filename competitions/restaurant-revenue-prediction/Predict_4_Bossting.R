@@ -180,8 +180,8 @@ pred.1.train = predict.train.k.folds (traindata ,
                                       k = 6 )
 
 ### then, we compute residuals, i.e. the difference between the observed value and the prediction in train set
-cat(">>> computing residuals in train set ... \n")
 res.1 = (y - pred.1.train) 
+cat(">>> computing residuals in train set: ",mean(res.1),"... \n")
 
 # we fit an Enet_Reg applying caret’s nearZeroVar function using the residuals as response and predict on test set 
 cat("predicting Enet_Reg applying caret’s nearZeroVar function using the residuals as response ... \n")
@@ -198,7 +198,7 @@ pred.res.1 = reg.trainAndPredict( res.1 ,
                             controlObject, 
                             best.tuning = T)
 
-
+cat(">>> predictedresiduals in train set: ",mean(pred.res.1),"... \n")
 ## 
 if (verbose) cat("Making prediction of residuals w/ Enet_Reg  on train set (6-folds).. \n")
 pred.res.1.train = predict.train.k.folds (traindata , 

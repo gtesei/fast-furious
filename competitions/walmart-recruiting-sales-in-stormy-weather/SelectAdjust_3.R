@@ -87,6 +87,28 @@ intrapolatePredTS <- function(train.chunk, test.chunk,doPlot=F,st,it) {
   list(pred,rmse)
 }
 
+trendTS <- function(train.chunk, test.chunk,doPlot=F) {
+  data.chucks = rbind(train.chunk,test.chunk)
+  data.chucks = data.chucks[order(data.chucks$as.date,decreasing = F),]
+  test.idx = which(  is.na(data.chucks$units)   )
+  train.idx = which( ! is.na(data.chucks$units)   )
+  ts.all = ts(data.chucks$units ,frequency = 365, start = c(2012,1) )
+  x <- ts(ts.all,f=4)
+  fit <- ts(rowSums(tsSmooth(StructTS(x))[,-2]))
+  tsp(fit) <- tsp(x)
+  if (doPlot) {
+    plot(x)
+    lines(fit,col=2)
+  }
+  
+  fit = ifelse(fit >= 0, fit , 0 )
+  
+  test.trend = fit[test.idx]
+  train.trend = fit[train.idx]
+  
+  list(train.trend,test.trend)
+}
+
 predict.trainTS <- function(train.chunk, test.chunk,doPlot=F,st,it) {
   data.chucks = rbind(train.chunk,test.chunk)
   data.chucks = data.chucks[order(data.chucks$as.date,decreasing = F),]
@@ -255,6 +277,21 @@ for (i in 1:dim(grid)[1]) {
   test.chunk = testdata.header[,c(5,6)]
   test.chunk$units = NA
   
+  l = tryCatch({ 
+    trendTS (train.chunk, test.chunk,doPlot=T)
+  } , error = function(err) { 
+    print(paste("ERROR:  ",err))
+    NULL
+  })
+  
+  if (! is.null(l) ) { 
+    train.trend = l[[1]]
+    test.trend = l[[2]]
+    
+    traindata$trend = train.trend
+    testdata$trend = test.trend 
+  }
+  
   #### original pred 
   id = sub[grep(x = sub$id , pattern = paste("^",st,"_",it,"_",sep='') ), ]$id
   pred.orig = sub[sub$id %in% id, ]$units 
@@ -303,7 +340,7 @@ for (i in 1:dim(grid)[1]) {
     
     ### 
     pred.bias = mean(res)
-    plotPrefotmance.reg(observed=train.chunk$units,predicted=pred.train)
+    plotPerformance.reg(observed=train.chunk$units,predicted=pred.train)
     cat(">>> prediction bias = ",mean(res)," - prediction bias % perediction="
         ,(mean(res)/mean(pred.train)), " \n")  
       
@@ -313,16 +350,18 @@ for (i in 1:dim(grid)[1]) {
     traindata.proc = l[[1]]
     testdata.proc = l[[2]]
     
-    #### 
-    l = trainAndPredict.kfold.reg (k = 6,traindata.proc,res,RegModels,controlObject)
-    model.winner = l[[1]]
-    .grid = l[[2]]
-    perf.kfold = l[[3]]
+    #### finding best fitting model for residuals <<<<<<<<< too costy 
+#     l = trainAndPredict.kfold.reg (k = 6,traindata.proc,res,RegModels,controlObject)
+#     model.winner = l[[1]]
+#     .grid = l[[2]]
+#     perf.kfold = l[[3]]
+
+    ##### faster 
+    model.winner = model.grid[model.grid$store == st & model.grid$item == it , ]$best.model
     
-    #################################################################################
     cat("model.winner=",model.winner,"\n")
-    print(perf.kfold)
-    print(.grid)
+    #print(perf.kfold)
+    #print(.grid)
     
     if (verbose) cat("Making prediction of residuals w/ model.winner .. \n")
     pred.res = reg.trainAndPredict( res , 
@@ -332,15 +371,12 @@ for (i in 1:dim(grid)[1]) {
                                       controlObject, 
                                       best.tuning = T)
     
-    cat(">>> prediction bias = ",mean(pred.res)," - prediction bias % perediction="
-        ,(mean(pred.res)/mean(pred.train)), " \n")  
+    cat(">>> mean residuals prediction = ",mean(pred.res)," -  % prediction ="
+        ,(mean(pred.res)/mean(pred)), " \n")  
     
     cat(">>> updating prediction ... \n")
+    
     pred = pred + pred.res
-    #################################################################################
-    
-    stop("kk")
-    
   } 
   
   ###### Updating submission
