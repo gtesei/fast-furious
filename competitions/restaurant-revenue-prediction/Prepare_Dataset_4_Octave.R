@@ -77,6 +77,51 @@ buildData.basic = function(train.raw , test.raw) {
   y = train[,38]
   train = train[,-38]
   
+  ## P29
+  l = encodeCategoricalFeature (train[,29] , test[,29] , colname.prefix = "P29" , asNumeric=F)
+  tr = l[[1]]
+  ts = l[[2]]
+  
+  train = cbind(train,tr)
+  test = cbind(test,ts)
+  
+  train = train[ , -29]
+  test = test[ , -29]
+  
+  ## P35
+  l = encodeCategoricalFeature (train[,35] , test[,35] , colname.prefix = "P35" , asNumeric=F)
+  tr = l[[1]]
+  ts = l[[2]]
+  
+  train = cbind(train,tr)
+  test = cbind(test,ts)
+  
+  train = train[ , -35]
+  test = test[ , -35]
+  
+  ## P25
+  l = encodeCategoricalFeature (train[,25] , test[,25] , colname.prefix = "P25" , asNumeric=F)
+  tr = l[[1]]
+  ts = l[[2]]
+  
+  train = cbind(train,tr)
+  test = cbind(test,ts)
+  
+  train = train[ , -25]
+  test = test[ , -25]
+  
+  ## P36
+  l = encodeCategoricalFeature (train[,36] , test[,36] , colname.prefix = "P36" , asNumeric=F)
+  tr = l[[1]]
+  ts = l[[2]]
+  
+  train = cbind(train,tr)
+  test = cbind(test,ts)
+  
+  train = train[ , -36]
+  test = test[ , -36]
+  
+  ##
   list(train,y,test)
 }
 

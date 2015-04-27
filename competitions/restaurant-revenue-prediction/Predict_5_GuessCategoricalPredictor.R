@@ -228,7 +228,7 @@ pred = reg.trainAndPredict( y ,
                             controlObject, 
                             best.tuning = T)
 
-pred = ifelse(pred >= 1150 , pred , 1150) ## TODO better 
+pred = ifelse(pred >= min(y) , pred , min(y)) ## TODO better 
 
 ### storing on disk 
 write.csv(data.frame(Id = test.raw$Id , Prediction = pred),
@@ -238,7 +238,7 @@ write.csv(data.frame(Id = test.raw$Id , Prediction = pred),
 
 write.csv(grid,
           quote=FALSE, 
-          file=paste(getBasePath("data"),"grid_cat_guess.csv") ,
+          file=paste0(getBasePath("data"),"grid_cat_guess.csv") ,
           row.names=FALSE)
 
 cat("<<<<< submission/grid stored on disk >>>>>\n")

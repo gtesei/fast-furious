@@ -34,6 +34,51 @@ getBasePath = function (type = "data") {
   ret
 }
 
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+getPvalueTypeIError = function(x,y) {
+  test = NA
+  pvalue = NA
+  
+  ## type casting and understanding stat test 
+  if (class(x) == "integer") x = as.numeric(x)
+  if (class(y) == "integer") y = as.numeric(y)
+  
+  if ( class(x) == "factor" & class(y) == "numeric" ) {
+    # C -> Q
+    test = "ANOVA"
+  } else if (class(x) == "factor" & class(y) == "factor" ) {
+    # C -> C
+    test = "CHI-SQUARE"
+  } else if (class(x) == "numeric" & class(y) == "numeric" ) {
+    test = "PEARSON"
+  }  else {
+    # Q -> C 
+    # it performs anova test x ~ y 
+    test = "ANOVA"
+    tmp = x 
+    x = y 
+    y = tmp 
+  }
+  
+  ## performing stat test and computing p-value
+  if (test == "ANOVA") {                
+    test.anova = aov(y~x)
+    pvalue = summary(test.anova)[[1]][["Pr(>F)"]][1]
+  } else if (test == "CHI-SQUARE") {    
+    test.chisq = chisq.test(x = x , y = y)
+    pvalue = test.chisq$p.value
+  } else {                             
+    ###  PEARSON
+    test.corr = cor.test(x =  x , y =  y)
+    pvalue = test.corr$p.value
+  }
+  
+  pvalue
+}
+
 buildData.basic = function(train.raw , test.raw) {
   ## remove id 
   train = train.raw[ , -1] 
@@ -127,50 +172,50 @@ buildData.basic = function(train.raw , test.raw) {
   train = train[ , -36]
   test = test[ , -36]
   
-#   ## P31
-#   l = encodeCategoricalFeature (train[,31] , test[,31] , colname.prefix = "P31" , asNumeric=F)
+  #   ## P31
+  #   l = encodeCategoricalFeature (train[,31] , test[,31] , colname.prefix = "P31" , asNumeric=F)
+  #   tr = l[[1]]
+  #   ts = l[[2]]
+  #   
+  #   train = cbind(train,tr)
+  #   test = cbind(test,ts)
+  #   
+  #   train = train[ , -31]
+  #   test = test[ , -31]
+  
+#   # P27
+#   l = encodeCategoricalFeature (train[,27] , test[,27] , colname.prefix = "P27" , asNumeric=F)
 #   tr = l[[1]]
 #   ts = l[[2]]
 #   
 #   train = cbind(train,tr)
 #   test = cbind(test,ts)
 #   
-#   train = train[ , -31]
-#   test = test[ , -31]
+#   train = train[ , -27]
+#   test = test[ , -27]
   
-  # P27
-  l = encodeCategoricalFeature (train[,27] , test[,27] , colname.prefix = "P27" , asNumeric=F)
-  tr = l[[1]]
-  ts = l[[2]]
+  #   ## P17
+  #   l = encodeCategoricalFeature (train[,17] , test[,17] , colname.prefix = "P17" , asNumeric=F)
+  #   tr = l[[1]]
+  #   ts = l[[2]]
+  #   
+  #   train = cbind(train,tr)
+  #   test = cbind(test,ts)
+  #   
+  #   train = train[ , -17]
+  #   test = test[ , -17]
+  #   
+  #   ## P5
+  #   l = encodeCategoricalFeature (train[,5] , test[,5] , colname.prefix = "P5" , asNumeric=F)
+  #   tr = l[[1]]
+  #   ts = l[[2]]
+  #   
+  #   train = cbind(train,tr)
+  #   test = cbind(test,ts)
+  #   
+  #   train = train[ , -5]
+  #   test = test[ , -5]
   
-  train = cbind(train,tr)
-  test = cbind(test,ts)
-  
-  train = train[ , -27]
-  test = test[ , -27]
-  
-#   ## P17
-#   l = encodeCategoricalFeature (train[,17] , test[,17] , colname.prefix = "P17" , asNumeric=F)
-#   tr = l[[1]]
-#   ts = l[[2]]
-#   
-#   train = cbind(train,tr)
-#   test = cbind(test,ts)
-#   
-#   train = train[ , -17]
-#   test = test[ , -17]
-#   
-#   ## P5
-#   l = encodeCategoricalFeature (train[,5] , test[,5] , colname.prefix = "P5" , asNumeric=F)
-#   tr = l[[1]]
-#   ts = l[[2]]
-#   
-#   train = cbind(train,tr)
-#   test = cbind(test,ts)
-#   
-#   train = train[ , -5]
-#   test = test[ , -5]
-
   ## 
   list(train,y,test)
 }
@@ -232,95 +277,16 @@ test.raw = as.data.frame( fread(paste(getBasePath("data") ,
                                       "test.csv" , sep='')))
 
 
-####### SCHEMA 
-### 1- fitting y with BaggedTree_Reg,res (removeOnlyZeroVariacePredictors=T) 
-### 2- fitting res with Enet_Reg (applying caret nearZeroVar function)
-### 3- fitting resr res with  RandomForest_Reg (applying caret nearZeroVar function)
-
 ####### basic feature processing 
 l = buildData.basic(train.raw , test.raw)
 train = l[[1]]
 y = l[[2]]
 test = l[[3]]
 
-### first we compute the response both in training set (6-folds-like procedure) and test set 
-### w/ BaggedTree_Reg removing only zero variance predictors
-#### feature selection <<<<<<<<<<<<<<
-l = featureSelect (train,test,
-                   removeOnlyZeroVariacePredictors=T)
-traindata = l[[1]]
-testdata = l[[2]]
+#####
 
-### test set 
-if (verbose) cat("Making prediction w/ BaggedTree_Reg on test set .. \n")
-pred.1.test = reg.trainAndPredict( y , 
-                            traindata , 
-                            testdata , 
-                            "BaggedTree_Reg" , 
-                            controlObject, 
-                            best.tuning = T)
-
-pred.1.test = ifelse(pred.1.test >= min(y) , pred.1.test , min(y)) 
-
-if (verbose) cat("Making prediction w/ BaggedTree_Reg  on train set (6-folds).. \n")
-pred.1.train = predict.train.k.folds (traindata , 
-                                      y , 
-                                      model.label = "BaggedTree_Reg",
-                                      k = 6 )
-
-### then, we compute residuals, i.e. the difference between the observed value and the prediction in train set
-res.1 = (y - pred.1.train) 
-cat(">>> computing residuals in train set: ",mean(res.1),"... \n")
-
-# we fit an Enet_Reg applying caret’s nearZeroVar function using the residuals as response and predict on test set 
-cat("predicting Enet_Reg applying caret’s nearZeroVar function using the residuals as response ... \n")
-#### feature selection <<<<<<<<<<<<<<
-l = featureSelect (train,test)
-traindata = l[[1]]
-testdata = l[[2]]
-
-if (verbose) cat("Making prediction of residuals w/ Enet_Reg .. \n")
-pred.res.1 = reg.trainAndPredict( res.1 , 
-                            traindata , 
-                            testdata , 
-                            "Enet_Reg" , 
-                            controlObject, 
-                            best.tuning = T)
-
-cat(">>> predictedresiduals in train set: ",mean(pred.res.1),"... \n")
-## 
-if (verbose) cat("Making prediction of residuals w/ Enet_Reg  on train set (6-folds).. \n")
-pred.res.1.train = predict.train.k.folds (traindata , 
-                                          res.1 ,
-                                          model.label = "Enet_Reg",
-                                          k = 6 )
-
-## 
-cat(">>> computing residuals residuals in train set ... \n")
-res.2 = (y - pred.1.train) - pred.res.1.train
-
-##
-l = featureSelect (train,test)
-traindata = l[[1]]
-testdata = l[[2]]
-
-if (verbose) cat("Making prediction of residuals residuals w/ RandomForest_Reg .. \n")
-pred.res.2 = reg.trainAndPredict( res.2 , 
-                                  traindata , 
-                                  testdata , 
-                                  "RandomForest_Reg" , 
-                                  controlObject, 
-                                  best.tuning = T)
+#describe(train)
 
 
 
-### update the predicted values 
-pred = pred.1.test + pred.res.1 + pred.res.2
 
-pred = ifelse(pred >= min(y) , pred , min(y))
-
-### storing on disk 
-write.csv(data.frame(Id = test.raw$Id , Prediction = pred),
-          quote=FALSE, 
-          file=paste(getBasePath("data"),"mySub_boost_2.csv",sep='') ,
-          row.names=FALSE)

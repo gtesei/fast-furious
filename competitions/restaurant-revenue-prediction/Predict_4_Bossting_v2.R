@@ -137,18 +137,18 @@ buildData.basic = function(train.raw , test.raw) {
 #   
 #   train = train[ , -31]
 #   test = test[ , -31]
-  
-  # P27
-  l = encodeCategoricalFeature (train[,27] , test[,27] , colname.prefix = "P27" , asNumeric=F)
-  tr = l[[1]]
-  ts = l[[2]]
-  
-  train = cbind(train,tr)
-  test = cbind(test,ts)
-  
-  train = train[ , -27]
-  test = test[ , -27]
-  
+#   
+#   ## P27
+#   l = encodeCategoricalFeature (train[,27] , test[,27] , colname.prefix = "P27" , asNumeric=F)
+#   tr = l[[1]]
+#   ts = l[[2]]
+#   
+#   train = cbind(train,tr)
+#   test = cbind(test,ts)
+#   
+#   train = train[ , -27]
+#   test = test[ , -27]
+#   
 #   ## P17
 #   l = encodeCategoricalFeature (train[,17] , test[,17] , colname.prefix = "P17" , asNumeric=F)
 #   tr = l[[1]]
@@ -170,7 +170,7 @@ buildData.basic = function(train.raw , test.raw) {
 #   
 #   train = train[ , -5]
 #   test = test[ , -5]
-
+  
   ## 
   list(train,y,test)
 }
@@ -235,7 +235,6 @@ test.raw = as.data.frame( fread(paste(getBasePath("data") ,
 ####### SCHEMA 
 ### 1- fitting y with BaggedTree_Reg,res (removeOnlyZeroVariacePredictors=T) 
 ### 2- fitting res with Enet_Reg (applying caret nearZeroVar function)
-### 3- fitting resr res with  RandomForest_Reg (applying caret nearZeroVar function)
 
 ####### basic feature processing 
 l = buildData.basic(train.raw , test.raw)
@@ -288,39 +287,15 @@ pred.res.1 = reg.trainAndPredict( res.1 ,
                             best.tuning = T)
 
 cat(">>> predictedresiduals in train set: ",mean(pred.res.1),"... \n")
-## 
-if (verbose) cat("Making prediction of residuals w/ Enet_Reg  on train set (6-folds).. \n")
-pred.res.1.train = predict.train.k.folds (traindata , 
-                                          res.1 ,
-                                          model.label = "Enet_Reg",
-                                          k = 6 )
-
-## 
-cat(">>> computing residuals residuals in train set ... \n")
-res.2 = (y - pred.1.train) - pred.res.1.train
-
-##
-l = featureSelect (train,test)
-traindata = l[[1]]
-testdata = l[[2]]
-
-if (verbose) cat("Making prediction of residuals residuals w/ RandomForest_Reg .. \n")
-pred.res.2 = reg.trainAndPredict( res.2 , 
-                                  traindata , 
-                                  testdata , 
-                                  "RandomForest_Reg" , 
-                                  controlObject, 
-                                  best.tuning = T)
-
 
 
 ### update the predicted values 
-pred = pred.1.test + pred.res.1 + pred.res.2
+pred = pred.1.test + pred.res.1 
 
 pred = ifelse(pred >= min(y) , pred , min(y))
 
 ### storing on disk 
 write.csv(data.frame(Id = test.raw$Id , Prediction = pred),
           quote=FALSE, 
-          file=paste(getBasePath("data"),"mySub_boost_2.csv",sep='') ,
+          file=paste(getBasePath("data"),"mySub_boost_3.csv",sep='') ,
           row.names=FALSE)

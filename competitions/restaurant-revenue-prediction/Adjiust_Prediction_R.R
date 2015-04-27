@@ -79,7 +79,7 @@ buildData.basic = function(train.raw , test.raw) {
   list(train,y,test)
 }
 
-submitR = function (fn = "mySub_boost_1.csv" , y , doPlot = T) {
+submitR = function (fn = "mySub_boost_1.csv" , y , doPlot = T , meanAdjust=F) {
   fn_sub = paste(substr(fn , start =1 , stop =  (nchar(fn)-4) ) , "_ready.csv", sep='')
   
   sub = as.data.frame( fread(paste(getBasePath("data") , 
@@ -100,7 +100,14 @@ submitR = function (fn = "mySub_boost_1.csv" , y , doPlot = T) {
   
   #####
   y_mean = mean(y)
-  cat("mean y train = ",y_mean, " vs. mean sub = ",mean(pred) , " --> NOT adjiusting ... \n")
+  cat("mean y train = ",y_mean, " vs. mean sub = ",mean(pred) , "  ... \n")
+  if (meanAdjust) {
+    cat(" --> adjiusting ... \n")
+    pred = pred + (y_mean - mean(pred))
+    cat("mean y train = ",y_mean, " vs. mean sub = ",mean(pred) , "  ... \n")
+  } else {
+    cat(" --> NOT adjiusting ... \n")
+  }
   
   ### storing on disk 
   write.csv(data.frame(Id = sampleSubmission$Id , Prediction = pred),
@@ -143,4 +150,4 @@ test = l[[3]]
 
 ####
 
-submitR (fn = "mySub_boost_1.csv" , y , doPlot = T)
+submitR (fn = "mySub_boost_2.csv" , y , doPlot = T , meanAdjust = T)
