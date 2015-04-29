@@ -34,51 +34,6 @@ getBasePath = function (type = "data") {
   ret
 }
 
-Mode <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
-getPvalueTypeIError = function(x,y) {
-  test = NA
-  pvalue = NA
-  
-  ## type casting and understanding stat test 
-  if (class(x) == "integer") x = as.numeric(x)
-  if (class(y) == "integer") y = as.numeric(y)
-  
-  if ( class(x) == "factor" & class(y) == "numeric" ) {
-    # C -> Q
-    test = "ANOVA"
-  } else if (class(x) == "factor" & class(y) == "factor" ) {
-    # C -> C
-    test = "CHI-SQUARE"
-  } else if (class(x) == "numeric" & class(y) == "numeric" ) {
-    test = "PEARSON"
-  }  else {
-    # Q -> C 
-    # it performs anova test x ~ y 
-    test = "ANOVA"
-    tmp = x 
-    x = y 
-    y = tmp 
-  }
-  
-  ## performing stat test and computing p-value
-  if (test == "ANOVA") {                
-    test.anova = aov(y~x)
-    pvalue = summary(test.anova)[[1]][["Pr(>F)"]][1]
-  } else if (test == "CHI-SQUARE") {    
-    test.chisq = chisq.test(x = x , y = y)
-    pvalue = test.chisq$p.value
-  } else {                             
-    ###  PEARSON
-    test.corr = cor.test(x =  x , y =  y)
-    pvalue = test.corr$p.value
-  }
-  
-  pvalue
-}
-
 buildData.basic = function(train.raw , test.raw) {
   ## remove id 
   train = train.raw[ , -1] 
@@ -220,49 +175,23 @@ buildData.basic = function(train.raw , test.raw) {
   list(train,y,test)
 }
 
-predict.train.k.folds = function (traindata , 
-                                  y , 
-                                  model.label = "RandomForest_Reg", 
-                                  k = 6 ) {
-  ### train set 
-  folds = kfolds(k,dim(traindata)[1])
-  
-  pred.1.train = rep(NA,dim(traindata)[1])
-  
-  for(j in 1:k) {  
-    if (verbose) cat("--k-fold:: ",j, "/",k , "\n")
-    traindata.train <- traindata[ folds != j,]
-    traindata.y.train = y[folds != j]
-    
-    traindata.xval <- traindata[folds == j,]
-    traindata.y.xval = y[folds == j]
-    
-    ###
-    pred.1.train.fold = reg.trainAndPredict( traindata.y.train , 
-                                             traindata.train , 
-                                             traindata.xval , 
-                                             model.label , 
-                                             controlObject, 
-                                             best.tuning = T)
-    
-    pred.1.train.fold = ifelse(pred.1.train.fold >= 1150 , pred.1.train.fold , 1150) 
-    
-    pred.1.train[folds == j] = pred.1.train.fold
-  } ### end of k-fold 
-  
-  ## check 
-  if (sum(is.na(pred.1.train)) > 0)
-    stop("something wrong (NAs) in tip.train")
-  
-  pred.1.train
-}
-
 #######
 verbose = T
 source(paste0( getBasePath("process") , "/FeatureSelection_Lib.R"))
 source(paste0( getBasePath("process") , "/Resample_Lib.R"))
 source(paste0( getBasePath("process") , "/Regression_Lib.R"))
 source(paste0( getBasePath("process") , "/FeatureEncode_Lib.R"))
+
+RegModels = c("Average" , "Mode",  
+              "LinearReg", "RobustLinearReg", 
+              "PLS_Reg" , "Ridge_Reg" , "Enet_Reg" , 
+              "KNN_Reg", 
+              "SVM_Reg", 
+              "BaggedTree_Reg"
+              , "RandomForest_Reg"
+              , "Cubist_Reg" 
+              #, "NNet"
+) 
 
 controlObject <- trainControl(method = "boot", number = 200)
 
@@ -271,40 +200,80 @@ sampleSubmission = as.data.frame( fread(paste(getBasePath("data") ,
                                               "sampleSubmission.csv" , sep='')))
 
 train.raw = as.data.frame( fread(paste(getBasePath("data") , 
-                                       "train.csv" , sep=''))) 
+                                     "train.csv" , sep=''))) 
 
 test.raw = as.data.frame( fread(paste(getBasePath("data") , 
-                                      "test.csv" , sep='')))
+                                   "test.csv" , sep='')))
 
-
+cat("\nRegression models:\n")
+print(RegModels)
 ####### basic feature processing 
 l = buildData.basic(train.raw , test.raw)
 train = l[[1]]
 y = l[[2]]
 test = l[[3]]
 
-#####
+####### feature selection <<<<<<<<<<<<<<
+l = featureSelect (traindata = train,
+                   testdata = test,
+                   y = y , 
+                   correlationRhreshold = 0.10, )
+traindata = l[[1]]
+testdata = l[[2]]
 
-#describe(train)
-corrValues <- apply(train,
-                      MARGIN = 2,
-                      FUN = function(x, y) cor(x, y),
-                      y = y)
-#corrValues = corrValues[order(abs(corrValues),decreasing = T)]
-corrValues
-! is.na(corrValues) & corrValues > 0.10
-as.numeric(which(! is.na(corrValues) & corrValues > 0.10))
-corrValues[! is.na(corrValues) & corrValues > 0.10]
+### k-fold 
+l = trainAndPredict.kfold.reg (k = 6,traindata,y,RegModels,controlObject)
+model.winner = l[[1]]
+.grid = l[[2]]
+perf.kfold = l[[3]]
 
-##
-l = featureSelect (train,test,featureScaling = T)
-train.proc = l[[1]]
-test.proc = l[[2]]
-corrValues.proc <- apply(train.proc,
-                    MARGIN = 2,
-                    FUN = function(x, y) cor(x, y),
-                    y = y)
-corrValues.proc = corrValues.proc[order(abs(corrValues.proc),decreasing = T)]
-corrValues.proc
+### results 
+if (verbose) {
+  cat("****** RMSE - each model/fold ****** \n")
+  print(perf.kfold)
+  cat("\n****** RMSE - mean ****** \n")
+  print(.grid)
+  cat("\n>>>>>>>>>>>> The winner is ... ",model.winner,"\n")
+}
+
+### making prediction on test set with winner model 
+if (verbose) cat("Training on test data and making prediction w/ winner model ", model.winner , " ... \n")
+pred = reg.trainAndPredict( y , 
+                           traindata , 
+                           testdata , 
+                           model.winner , 
+                           controlObject, 
+                           best.tuning = T)
+
+####### Adjiusting ... 
+#### min
+y_min = min(y)
+cat("min y train = ",y_min, " vs. min sub = ",min(pred) , " --> adjiusting ... \n")
+pred = ifelse(pred  >= y_min , pred  , y_min)
+cat("---> min y train = ",min(y), " vs. min sub = ",min(pred) , " ... \n")
+
+#### max 
+y_max = max(y)
+cat("max y train = ",y_max, " vs. max sub = ",max(pred) , " --> adjiusting ... \n")
+pred = ifelse(pred  <= y_max , pred  , y_max)
+cat("---> max y train = ",max(y), " vs. max sub = ",max(pred) , " ... \n") 
+
+### storing on disk 
+write.csv(data.frame(Id = test.raw$Id , Prediction = pred),
+          quote=FALSE, 
+          file=paste(getBasePath("data"),"mySub_basic_redo.csv",sep='') ,
+          row.names=FALSE)
+
+write.csv(.grid,
+          quote=FALSE, 
+          file=paste(getBasePath("data"),"grid_basic_redo.csv",sep='') ,
+          row.names=FALSE)
+
+cat("<<<<< submission/grid stored on disk >>>>>\n")
+
+
+
+
+
 
 

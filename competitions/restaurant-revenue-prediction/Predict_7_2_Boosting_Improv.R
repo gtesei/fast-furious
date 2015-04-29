@@ -127,50 +127,50 @@ buildData.basic = function(train.raw , test.raw) {
   train = train[ , -36]
   test = test[ , -36]
   
-#   ## P31
-#   l = encodeCategoricalFeature (train[,31] , test[,31] , colname.prefix = "P31" , asNumeric=F)
-#   tr = l[[1]]
-#   ts = l[[2]]
+#     ## P31
+#     l = encodeCategoricalFeature (train[,31] , test[,31] , colname.prefix = "P31" , asNumeric=F)
+#     tr = l[[1]]
+#     ts = l[[2]]
+#     
+#     train = cbind(train,tr)
+#     test = cbind(test,ts)
+#     
+#     train = train[ , -31]
+#     test = test[ , -31]
 #   
-#   train = cbind(train,tr)
-#   test = cbind(test,ts)
+#     # P27
+#     l = encodeCategoricalFeature (train[,27] , test[,27] , colname.prefix = "P27" , asNumeric=F)
+#     tr = l[[1]]
+#     ts = l[[2]]
+#     
+#     train = cbind(train,tr)
+#     test = cbind(test,ts)
+#     
+#     train = train[ , -27]
+#     test = test[ , -27]
 #   
-#   train = train[ , -31]
-#   test = test[ , -31]
+#     ## P17
+#     l = encodeCategoricalFeature (train[,17] , test[,17] , colname.prefix = "P17" , asNumeric=F)
+#     tr = l[[1]]
+#     ts = l[[2]]
+#     
+#     train = cbind(train,tr)
+#     test = cbind(test,ts)
+#     
+#     train = train[ , -17]
+#     test = test[ , -17]
+#     
+#     ## P5
+#     l = encodeCategoricalFeature (train[,5] , test[,5] , colname.prefix = "P5" , asNumeric=F)
+#     tr = l[[1]]
+#     ts = l[[2]]
+#     
+#     train = cbind(train,tr)
+#     test = cbind(test,ts)
+#     
+#     train = train[ , -5]
+#     test = test[ , -5]
   
-#   # P27
-#   l = encodeCategoricalFeature (train[,27] , test[,27] , colname.prefix = "P27" , asNumeric=F)
-#   tr = l[[1]]
-#   ts = l[[2]]
-#   
-#   train = cbind(train,tr)
-#   test = cbind(test,ts)
-#   
-#   train = train[ , -27]
-#   test = test[ , -27]
-  
-#   ## P17
-#   l = encodeCategoricalFeature (train[,17] , test[,17] , colname.prefix = "P17" , asNumeric=F)
-#   tr = l[[1]]
-#   ts = l[[2]]
-#   
-#   train = cbind(train,tr)
-#   test = cbind(test,ts)
-#   
-#   train = train[ , -17]
-#   test = test[ , -17]
-#   
-#   ## P5
-#   l = encodeCategoricalFeature (train[,5] , test[,5] , colname.prefix = "P5" , asNumeric=F)
-#   tr = l[[1]]
-#   ts = l[[2]]
-#   
-#   train = cbind(train,tr)
-#   test = cbind(test,ts)
-#   
-#   train = train[ , -5]
-#   test = test[ , -5]
-
   ## 
   list(train,y,test)
 }
@@ -178,6 +178,7 @@ buildData.basic = function(train.raw , test.raw) {
 predict.train.k.folds = function (traindata , 
                                   y , 
                                   model.label = "RandomForest_Reg", 
+                                  controlObject , 
                                   k = 6 ) {
   ### train set 
   folds = kfolds(k,dim(traindata)[1])
@@ -219,7 +220,11 @@ source(paste0( getBasePath("process") , "/Resample_Lib.R"))
 source(paste0( getBasePath("process") , "/Regression_Lib.R"))
 source(paste0( getBasePath("process") , "/FeatureEncode_Lib.R"))
 
-controlObject <- trainControl(method = "boot", number = 200)
+#controlObject <- trainControl(method = "boot", number = 200)
+controlObject <- trainControl(method = "repeatedcv", repeats = 10, number = 30)
+
+cat(">>> controlObject == repeatedcv 10 30 \n")
+#cat(">>> controlObject == boot 200 \n")
 
 #######
 sampleSubmission = as.data.frame( fread(paste(getBasePath("data") , 
@@ -231,95 +236,93 @@ train.raw = as.data.frame( fread(paste(getBasePath("data") ,
 test.raw = as.data.frame( fread(paste(getBasePath("data") , 
                                       "test.csv" , sep='')))
 
-
-####### SCHEMA 
-### 1- fitting y with BaggedTree_Reg,res (removeOnlyZeroVariacePredictors=T) 
-### 2- fitting res with Enet_Reg (applying caret nearZeroVar function)
-### 3- fitting resr res with  RandomForest_Reg (applying caret nearZeroVar function)
-
 ####### basic feature processing 
 l = buildData.basic(train.raw , test.raw)
 train = l[[1]]
 y = l[[2]]
 test = l[[3]]
 
-### first we compute the response both in training set (6-folds-like procedure) and test set 
-### w/ BaggedTree_Reg removing only zero variance predictors
-#### feature selection <<<<<<<<<<<<<<
-l = featureSelect (train,test)
-traindata = l[[1]]
-testdata = l[[2]]
 
-### test set 
-if (verbose) cat("Making prediction w/ BaggedTree_Reg on test set .. \n")
-pred.1.test = reg.trainAndPredict( y , 
-                            traindata , 
-                            testdata , 
-                            "SVM_Reg" , 
-                            controlObject, 
-                            best.tuning = T)
+##### MODELS DATA FRAME
+model.boosting = data.frame(
+  lev = c(1,2) , 
+  model = as.character(c("BaggedTree_Reg","Enet_Reg")) , 
+  removeOnlyZeroVariacePredictors = c(T,F) , 
+  performVarianceAnalysisOnTrainSetOnly = c(T,T) , 
+  correlationRhreshold = c(NA,NA) 
+  )
 
-pred.1.test = ifelse(pred.1.test >= min(y) , pred.1.test , min(y)) 
+print(model.boosting)
 
-if (verbose) cat("Making prediction w/ BaggedTree_Reg  on train set (6-folds).. \n")
-pred.1.train = predict.train.k.folds (traindata , 
-                                      y , 
-                                      model.label = "SVM_Reg",
-                                      k = 6 )
-
-### then, we compute residuals, i.e. the difference between the observed value and the prediction in train set
-res.1 = (y - pred.1.train) 
-cat(">>> computing residuals in train set: ",mean(res.1),"... \n")
-
-# we fit an Enet_Reg applying caret’s nearZeroVar function using the residuals as response and predict on test set 
-cat("predicting Enet_Reg applying caret’s nearZeroVar function using the residuals as response ... \n")
-#### feature selection <<<<<<<<<<<<<<
-l = featureSelect (train,test)
-traindata = l[[1]]
-testdata = l[[2]]
-
-if (verbose) cat("Making prediction of residuals w/ Enet_Reg .. \n")
-pred.res.1 = reg.trainAndPredict( res.1 , 
-                            traindata , 
-                            testdata , 
-                            "Enet_Reg" , 
-                            controlObject, 
-                            best.tuning = T)
-
-cat(">>> predictedresiduals in train set: ",mean(pred.res.1),"... \n")
-## 
-if (verbose) cat("Making prediction of residuals w/ Enet_Reg  on train set (6-folds).. \n")
-pred.res.1.train = predict.train.k.folds (traindata , 
-                                          res.1 ,
-                                          model.label = "Enet_Reg",
-                                          k = 6 )
-
-## 
-cat(">>> computing residuals residuals in train set ... \n")
-res.2 = (y - pred.1.train) - pred.res.1.train
+##### LEVEL 1  
+level = 1 
 
 ##
-l = featureSelect (train,test)
+l = featureSelect (train,test,y=y,
+                   removeOnlyZeroVariacePredictors = model.boosting[model.boosting$lev==level,]$removeOnlyZeroVariacePredictors,
+                   performVarianceAnalysisOnTrainSetOnly = model.boosting[model.boosting$lev==level,]$performVarianceAnalysisOnTrainSetOnly,
+                   correlationRhreshold = model.boosting[model.boosting$lev==level,]$correlationRhreshold
+                     )
 traindata = l[[1]]
 testdata = l[[2]]
 
-if (verbose) cat("Making prediction of residuals residuals w/ RandomForest_Reg .. \n")
-pred.res.2 = reg.trainAndPredict( res.2 , 
-                                  traindata , 
-                                  testdata , 
-                                  "KNN_Reg" , 
-                                  controlObject, 
-                                  best.tuning = T)
+## estimating res 
+cat(">>> estimating residuals on training set of the first level .. \n")
+pred.1.train = predict.train.k.folds (traindata , 
+                                      y , 
+                                      model.label = model.boosting[model.boosting$lev==level,]$model ,
+                                      controlObject , 
+                                      k = 6 )
+
+res.1 = (y - pred.1.train) 
+cat(">>> residuals in train set - mean =",mean(res.1)," sd =",sd(res.1)," ... \n")
+
+##### LEVEL 2 
+level = 2
+
+l = featureSelect (train,test,y=y,
+                   removeOnlyZeroVariacePredictors = model.boosting[model.boosting$lev==level,]$removeOnlyZeroVariacePredictors,
+                   performVarianceAnalysisOnTrainSetOnly = model.boosting[model.boosting$lev==level,]$performVarianceAnalysisOnTrainSetOnly,
+                   correlationRhreshold = model.boosting[model.boosting$lev==level,]$correlationRhreshold
+)
+traindata = l[[1]]
+testdata = l[[2]]
+
+### finding te best model fitting residuals .... 
+cat(">> finding te best model fitting residuals .... \n")
+RegModels = c("Average" , "Mode",  
+              "LinearReg", "RobustLinearReg", 
+              "PLS_Reg" , "Ridge_Reg" , "Enet_Reg" , 
+              "KNN_Reg", 
+              "SVM_Reg", 
+              "BaggedTree_Reg"
+              , "RandomForest_Reg"
+              , "Cubist_Reg" 
+              #, "NNet"
+) 
+
+cat("resampling = repeated cv 10 30",
+    " - removeOnlyZeroVariacePredictors=",model.boosting[model.boosting$lev==level,]$removeOnlyZeroVariacePredictors,
+    " - correlationRhreshold =",model.boosting[model.boosting$lev==level,]$correlationRhreshold,
+    "\n")
+
+l = trainAndPredict.kfold.reg (k = 6,traindata,
+                               res.1,
+                               RegModels,
+                               controlObject)
+model.winner = l[[1]]
+.grid = l[[2]]
+perf.kfold = l[[3]]
+
+### results 
+cat("****** RMSE - each model/fold ****** \n")
+print(perf.kfold)
+cat("\n****** RMSE - mean ****** \n")
+print(.grid)
+cat("\n>>>>>>>>>>>> The winner is ... ",model.winner,"\n")
 
 
 
-### update the predicted values 
-pred = pred.1.test + pred.res.1 + pred.res.2
 
-pred = ifelse(pred >= min(y) , pred , min(y))
 
-### storing on disk 
-write.csv(data.frame(Id = test.raw$Id , Prediction = pred),
-          quote=FALSE, 
-          file=paste(getBasePath("data"),"mySub_boost_2.csv",sep='') ,
-          row.names=FALSE)
+

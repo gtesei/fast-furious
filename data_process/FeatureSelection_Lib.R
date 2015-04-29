@@ -3,16 +3,41 @@ library(caret)
 
 featureSelect <- function(traindata,
                           testdata,
+                          y = NULL,
                           removeOnlyZeroVariacePredictors=F,
+                          performVarianceAnalysisOnTrainSetOnly = T , 
+                          correlationRhreshold = NA, 
                           removePredictorsMakingIllConditionedSquareMatrix = T, 
                           removeHighCorrelatedPredictors = T, 
                           featureScaling = T) {
+  
   data = rbind(testdata,traindata)
   
   ### removing near zero var predictors 
   if (! removeOnlyZeroVariacePredictors ) { 
-    cat(">>> applying caret nearZeroVar ... \n")
-    PredToDel = nearZeroVar(data)
+    PredToDel = NULL 
+    if (performVarianceAnalysisOnTrainSetOnly) { 
+      cat(">>> applying caret nearZeroVar performing caret nearZeroVar function on train set only ... \n")
+      PredToDel = nearZeroVar(traindata)
+    } else {
+      cat(">>> applying caret nearZeroVar performing caret nearZeroVar function on both train set and test set ... \n")
+      PredToDel = nearZeroVar(data)
+    }
+    
+    if (! is.na(correlationRhreshold) ) {
+      cat(">>> computing correlation ... \n")
+      corrValues <- apply(traindata,
+                               MARGIN = 2,
+                               FUN = function(x, y) cor(x, y),
+                               y = y)
+      PredToReinsert = as.numeric(which(! is.na(corrValues) & corrValues > correlationRhreshold))
+      
+      cat(">> There are high correlated predictors with response variable. N. ",length(PredToReinsert)," - predictors: ", 
+          paste(colnames(data) [PredToReinsert] , collapse=" " ) , " ... \n ")
+      
+      PredToDel = PredToDel[! PredToDel %in% PredToReinsert]
+    } 
+    
     if (length(PredToDel) > 0) {
       cat("removing ",length(PredToDel)," nearZeroVar predictors: ", 
           paste(colnames(data) [PredToDel] , collapse=" " ) , " ... \n ")
@@ -20,7 +45,16 @@ featureSelect <- function(traindata,
     } 
   } else {
     cat(">>> removing zero variance predictors only  ... \n")
-    card = apply(data,2,function(x)  length(unique(x))  )
+    card = NULL
+    
+    if (performVarianceAnalysisOnTrainSetOnly) { 
+      cat(">>> removing zero variance predictors only performing variance analysis on train set only ... \n")
+      card = apply(traindata,2,function(x)  length(unique(x))  )
+    } else {
+      cat(">>> removing zero variance predictors only performing variance analysis on both train set and test set ... \n")
+      card = apply(data,2,function(x)  length(unique(x))  )
+    }
+    
     PredToDel = as.numeric(which(card < 2))
     if (length(PredToDel) > 0) {
       cat("removing ",length(PredToDel)," ZeroVariacePredictors predictors: ", 
