@@ -357,7 +357,7 @@ if (prediction.mode) {
   pred.hrc = sum(pred[which(test$hrc == 1)])
   amount.hrc = sum(test[which(test$hrc == 1),]$hrc) * 16549064
   cat(">> sum of pred with hrc on:",pred.hrc," -- difference: ",(amount.hrc-pred.hrc),"\n")
-  pred[which(test$hrc == 1] = 16549064
+  pred[which(test$hrc == 1)] = 16549064
   
   #### storing 
   write.csv(data.frame(Id = test.raw$Id , Prediction = pred),

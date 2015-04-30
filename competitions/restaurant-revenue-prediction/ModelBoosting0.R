@@ -83,16 +83,16 @@ buildData.basic = function(train.raw , test.raw) {
   y = train[,38]
   train = train[,-38]
   
-#   ## P29
-#   l = encodeCategoricalFeature (train[,29] , test[,29] , colname.prefix = "P29" , asNumeric=F)
-#   tr = l[[1]]
-#   ts = l[[2]]
-#   
-#   train = cbind(train,tr)
-#   test = cbind(test,ts)
-#   
-#   train = train[ , -29]
-#   test = test[ , -29]
+  #   ## P29
+  #   l = encodeCategoricalFeature (train[,29] , test[,29] , colname.prefix = "P29" , asNumeric=F)
+  #   tr = l[[1]]
+  #   ts = l[[2]]
+  #   
+  #   train = cbind(train,tr)
+  #   test = cbind(test,ts)
+  #   
+  #   train = train[ , -29]
+  #   test = test[ , -29]
   
   ## P35
   l = encodeCategoricalFeature (train[,35] , test[,35] , colname.prefix = "P35" , asNumeric=F)
@@ -127,16 +127,16 @@ buildData.basic = function(train.raw , test.raw) {
   train = train[ , -36]
   test = test[ , -36]
   
-  #   ## P31
-  #   l = encodeCategoricalFeature (train[,31] , test[,31] , colname.prefix = "P31" , asNumeric=F)
-  #   tr = l[[1]]
-  #   ts = l[[2]]
-  #   
-  #   train = cbind(train,tr)
-  #   test = cbind(test,ts)
-  #   
-  #   train = train[ , -31]
-  #   test = test[ , -31]
+  ## P31
+  #     l = encodeCategoricalFeature (train[,31] , test[,31] , colname.prefix = "P31" , asNumeric=F)
+  #     tr = l[[1]]
+  #     ts = l[[2]]
+  #     
+  #     train = cbind(train,tr)
+  #     test = cbind(test,ts)
+  #     
+  #     train = train[ , -31]
+  #     test = test[ , -31]
   
   #   # P27
   #   l = encodeCategoricalFeature (train[,27] , test[,27] , colname.prefix = "P27" , asNumeric=F)
@@ -160,28 +160,30 @@ buildData.basic = function(train.raw , test.raw) {
   #   train = train[ , -17]
   #   test = test[ , -17]
   #   
-  #   ## P5
-  #   l = encodeCategoricalFeature (train[,5] , test[,5] , colname.prefix = "P5" , asNumeric=F)
-  #   tr = l[[1]]
-  #   ts = l[[2]]
-  #   
-  #   train = cbind(train,tr)
-  #   test = cbind(test,ts)
-  #   
-  #   train = train[ , -5]
-  #   test = test[ , -5]
+  #     ## P5
+  #     l = encodeCategoricalFeature (train[,5] , test[,5] , colname.prefix = "P5" , asNumeric=F)
+  #     tr = l[[1]]
+  #     ts = l[[2]]
+  #     
+  #     train = cbind(train,tr)
+  #     test = cbind(test,ts)
+  #     
+  #     train = train[ , -5]
+  #     test = test[ , -5]
+  
+  ## 
   
   ## high revenue combinations 
   train$hrc = ifelse(train$P1 == 5 & train$P8 == 3 , 1 , 0) 
   test$hrc = ifelse(test$P1 == 5 & test$P8 == 3 , 1 , 0) 
-
-  ## 
+  
   list(train,y,test)
 }
 
 predict.train.k.folds = function (traindata , 
                                   y , 
                                   model.label = "RandomForest_Reg", 
+                                  controlObject , 
                                   k = 6 ) {
   ### train set 
   folds = kfolds(k,dim(traindata)[1])
@@ -216,19 +218,31 @@ predict.train.k.folds = function (traindata ,
   pred.1.train
 }
 
-#######
+####### 
 verbose = T
+
 source(paste0( getBasePath("process") , "/FeatureSelection_Lib.R"))
 source(paste0( getBasePath("process") , "/Resample_Lib.R"))
 source(paste0( getBasePath("process") , "/Regression_Lib.R"))
 source(paste0( getBasePath("process") , "/FeatureEncode_Lib.R"))
 
-#controlObject <- trainControl(method = "boot", number = 200)
 controlObject <- trainControl(method = "repeatedcv", repeats = 10, number = 30)
 
-cat(">>> controlObject == repeatedcv 10 30 \n")
-#cat(">>> removePredictorsMakingIllConditionedSquareMatrix == F \n")
-#cat(">>> removeHighCorrelatedPredictors == F \n")
+cat(">>> resampling:: repeatedcv 10 30 \n")
+
+RegModels = c("Average" , "Mode",  
+              "LinearReg", "RobustLinearReg", 
+              "PLS_Reg" , "Ridge_Reg" , "Enet_Reg" , 
+              "KNN_Reg", 
+              "SVM_Reg", 
+              "BaggedTree_Reg"
+              , "RandomForest_Reg"
+              , "Cubist_Reg" 
+              #, "NNet"
+) 
+
+cat("****** Available regression models ******\n") 
+print(RegModels)
 
 #######
 sampleSubmission = as.data.frame( fread(paste(getBasePath("data") , 
@@ -240,77 +254,95 @@ train.raw = as.data.frame( fread(paste(getBasePath("data") ,
 test.raw = as.data.frame( fread(paste(getBasePath("data") , 
                                       "test.csv" , sep='')))
 
+## init levels (you can load the initial grid from file)
+model.boosting = expand.grid(
+  lev = 1 ,  
+  model = "BaggedTree_Reg" , 
+  #model = "Average" , 
+  need.finding = F , 
+  removeOnlyZeroVariacePredictors = T , 
+  performVarianceAnalysisOnTrainSetOnly = T , 
+  correlationRhreshold = NA, 
+  res.train.mean = NA , 
+  res.train.sd = NA , 
+  RMSE.train.kfold = NA , 
+  RMSE.xval.winner = NA 
+)
+
+### predicting 
+level = 1
+cat("******** PROCESSING LEVEL ",level,"********\n")
+
+## unroll parameters  
+models = as.character(model.boosting[model.boosting$lev==level,]$model)
+need.finding = as.logical(model.boosting[model.boosting$lev==level,]$need.finding)
+removeOnlyZeroVariacePredictors = as.logical(model.boosting[model.boosting$lev==level,]$removeOnlyZeroVariacePredictors) 
+performVarianceAnalysisOnTrainSetOnly = as.logical(model.boosting[model.boosting$lev==level,]$performVarianceAnalysisOnTrainSetOnly) 
+correlationRhreshold = as.numeric(model.boosting[model.boosting$lev==level,]$correlationRhreshold) 
+res.train.mean = as.numeric(model.boosting[model.boosting$lev==level,]$res.train.mean) 
+res.train.sd = as.numeric(model.boosting[model.boosting$lev==level,]$res.train.sd) 
+RMSE.train.kfold = as.numeric(model.boosting[model.boosting$lev==level,]$RMSE.train.kfold) 
+RMSE.xval.winner = as.numeric(model.boosting[model.boosting$lev==level,]$RMSE.xval.winner) 
+
+variants = length(models)
+
 ####### basic feature processing 
 l = buildData.basic(train.raw , test.raw)
 train = l[[1]]
 y = l[[2]]
 test = l[[3]]
 
-
-##### MODELS DATA FRAME
-model.boosting = data.frame(
-  lev = c(1) , 
-  model = as.character(c("BaggedTree_Reg")) , 
-  removeOnlyZeroVariacePredictors = c(T) , 
-  performVarianceAnalysisOnTrainSetOnly = c(T) , 
-  correlationRhreshold = c(NA) 
-  )
-
-print(model.boosting)
-
-##### Let's assess the first level 
-level = 1 
-
-##
+## process data 
 l = featureSelect (train,test,y=y,
                    removeOnlyZeroVariacePredictors = model.boosting[model.boosting$lev==level,]$removeOnlyZeroVariacePredictors,
                    performVarianceAnalysisOnTrainSetOnly = model.boosting[model.boosting$lev==level,]$performVarianceAnalysisOnTrainSetOnly,
                    correlationRhreshold = model.boosting[model.boosting$lev==level,]$correlationRhreshold
-                     )
+)
 traindata = l[[1]]
 testdata = l[[2]]
 
-## asses RMSE (6-fold)
-l = trainAndPredict.kfold.reg (k = 6,traindata,y,model.boosting[model.boosting$lev==level,]$model,controlObject)
-model.winner = l[[1]]
-.grid = l[[2]]
-perf.kfold = l[[3]]
-
-if (verbose) {
-  cat("****** RMSE - each model/fold ****** \n")
-  print(perf.kfold)
-  cat("\n****** RMSE - mean ****** \n")
-  print(.grid)
-}
-
-## view prediction on cross valitation set 
-forTraining <- createDataPartition(y, p = 4/5)[[1]]
-trainingSet <- traindata[ forTraining,]
-testSet <- traindata[-forTraining,]
-yTrain = y[forTraining]
-yTest = y[-forTraining]
-
-pred = 
-  reg.trainAndPredict( yTrain , 
-                       trainingSet , 
-                       testSet , 
+## pred.1 
+pred.1 = 
+  reg.trainAndPredict( y , 
+                       traindata , 
+                       testdata , 
                        model.boosting[model.boosting$lev==level,]$model , 
                        controlObject, 
-                       best.tuning = F)
+                       best.tuning = T)
 
+## estimating res 
+cat(">>> estimating residuals on training set of the first level .. \n")
+pred.1.train = predict.train.k.folds (traindata , 
+                                      y , 
+                                      model.label = model.boosting[model.boosting$lev==level,]$model ,
+                                      controlObject , 
+                                      k = 6 )
 
-plotPerformance.reg (observed=yTest,predicted=pred)
+res.1 = (y - pred.1.train) 
+cat(">>> residuals in train set - mean =",mean(res.1)," sd =",sd(res.1)," ... \n")
 
-RMSE(yTest,pred)
+#### updating grid 
+model.boosting[model.boosting$lev==level,]$res.train.mean = mean(res.1)
+model.boosting[model.boosting$lev==level,]$res.train.sd = sd(res.1)
+model.boosting[model.boosting$lev==level,]$RMSE.train.kfold = RMSE(pred = pred.1.train, obs = y)
+model.boosting[model.boosting$lev==level,]$RMSE.xval.winner = NA
 
-error.abs = abs(yTest-pred)
-error.abs.max = max(error.abs)
+#### storing 
+cat(">>> Storing on disk ... \n")
 
-testSet[which(error.abs == error.abs.max) , ]
-yTest[which(error.abs == error.abs.max)]
-pred[which(error.abs == error.abs.max)]
+write.csv(model.boosting,
+          quote=FALSE, 
+          file=paste(getBasePath("data"),"model_boosting0_grid.csv",sep='') ,
+          row.names=FALSE)
 
+write.csv(data.frame(Id = test.raw$Id , Pred_1 = pred.1 ),
+          quote=FALSE, 
+          file=paste(getBasePath("data"),"model_boosting0_pred.test.csv",sep='') ,
+          row.names=FALSE)
 
-
+write.csv(data.frame(Id = train.raw$Id , res.1 = res.1),
+          quote=FALSE, 
+          file=paste(getBasePath("data"),"model_boosting0_res.csv",sep='') ,
+          row.names=FALSE)
 
 
