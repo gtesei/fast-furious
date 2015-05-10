@@ -1,4 +1,4 @@
-function [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X,y,perc_train) 
+function [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X,y,perc_train,shuffle=0) 
 
  [m,n] = size(X);
  [_m,_n] = size(y);
@@ -9,6 +9,12 @@ function [Xtrain,ytrain,Xval,yval] = splitTrainValidation(X,y,perc_train)
  elseif (perc_train > 1 || perc_train < 0)
    error ("perc_train must belong to the range [0,1]!");
  endif
+
+ if (shuffle)
+   rand_ind = randperm(size(X,1));
+   X = X(rand_ind,:);
+   y = y(rand_ind,:);
+ endif 
  
  mtrain = floor(m * perc_train);
  mval = m - mtrain;
