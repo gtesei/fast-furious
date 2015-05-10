@@ -111,7 +111,7 @@ sampleSubmission = as.data.frame( fread(paste(getBasePath("data") ,
                                               "sampleSubmission.csv" , sep='')))
 
 weather = as.data.frame( fread(paste(getBasePath("data") , 
-                                     "weather.imputed.basic.17.9.csv" , sep=''))) ## <<<< TODO use weather.imputed.all.<perf>.csv
+                                     "weather.imputed.full.17.8.csv" , sep=''))) 
 
 ######
 

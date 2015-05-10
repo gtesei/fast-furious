@@ -96,23 +96,23 @@ train = train[,-ncol(train)]
 # 
 # print(trans.pca)
 
-# trans.ica <- preProcess(rbind(train,test),
-#                         method = c("BoxCox", "center", "scale", "ica") , n.comp = 50)
-# 
-# trans.ica
+trans.ica <- preProcess(rbind(train,test),
+                        method = c("BoxCox", "center", "scale", "ica") , n.comp = 150)
+
+trans.ica
 
 # trans.scal <- preProcess(rbind(train,test),
 #                         method = c("center", "scale") )
 # 
 # trans.scal
 
-trans.ss <- preProcess(rbind(train,test),
-                        method = c("center", "scale" , "spatialSign") )
+# trans.ss <- preProcess(rbind(train,test),
+#                         method = c("center", "scale" , "spatialSign") )
+# 
+# trans.ss
 
-trans.ss
-
-train = predict(trans.ss,train)
-test = predict(trans.ss,test)
+train = predict(trans.ica,train)
+test = predict(trans.ica,test)
 ######
 x = rbind(train,test)
 x = as.matrix(x)
@@ -127,12 +127,12 @@ param <- list("objective" = "multi:softprob",
               "nthread" = 8)
 
 # Run Cross Valication
-cv.nround = 175
+cv.nround = 200
 bst.cv = xgb.cv(param=param, data = x[trind,], label = y, 
                 nfold = 3, nrounds=cv.nround)
 
 # Train the model
-nround = 175
+nround = 200
 bst = xgboost(param=param, data = x[trind,], label = y, nrounds=nround)
 
 # Make prediction
@@ -146,5 +146,5 @@ pred = data.frame(1:nrow(pred),pred)
 names(pred) = c('id', paste0('Class_',1:9))
 #write.csv(pred,file='submission.csv', quote=FALSE,row.names=FALSE)
 write.csv(pred,file=paste(getBasePath("data") , 
-                          "sub_xgb_ss.csv" , sep=''), quote=FALSE,row.names=FALSE)
+                          "sub_xgb_ica.csv" , sep=''), quote=FALSE,row.names=FALSE)
 

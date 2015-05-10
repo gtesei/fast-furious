@@ -53,7 +53,8 @@ reg.trainAndPredict = function( YtrainingSet , XtrainingSet ,
     
     fit <- train(y = YtrainingSet, x = XtrainingSet ,
                  method = "enet",
-                 tuneGrid = enetGrid)
+                 tuneGrid = enetGrid, 
+                 trControl = controlObject)
     
     pred = as.numeric( predict(fit , testSet )  )
   } else if (model.label == "SVM_Reg") {  ### SVM_Reg
