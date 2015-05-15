@@ -60,17 +60,19 @@ train = as.data.frame( fread(paste(getBasePath("data") ,
 test = as.data.frame( fread(paste(getBasePath("data") , 
                                   "test.csv" , sep='')))
 
+grid = as.data.frame( fread(paste(getBasePath("data") , 
+                                  "xgboost_grid_cat_vs_numeric.csv" , sep='')))
+
+ftoenc = as.numeric( (grid[grid$is.categorical & ! is.na(grid$is.categorical) ,]$feature) )
 
 ########
 verbose = T
-source(paste0( getBasePath("process") , "/Transform_Lib.R"))
+source(paste0( getBasePath("process") , "/FeatureEncode_Lib.R"))
 
 #########
 require(xgboost)
 require(methods)
 
-#train = read.csv('data/train.csv',header=TRUE,stringsAsFactors = F)
-#test = read.csv('data/test.csv',header=TRUE,stringsAsFactors = F)
 train = train[,-1]
 test = test[,-1]
 
@@ -80,36 +82,30 @@ y = as.integer(y)-1 #xgboost take features in [0,numOfClass)
 
 train = train[,-ncol(train)]
 
-# #### trans 1 
-# l = transfrom4Skewness (traindata = train,
-#                         testdata = test,
-#                         verbose = T)
-# 
-# 
-# train = l[[1]]
-# test = l[[2]]
-####
+## encodinng 
+cat(">> found ",length(ftoenc)," features to encode as categorical .. \n")
+toRemove = NULL
+for (i in ftoenc) {
+  cat(">> enacoding feat",i," ..\n")
+  
+  l = encodeCategoricalFeature (train[,i] , test[,i] , colname.prefix = paste0("feat_",i) , asNumeric=F)
+  tr = l[[1]]
+  ts = l[[2]]
+  
+  train = cbind(train,tr)
+  test = cbind(test,ts)
+  
+  toRemove = c(toRemove,i)
+}
 
-#### trans 2
-# trans.pca <- preProcess(rbind(train,test),
-#                     method = c("BoxCox", "center", "scale", "pca") )
-# 
-# print(trans.pca)
+train = train[ , -toRemove]
+test = test[ , -toRemove]
 
-# trans.ica <- preProcess(rbind(train,test),
-#                         method = c("BoxCox", "center", "scale", "ica") , n.comp = 150)
-# 
-# trans.ica
-
+## feature scaling 
 trans.scal <- preProcess(rbind(train,test),
                         method = c("center", "scale") )
 
 trans.scal
-
-# trans.ss <- preProcess(rbind(train,test),
-#                         method = c("center", "scale" , "spatialSign") )
-# 
-# trans.ss
 
 train = predict(trans.scal,train)
 test = predict(trans.scal,test)
@@ -124,16 +120,47 @@ teind = (nrow(train)+1):nrow(x)
 param <- list("objective" = "multi:softprob",
               "eval_metric" = "mlogloss",
               "num_class" = 9,
-              "nthread" = 8)
+              "eta" = 0.05,  ## suggested in ESLII
+              "gamma" = 0.5,  
+              "max_depth" = 25, 
+              "subsample" = 0.5 , ## suggested in ESLII
+              "nthread" = 10, 
+              
+              "min_child_weight" = 1 , 
+              "colsample_bytree" = 0.5, 
+              "max_delta_step" = 1
+              )
+
+cat(">>Params:\n")
+print(param)
 
 # Run Cross Valication
-cv.nround = 175
-bst.cv = xgb.cv(param=param, data = x[trind,], label = y, 
-                nfold = 3, nrounds=cv.nround)
+cat(">>Cross validation ... \n")
 
-print(bst.cv)
+inCV = T
+early.stop = cv.nround = 2000
+
+while (inCV) {
+  
+  cat(">> cv.nround: ",cv.nround,"\n") 
+  bst.cv = xgb.cv(param=param, data = x[trind,], label = y, 
+                  nfold = 5, nrounds=cv.nround)
+  print(bst.cv)
+  early.stop = which(bst.cv$test.mlogloss.mean == min(bst.cv$test.mlogloss.mean) )
+  cat(">> early.stop: ",early.stop," [test.mlogloss.mean:",bst.cv[early.stop,]$test.mlogloss.mean,"]\n") 
+  if (early.stop < cv.nround) {
+    inCV = F
+    cat(">> stopping [early.stop < cv.nround=",cv.nround,"] ... \n") 
+  } else {
+    cat(">> redo-cv [early.stop == cv.nround=",cv.nround,"] with 2 * cv.nround ... \n") 
+    cv.nround = cv.nround * 2 
+  }
+  gc()
+}
+
+cat(">>Train the model ... \n")
 # Train the model
-nround = 175
+nround = early.stop
 bst = xgboost(param=param, data = x[trind,], label = y, nrounds=nround)
 
 # Make prediction
@@ -147,5 +174,5 @@ pred = data.frame(1:nrow(pred),pred)
 names(pred) = c('id', paste0('Class_',1:9))
 #write.csv(pred,file='submission.csv', quote=FALSE,row.names=FALSE)
 write.csv(pred,file=paste(getBasePath("data") , 
-                          "sub_xgb_ica.csv" , sep=''), quote=FALSE,row.names=FALSE)
+                          "sub_xgb_boost_3gen_categorical.csv" , sep=''), quote=FALSE,row.names=FALSE)
 

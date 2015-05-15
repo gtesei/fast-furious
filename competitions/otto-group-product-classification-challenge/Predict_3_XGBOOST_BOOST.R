@@ -124,16 +124,48 @@ teind = (nrow(train)+1):nrow(x)
 param <- list("objective" = "multi:softprob",
               "eval_metric" = "mlogloss",
               "num_class" = 9,
-              "nthread" = 8)
+              "eta" = 0.01,  ## suggested in ESLII
+              "gamma" = 0.5,  
+              "max_depth" = 25, 
+              "subsample" = 0.5 , ## suggested in ESLII
+              "nthread" = 10, 
+              
+              "min_child_weight" = 1 , 
+              "colsample_bytree" = 0.5, 
+              "max_delta_step" = 1
+              )
+
+cat(">>Params:\n")
+print(param)
 
 # Run Cross Valication
-cv.nround = 175
-bst.cv = xgb.cv(param=param, data = x[trind,], label = y, 
-                nfold = 3, nrounds=cv.nround)
+cat(">>Cross validation ... \n")
 
-print(bst.cv)
+inCV = T
+early.stop = cv.nround = 3000
+bst.cv = NULL
+
+while (inCV) {
+  
+  cat(">> cv.nround: ",cv.nround,"\n") 
+  bst.cv = xgb.cv(param=param, data = x[trind,], label = y, 
+                  nfold = 5, nrounds=cv.nround)
+  print(bst.cv)
+  early.stop = which(bst.cv$test.mlogloss.mean == min(bst.cv$test.mlogloss.mean) )
+  cat(">> early.stop: ",early.stop," [test.mlogloss.mean:",bst.cv[early.stop,]$test.mlogloss.mean,"]\n") 
+  if (early.stop < cv.nround) {
+    inCV = F
+    cat(">> stopping [early.stop < cv.nround=",cv.nround,"] ... \n") 
+  } else {
+    cat(">> redo-cv [early.stop == cv.nround=",cv.nround,"] with 2 * cv.nround ... \n") 
+    cv.nround = cv.nround * 2 
+  }
+  gc()
+}
+
+cat(">>Train the model ... \n")
 # Train the model
-nround = 175
+nround = early.stop
 bst = xgboost(param=param, data = x[trind,], label = y, nrounds=nround)
 
 # Make prediction
@@ -147,5 +179,5 @@ pred = data.frame(1:nrow(pred),pred)
 names(pred) = c('id', paste0('Class_',1:9))
 #write.csv(pred,file='submission.csv', quote=FALSE,row.names=FALSE)
 write.csv(pred,file=paste(getBasePath("data") , 
-                          "sub_xgb_ica.csv" , sep=''), quote=FALSE,row.names=FALSE)
+                          "sub_xgb_boost_4gen_eta_0005.csv" , sep=''), quote=FALSE,row.names=FALSE)
 

@@ -79,37 +79,12 @@ y = gsub('Class_','',y)
 y = as.integer(y)-1 #xgboost take features in [0,numOfClass)
 
 train = train[,-ncol(train)]
-
-# #### trans 1 
-# l = transfrom4Skewness (traindata = train,
-#                         testdata = test,
-#                         verbose = T)
-# 
-# 
-# train = l[[1]]
-# test = l[[2]]
 ####
-
-#### trans 2
-# trans.pca <- preProcess(rbind(train,test),
-#                     method = c("BoxCox", "center", "scale", "pca") )
-# 
-# print(trans.pca)
-
-# trans.ica <- preProcess(rbind(train,test),
-#                         method = c("BoxCox", "center", "scale", "ica") , n.comp = 150)
-# 
-# trans.ica
 
 trans.scal <- preProcess(rbind(train,test),
                         method = c("center", "scale") )
 
 trans.scal
-
-# trans.ss <- preProcess(rbind(train,test),
-#                         method = c("center", "scale" , "spatialSign") )
-# 
-# trans.ss
 
 train = predict(trans.scal,train)
 test = predict(trans.scal,test)
@@ -124,28 +99,57 @@ teind = (nrow(train)+1):nrow(x)
 param <- list("objective" = "multi:softprob",
               "eval_metric" = "mlogloss",
               "num_class" = 9,
+              "eta" = 0.05,  ## suggested in ESLII
+              "gamma" = 0.5,  
+              "max_depth" = 10, 
+              "subsample" = 0.5 , ## suggested in ESLII
               "nthread" = 8)
 
-# Run Cross Valication
-cv.nround = 175
-bst.cv = xgb.cv(param=param, data = x[trind,], label = y, 
-                nfold = 3, nrounds=cv.nround)
-
-print(bst.cv)
+cat(">>Train the model ... \n")
 # Train the model
-nround = 175
+nround = 400
 bst = xgboost(param=param, data = x[trind,], label = y, nrounds=nround)
 
-# Make prediction
-pred = predict(bst,x[teind,])
-pred = matrix(pred,9,length(pred)/9)
-pred = t(pred)
+## feature importance 
+importance <- xgb.importance(colnames(train), model = bst)
+head(importance)
 
-# Output submission
-pred = format(pred, digits=2,scientific=F) # shrink the size of submission
-pred = data.frame(1:nrow(pred),pred)
-names(pred) = c('id', paste0('Class_',1:9))
-#write.csv(pred,file='submission.csv', quote=FALSE,row.names=FALSE)
-write.csv(pred,file=paste(getBasePath("data") , 
-                          "sub_xgb_ica.csv" , sep=''), quote=FALSE,row.names=FALSE)
+xgb.plot.importance(importance_matrix = importance)
+
+write.table(importance,
+            "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/otto-group-product-classification-challenge/xgboost_feat_imp.csv",
+            sep=",",
+            row.names=FALSE,
+            quote=FALSE)
+
+## saving a dataset with reduced set of features 
+n.reduced = 40 
+train.reduced = train[, importance$Feature[1:n.reduced]]
+test.reduced = test[, importance$Feature[1:n.reduced]]
+
+cat(">>> storing on disk for octave ... \n")
+write.table(train.reduced,
+            quote=FALSE, 
+            file=paste0(getBasePath("data"),"oct_train_reduced_xg.csv") ,
+            row.names=FALSE,
+            col.names=FALSE)
+
+write.table(test.reduced,
+            quote=FALSE, 
+            file=paste0(getBasePath("data"),"oct_test_reduced_xg.csv") ,
+            row.names=FALSE,
+            col.names=FALSE)
+
+cat(">>> storing on disk for R ... \n")
+write.table(train.reduced,
+            quote=FALSE, 
+            file=paste0(getBasePath("data"),"train_reduced_xg.csv") ,
+            row.names=FALSE)
+
+write.table(test.reduced,
+            quote=FALSE, 
+            file=paste0(getBasePath("data"),"test_reduced_xg.csv") ,
+            row.names=FALSE)
+
+
 

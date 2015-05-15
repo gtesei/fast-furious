@@ -82,6 +82,11 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
           pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
           pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
           
+          if (num_labels == 1)
+             pred_train = (pred_train > 0.5);
+             pred_val = (pred_val > 0.5);
+          endif  
+          
           acc_train = mean(double(pred_train == ytrain)) * 100;
           acc_val = mean(double(pred_val == yval)) * 100;
           grid(i,5) = acc_train;
@@ -108,13 +113,20 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
   h_opt_RMSE = grid(RMSE_opt_idx,3);
   lambda_opt_RMSE = grid(RMSE_opt_idx,4);
 
+  if (! regression)
+    [RMSE_opt,RMSE_opt_idx] = max(grid(:,6));
+    p_opt_RMSE = grid(RMSE_opt_idx,2);
+    h_opt_RMSE = grid(RMSE_opt_idx,3);
+    lambda_opt_RMSE = grid(RMSE_opt_idx,4); 
+  endif 
+
   ### print grid
   if (verbose)
     printf("*** GRID ***\n");
     if (regression)
       fprintf('i \tp \t\th \t\tlambda \t\tRMSE(Train) \tRMSE(Val) \n');
     else 
-      fprintf('i \tp \t\th \t\tlambda \t\Accuracy(Train) \Accuracy(Val) \n');
+      fprintf('i \tp \t\th \t\tlambda \t\tAccuracy(Train) \tAccuracy(Val) \n');
     endif 
     for i = 1:gLen
       fprintf('%i\t%f\t%f\t%f\t%f\t%f \n',
@@ -123,7 +135,7 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
     if (regression)
       fprintf('>>>> found min RMSE=%f  with p=%i , h=%f , lambda=%f \n', RMSE_opt , p_opt_RMSE , h_opt_RMSE , lambda_opt_RMSE );
     else 
-      fprintf('>>>> found min Accuracy=%f  with p=%i , h=%f , lambda=%f \n', RMSE_opt , p_opt_RMSE , h_opt_RMSE , lambda_opt_RMSE );
+      fprintf('>>>> found max Accuracy=%f  with p=%i , h=%f , lambda=%f \n', RMSE_opt , p_opt_RMSE , h_opt_RMSE , lambda_opt_RMSE );
     endif 
   endif
   
