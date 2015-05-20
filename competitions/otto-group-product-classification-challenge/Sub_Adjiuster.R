@@ -30,7 +30,7 @@ getBasePath = function (type = "data") {
 ######
 
 
-adjust = function (sub.file = "sub_xgb.csv" ) { 
+adjust = function (sub.file = "sub_xgb_boost_4gen_eta_0005_nround_5000.csv" ) { 
   
   base.fn = substr(x = sub.file, start = 1, stop = (nchar(sub.file)-4) ) 
   
@@ -45,8 +45,9 @@ adjust = function (sub.file = "sub_xgb.csv" ) {
   
   for (j in 1:length(sub$id)) 
     for (i in 1:9) {
-      rec = sum(sub[j, 2:10]) - sub[j,(sub.max.idx[j]+1)]
-      Class_j_mod[j,i] = ifelse(i == sub.max.idx[j] , sub[j,(i+1)],   (1 - sub[j,(sub.max.idx[j]+1)]) * sub[j,(i+1)] / rec )
+      #rec = sum(sub[j, 2:10]) - sub[j,(sub.max.idx[j]+1)]
+      #Class_j_mod[j,i] = ifelse(i == sub.max.idx[j] , sub[j,(i+1)],   (1 - sub[j,(sub.max.idx[j]+1)]) * sub[j,(i+1)] / rec )
+      Class_j_mod[j,i] = ifelse(i == sub.max.idx[j] , sub[j,(i+1)] * 1.1 , sub[j,(i+1)] )
     }
   
   sub.2 = data.frame ( id = sub$id , 
@@ -62,7 +63,7 @@ adjust = function (sub.file = "sub_xgb.csv" ) {
   )
   
   ### storing on disk 
-  write.csv(sub,quote=FALSE, 
+  write.csv(sub.2,quote=FALSE, 
             file=paste(getBasePath("data"),base.fn,"_adjiusted.csv",sep='') ,
             row.names=FALSE)
   
@@ -71,4 +72,5 @@ adjust = function (sub.file = "sub_xgb.csv" ) {
   sub.2
 }
 
-sub = adjust  (sub.file = "sub_xgb.csv" )
+sub = adjust  (sub.file = "sub_xgb_boost_4gen_eta_0005_nround_5000.csv" )
+

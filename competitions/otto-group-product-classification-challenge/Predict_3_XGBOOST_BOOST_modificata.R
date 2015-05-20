@@ -8,6 +8,7 @@ library(fBasics)
 library(xgboost)
 library(methods)
 library(magrittr)
+library(doParallel)
 require(stringr)
 
 xgb.iter.eval <- function(booster, watchlist, iter, feval = NULL, prediction = FALSE) {
@@ -478,7 +479,7 @@ teind = (nrow(train)+1):nrow(x)
 param <- list("objective" = "multi:softprob",
               "eval_metric" = "mlogloss",
               "num_class" = 9,
-              "eta" = 0.0001,  ## suggested in ESLII
+              "eta" = 0.001,  ## suggested in ESLII
               "gamma" = 0.5,  
               "max_depth" = 25, 
               "subsample" = 0.5 , ## suggested in ESLII
