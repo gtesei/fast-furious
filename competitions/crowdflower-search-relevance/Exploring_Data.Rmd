@@ -127,4 +127,6 @@ set.seed(0)
 plot_word_counts(sample(c(train$product_title, test$product_title), 1000))
 # The top words in the product description (from a random sample for computational reasons)
 plot_word_counts(sample(c(train$product_description, test$product_description), 1000))
+
+ddply(train , .(median_relevance) , function(x) c(relevance_variance=mean(x$relevance_variance)) )
 ```
