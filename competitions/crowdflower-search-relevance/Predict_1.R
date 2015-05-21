@@ -8,8 +8,12 @@ require(methods)
 
 ######################################################
 ## TODO 
-## 1) lsa before tf-idf 
-## 2) trying other models e.g. SVC (cap. 17 APM)
+## 1) extending with qwk 
+##    http://rpackages.ianhowson.com/cran/xgboost/man/xgb.cv.html 
+##    http://rpackages.ianhowson.com/cran/xgboost/man/xgb.train.html
+##
+## 2) lsa before tf-idf 
+## 3) trying other models e.g. SVC (cap. 17 APM)
 ######################################################
 
 getBasePath = function (type = "data") {
@@ -47,25 +51,32 @@ TrigramTokenizer = function(x) {
   unlist(lapply(ngrams(words(x), 3), paste, collapse = " "), use.names = FALSE)
 }
 
-ScoreQuadraticWeightedKappa = function (rater.a, rater.b, min.rating, max.rating) {
+ScoreQuadraticWeightedKappa = function (preds, dtrain) {
+  
+  obs <- getinfo(dtrain, "label")
+  
+  min.rating=1
+  max.rating=4
+  
   if (missing(min.rating)) {
-    min.rating <- min(min(rater.a), min(rater.b))
+    min.rating <- min(min(obs), min(preds))
   }
   if (missing(max.rating)) {
-    max.rating <- max(max(rater.a), max(rater.b))
+    max.rating <- max(max(obs), max(preds))
   }
-  rater.a <- factor(rater.a, levels <- min.rating:max.rating)
-  rater.b <- factor(rater.b, levels <- min.rating:max.rating)
-  confusion.mat <- table(data.frame(rater.a, rater.b))
+  obs <- factor(obs, levels <- min.rating:max.rating)
+  preds <- factor(preds, levels <- min.rating:max.rating)
+  confusion.mat <- table(data.frame(obs, preds))
   confusion.mat <- confusion.mat/sum(confusion.mat)
-  histogram.a <- table(rater.a)/length(table(rater.a))
-  histogram.b <- table(rater.b)/length(table(rater.b))
+  histogram.a <- table(obs)/length(table(obs))
+  histogram.b <- table(preds)/length(table(preds))
   expected.mat <- histogram.a %*% t(histogram.b)
   expected.mat <- expected.mat/sum(expected.mat)
-  labels <- as.numeric(as.vector(names(table(rater.a))))
+  labels <- as.numeric(as.vector(names(table(obs))))
   weights <- outer(labels, labels, FUN <- function(x, y) (x - y)^2)
   kappa <- 1 - sum(weights * confusion.mat)/sum(weights * expected.mat)
-  kappa
+  
+  return(list(metric = "qwk", value = kappa))
 }
 
 myCleanFun <- function(htmlString) {
@@ -98,7 +109,7 @@ myCorpus = function(documents , allow_numbers = F , do_stemming = F) {
   cp <- tm_map( cp, content_transformer(removePunctuation))
   
   cp <- tm_map( cp, removeWords, stopwords('english')) 
-  cp <- tm_map( cp, removeWords, c("ul","dl","dt","li") ) ## residuals html tags 
+  cp <- tm_map( cp, removeWords, c("ul","dl","dt","li", "a") ) ## residuals html tags 
   
   cp <- tm_map( cp, stripWhitespace)
   
@@ -120,8 +131,8 @@ cat("***************** VARIANT SETTINGS *****************\n")
 settings = data.frame(
   process_step = c("parsing","text_processing","text_processing","text_processing","text_processing","text_processing","text_processing","modeling") ,
   variant =      c("allow_numbers","bigrams","trigrams","1gr_th","2gr_th","3gr_th","use_desc","lossfunc") , 
-  value =        c(F,T,T,2,2,2,F,"qwk")
-  ##value =        c(F,T,T,2,2,2,F,"logloss")
+  ##value =        c(F,T,T,2,3,3,F,"logloss") #0.46335
+  value =        c(F,T,T,2,3,3,F,"qwk") 
   )
 
 print(settings)
@@ -215,17 +226,20 @@ if ( as.logical(settings[settings$variant == "trigrams" , ]$value) ) {
                                                                tokenize = TrigramTokenizer)) 
   cat(">Time elapsed:",(proc.time() - ptm),"\n")
   
-  cat ("dtm.tfidf.2 dim: ",dim(dtm.tfidf.2),"\n")
-  print(dtm.tfidf.2)
+  cat ("dtm.tfidf.3 dim: ",dim(dtm.tfidf.3),"\n")
+  print(dtm.tfidf.3)
   
   for (i in seq(0.1,30,by = 4) ) {
     cat(".lowfreq > ",i,"\n")
-    print(summary(findFreqTerms(dtm.tfidf.2 , i) ))
+    print(summary(findFreqTerms(dtm.tfidf.3 , i) ))
   }
   
 } else {
   cat(">>> no 3-grams ...\n") 
 }
+
+## corpra are not necessary any more 
+rm(cp)
 
 ##### Convert matrices 
 cat ("converting dtm.tfidf.1 ... \n")
@@ -234,6 +248,7 @@ cat ("dtm.tfidf.1.df - dim: ",dim(dtm.tfidf.1.df),"\n")
 print(dtm.tfidf.1.df[1:5,1:5])
 
 dtm.tfidf.df = dtm.tfidf.1.df
+rm(dtm.tfidf.1.df)
 
 if ( as.logical(settings[settings$variant == "bigrams" , ]$value) ) { 
   cat ("converting dtm.tfidf.2 ... \n")
@@ -242,6 +257,7 @@ if ( as.logical(settings[settings$variant == "bigrams" , ]$value) ) {
   print(dtm.tfidf.2.df[1:5,1:5])
   
   dtm.tfidf.df = cbind(dtm.tfidf.df , dtm.tfidf.2.df)
+  rm(dtm.tfidf.2.df)
 }
 
 if ( as.logical(settings[settings$variant == "trigrams" , ]$value) ) { 
@@ -251,6 +267,7 @@ if ( as.logical(settings[settings$variant == "trigrams" , ]$value) ) {
   print(dtm.tfidf.3.df[1:5,1:5])
   
   dtm.tfidf.df = cbind(dtm.tfidf.df , dtm.tfidf.3.df)
+  rm(dtm.tfidf.3.df)
 }
 
 cat ("dtm.tfidf.df dim: ",dim(dtm.tfidf.df),"\n")
@@ -258,6 +275,8 @@ cat ("dtm.tfidf.df dim: ",dim(dtm.tfidf.df),"\n")
 #### preparing xboost 
 x = as.matrix(dtm.tfidf.df)
 x = matrix(as.numeric(x),nrow(x),ncol(x))
+rm(dtm.tfidf.df)
+
 trind = 1:nrow(train)
 teind = (nrow(train)+1):nrow(x)
 
@@ -265,17 +284,20 @@ y = train$median_relevance-1
 
 # Set necessary parameter
 param <- list("objective" = "multi:softmax",
-              "num_class" = 4,
-              "eta" = 0.05,  ## suggested in ESLII
-              "gamma" = 0.5,  
-              "max_depth" = 25, 
-              "subsample" = 0.5 , ## suggested in ESLII
-              "nthread" = 10, 
-              
-              "min_child_weight" = 1 , 
-              "colsample_bytree" = 0.5, 
-              "max_delta_step" = 1
-)
+                      "num_class" = 4,
+                      "eta" = 0.05,  ## suggested in ESLII
+                      "gamma" = 0.5,  
+                      "max_depth" = 25, 
+                      "subsample" = 0.5 , ## suggested in ESLII
+                      "nthread" = 10, 
+                      
+                      "min_child_weight" = 1 , 
+                      "colsample_bytree" = 0.5, 
+                      "max_delta_step" = 1)
+
+if ( ! as.character(settings[settings$variant == "lossfunc" , ]$value) == "qwk") {
+  param['eval_metric'] = 'mlogloss'
+} 
 
 cat(">>Params:\n")
 print(param)
@@ -285,27 +307,37 @@ cat(">> loss function:",as.character(settings[settings$variant == "lossfunc" , ]
 ### Cross-validation 
 cat(">>Cross Validation ... \n")
 inCV = T
-early.stop = cv.nround = 300
+early.stop = cv.nround = -1
 bst.cv = NULL
 
 while (inCV) {
-  
-  cat(">> cv.nround: ",cv.nround,"\n") 
+
   if (as.character(settings[settings$variant == "lossfunc" , ]$value) == "qwk") {
     cat(">>> maximizing ScoreQuadraticWeightedKappa ...\n")
+    
+    early.stop = cv.nround = 1000
+    cat(">> cv.nround: ",cv.nround,"\n") 
+    
     bst.cv = xgb.cv(param=param, data = x[trind,], label = y, 
                     nfold = 5, nrounds=cv.nround , 
                     feval = ScoreQuadraticWeightedKappa , maximize = T)
+    
+    print(bst.cv)
+    early.stop = which(bst.cv$test.qwk.mean == max(bst.cv$test.qwk.mean) )
+    cat(">> early.stop: ",early.stop," [test.qwk.mean:",bst.cv[early.stop,]$test.qwk.mean,"]\n") 
+    
   } else {
+    early.stop = cv.nround = 300
+    cat(">> cv.nround: ",cv.nround,"\n") 
     cat(">>> minimizing mlogloss ...\n")
     bst.cv = xgb.cv(param=param, data = x[trind,], label = y, 
-                    nfold = 5, nrounds=cv.nround , 
-                    feval = mlogloss , maximize = F)  
+                    nfold = 5, nrounds=cv.nround )  
+    
+    print(bst.cv)
+    early.stop = which(bst.cv$test.mlogloss.mean == min(bst.cv$test.mlogloss.mean) )
+    cat(">> early.stop: ",early.stop," [test.mlogloss.mean:",bst.cv[early.stop,]$test.mlogloss.mean,"]\n") 
   }
   
-  print(bst.cv)
-  early.stop = which(bst.cv$test.mlogloss.mean == min(bst.cv$test.mlogloss.mean) )
-  cat(">> early.stop: ",early.stop," [test.mlogloss.mean:",bst.cv[early.stop,]$test.mlogloss.mean,"]\n") 
   if (early.stop < cv.nround) {
     inCV = F
     cat(">> stopping [early.stop < cv.nround=",cv.nround,"] ... \n") 
@@ -313,6 +345,7 @@ while (inCV) {
     cat(">> redo-cv [early.stop == cv.nround=",cv.nround,"] with 2 * cv.nround ... \n") 
     cv.nround = cv.nround * 2 
   }
+  
   gc()
 }
 
@@ -327,8 +360,7 @@ if (as.character(settings[settings$variant == "lossfunc" , ]$value) == "qwk") {
 } else {
   cat(">>> minimizing mlogloss ...\n")
   bst = xgboost(param = param, data = x[trind,], label = y, 
-                nrounds = early.stop,
-                feval = mlogloss , maximize = F) 
+                nrounds = early.stop) 
 }
 
 cat(">> Making prediction ... \n")
