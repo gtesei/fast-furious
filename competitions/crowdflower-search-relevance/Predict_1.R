@@ -6,34 +6,22 @@ library(NLP)
 require(xgboost)
 require(methods)
 
+require(plyr)
+
+#library(caret)
+
 ######################################################
 ## TODO 
-## 1) extending with qwk 
-##    http://rpackages.ianhowson.com/cran/xgboost/man/xgb.cv.html 
-##    http://rpackages.ianhowson.com/cran/xgboost/man/xgb.train.html
 
+## 0) provare con maggori valori di 2-gram / 3-gram 
 
+## 1) estrarre le seguenti 2 features: 
+##          # di volte che i 2-gram della query occorrono nel product title  
+##          # di volte che i 2-gram della query occorrono nel product description 
+##          --> fatto(prtm,pdm). in xval ho 0.478 vs 0.473 e sulla leaderboard 0.587 vs 0.589 ... la lascio?
 
-## 2) come si ditribuisce il numero delle parole nella descrizione / titolo / query nelle varie categorie di rilevanza 1/2/3/4? 
-# > ddply(train , .(median_relevance)  , function(x) c(q.w = mean(x$q.w )  ))
-# median_relevance      q.w
-# 1                1 2.541344
-# 2                2 2.476965
-# 3                3 2.369603
-# 4                4 2.309512
-# > ddply(train , .(median_relevance)  , function(x) c(pd.w = mean(x$pd.w )  ))
-# median_relevance     pd.w
-# 1                1 46.17959
-# 2                2 42.55691
-# 3                3 42.76166
-# 4                4 41.70977
-# > ddply(train , .(median_relevance)  , function(x) c(pt.w = mean(x$pt.w )  ))
-# median_relevance     pt.w
-# 1                1 7.624031
-# 2                2 7.787263
-# 3                3 7.858952
-# 4                4 7.983957
-# > 
+## 2) usa dtm <- removeSparseTerms(dtm,0.99) - 
+##       come nel post https://www.kaggle.com/users/191033/luis-argerich/crowdflower-search-relevance/r-vector-space-model
 
 
 ## 3) median_relevance relevance_variance
@@ -86,15 +74,9 @@ ScoreQuadraticWeightedKappa = function (preds, dtrain) {
   
   obs <- getinfo(dtrain, "label")
   
-  min.rating=1
-  max.rating=4
+  min.rating = 1
+  max.rating = 4
   
-  if (missing(min.rating)) {
-    min.rating <- min(min(obs), min(preds))
-  }
-  if (missing(max.rating)) {
-    max.rating <- max(max(obs), max(preds))
-  }
   obs <- factor(obs, levels <- min.rating:max.rating)
   preds <- factor(preds, levels <- min.rating:max.rating)
   confusion.mat <- table(data.frame(obs, preds))
@@ -170,12 +152,13 @@ settings = data.frame(
   variant =      c("allow_numbers","bigrams","trigrams","1gr_th","2gr_th","3gr_th","use_desc","stem","lossfunc") , 
   ##value =        c(F,T,T,2,3,3,F,"logloss") #0.46335
   ##value =        c(F,T,T,2,3,3,F,"qwk") ##0.51
-  ##value =        c(F,T,T,2,4,4,F,T,"qwk") ##0.461 in xval 
-  value =        c(F,T,T,2,4,4,F,T,"qwk")  
+  ##value =        c(F,T,T,2,4,4,F,T,"qwk") ##0.58 
+  ##value =        c(F,T,T,2,5,5,F,T,"qwk")##0.589 
+  value =        c(F,T,T,2,6,6,F,T,"qwk") ##0.597
   )
 
 print(settings)
-fn = paste("sub2__",paste(settings$variant,settings$value,sep='',collapse = "_"),".csv",sep='')
+fn = paste("sub3__",paste(settings$variant,settings$value,sep='',collapse = "_"),".csv",sep='')
 cat(">> saving prediction on",fn,"...\n")
 
 #### Data 
@@ -186,10 +169,10 @@ test  <- read_csv(paste(getBasePath("data") , "test.csv" , sep=''))
 nouns <-  read.table(paste(getBasePath("data") , "nouns91K.txt" , sep=''), header=F , sep="" , colClasses = 'character') 
 nouns = as.character(nouns[,1])
 
-# adjectives <-  read.table(paste(getBasePath("data") , "adjectives28K.txt" , sep=''), header=F , sep="" , colClasses = 'character') 
-# adjectives = as.character(adjectives[,1])
+adjectives <-  read.table(paste(getBasePath("data") , "adjectives28K.txt" , sep=''), header=F , sep="" , colClasses = 'character') 
+adjectives = as.character(adjectives[,1])
 
-## Compute number of words per class 
+## Number of words in query / product title / product description 
 cat(">> computing number of words in query / product title / product description  ... \n")
 
 qcorp = myCorpus(c(train$query,test$query) , allow_numbers = T , do_stemming =  F )
@@ -205,13 +188,49 @@ rm(ptcorp)
 rm(pdcorp)
 
 ## Spell matching 
-cat(">> spell matching query/description ... \n")
+qcorp = myCorpus(c(train$query,test$query) , allow_numbers = F , do_stemming =  F )
+ptcorp = myCorpus(c(train$product_title,test$product_title) , allow_numbers = F , do_stemming =  F )
+pdcorp = myCorpus(c(train$product_description,test$product_description) , allow_numbers = F , do_stemming =  F )
 
-qcorp = myCorpus(c(train$query,test$query) , allow_numbers = T , do_stemming =  F )
-ptcorp = myCorpus(c(train$product_title,test$product_title) , allow_numbers = T , do_stemming =  F )
-
-sm = rep(NA,(nrow(train)+nrow(test)))
+cat(">> spell matching query/title as a substantive .. matching query/title  .. query/description .. ufos ..")
+ufos.q = ufos.pt = ufos.same = amd = am = sm = prtm = pdm = rep(NA,(nrow(train)+nrow(test)))
 for (i in 1:length(sm)) {
+  
+  ## ufos
+  l = which(   (! unlist(strsplit(qcorp[[i]]$content, " "))   %in% adjectives) && (! unlist(strsplit(qcorp[[i]]$content, " "))   %in% nouns)    )  
+  ufos.q[i] = length(unlist(strsplit(qcorp[[i]]$content, " "))[l])
+  
+  ll = which(   (! unlist(strsplit(ptcorp[[i]]$content, " "))   %in% adjectives) && (! unlist(strsplit(ptcorp[[i]]$content, " "))   %in% nouns)    )  
+  ufos.pt[i] = length(unlist(strsplit(ptcorp[[i]]$content, " "))[ll])
+  
+  if (ufos.q[i] == 0) ufos.same[i] = F 
+  else ufos.same[i] = (unlist(strsplit(qcorp[[i]]$content, " "))[l] %in% unlist(strsplit(ptcorp[[i]]$content, " "))[ll])
+    
+  ## amd
+  l = which(unlist(strsplit(qcorp[[i]]$content, " "))   %in% adjectives)  
+  query.adj = unlist(strsplit(qcorp[[i]]$content, " "))[l]
+  if (length(query.adj) == 0)  {
+    amd[i] = F
+  } else {
+    l = which(unlist(strsplit(pdcorp[[i]]$content, " "))   %in% query.adj)  
+    pt.adj = unlist(strsplit(pdcorp[[i]]$content, " "))[l]   
+    
+    amd[i] = (length(pt.adj)>0)
+  }
+  
+  ## am 
+  l = which(unlist(strsplit(qcorp[[i]]$content, " "))   %in% adjectives)  
+  query.adj = unlist(strsplit(qcorp[[i]]$content, " "))[l]
+  if (length(query.adj) == 0)  {
+    am[i] = F
+  } else {
+    l = which(unlist(strsplit(ptcorp[[i]]$content, " "))   %in% query.adj)  
+    pt.adj = unlist(strsplit(ptcorp[[i]]$content, " "))[l]   
+    
+    am[i] = (length(pt.adj)>0)
+  }
+  
+  ## sm 
   l = which(unlist(strsplit(qcorp[[i]]$content, " "))   %in% nouns)  
   if (length(l) > 1) l = max(l) 
   query.sost = unlist(strsplit(qcorp[[i]]$content, " "))[l]
@@ -233,30 +252,56 @@ for (i in 1:length(sm)) {
   
   sm[i] = (length(pt.sost)>0)
   
-  #   cat(">>>>>>>> i:",i,"\n")
-  #   cat(">> query:",qcorp[[i]]$content,"\n")
-  #   cat(">> query sostantive:",query.sost,"\n")
-  #   
-  #   cat(">> pt:",ptcorp[[i]]$content,"\n")
-  #   cat(">> pt sostantive:",pt.sost,"\n")
-  #   
-  #   cat(">> match:",(length(pt.sost)>0),"\n")
+  ## prtm pdm 
+  q = unlist(strsplit(qcorp[[i]]$content, " "))
   
-  if (i %% 1000 == 0) cat(i,"/",length(sm),"..\n")
+  l = which(unlist(strsplit(ptcorp[[i]]$content, " "))   %in% q)  
+  #prtm[i] = (length(l)>0) 
+  prtm[i] = length(l)
+  
+  l = which(unlist(strsplit(pdcorp[[i]]$content, " "))   %in% q)  
+  #pdm[i] = (length(l)>0)
+  pdm[i] = length(l)
+  
+  if (i %% 1000 == 0) cat(" [",i,"/",length(sm),"].. ")
 } 
 
-if ( sum(is.na(sm)) ) stop("something wrong with spell matching")
+if ( sum(is.na(ufos.q)) ) stop("something wrong with ufos.q")
+if ( sum(is.na(ufos.pt)) ) stop("something wrong with ufos.pt")
+if ( sum(is.na(ufos.same)) ) stop("something wrong with ufos.same")
+if ( sum(is.na(sm)) ) stop("something wrong with sm")
+if ( sum(is.na(am)) ) stop("something wrong with am")
+if ( sum(is.na(amd)) ) stop("something wrong with amd")
+if ( sum(is.na(prtm)) ) stop("something wrong with prtm")
+if ( sum(is.na(pdm)) ) stop("something wrong with pdm")
+
+train$ufos.q = ufos.q[1:nrow(train)]
+train$ufos.pt = ufos.pt[1:nrow(train)]
+train$ufos.same = ufos.same[1:nrow(train)]
+train$sm = sm[1:nrow(train)]
+train$am = am[1:nrow(train)]
+train$amd = amd[1:nrow(train)]
+train$prtm = prtm[1:nrow(train)]
+train$pdm = pdm[1:nrow(train)]
+
+cat("\n")
+print(ddply(train, .(median_relevance) , function(x) c( ufos.q.mean=mean(x$ufos.q) , ufos.pt.mean=mean(x$ufos.pt) , ufos.same.mean=mean(x$ufos.same) , sm.mean = mean(x$sm), am.mean = mean(x$am) , amd.mean = mean(x$amd) , prtm.mean = mean(x$prtm) , pdm.mean = mean(x$pdm) )  ))
+print(ddply(train, .(median_relevance) , function(x) c( ufos.q.sd = sd(x$ufos.q), ufos.pt.sd = sd(x$ufos.pt), ufos.same.sd = sd(x$ufos.same), sm.sd = sd(x$sm), am.sd = sd(x$am) , amd.sd = sd(x$amd) , prtm.sd = sd(x$prtm) , pdm.sd = sd(x$pdm) )  ))
 
 rm(qcorp)
 rm(ptcorp)
+rm(pdcorp)
+
+rm(nouns)
+rm(adjectives)
 
 ## Make corpora  
 if( ! as.logical(settings[settings$variant == "use_desc" , ]$value) ) {
-  cat(">> discarding product description on making corpora ... \n")
+  cat("\n>> discarding product description on making corpora ... \n")
   train$merge = apply(X = train , 1 , function(x) paste(x[2] , x[3]  , sep= ' ') )
   test$merge = apply(X = test , 1 , function(x) paste(x[2] , x[3]  , sep= ' ') )
 } else {
-  cat(">> using product description on making corpora ... \n")
+  cat("\n>> using product description on making corpora ... \n")
   train$merge = apply(X = train , 1 , function(x) paste(x[2] , x[3] , x[4] , sep= ' ') )
   test$merge = apply(X = test , 1 , function(x) paste(x[2] , x[3] , x[4] , sep= ' ') )
 }
@@ -354,6 +399,8 @@ cat ("dtm.tfidf.1.df - dim: ",dim(dtm.tfidf.1.df),"\n")
 print(dtm.tfidf.1.df[1:5,1:5])
 
 dtm.tfidf.df = dtm.tfidf.1.df
+
+rm(dtm.tfidf.1)
 rm(dtm.tfidf.1.df)
 
 if ( as.logical(settings[settings$variant == "bigrams" , ]$value) ) { 
@@ -363,6 +410,8 @@ if ( as.logical(settings[settings$variant == "bigrams" , ]$value) ) {
   print(dtm.tfidf.2.df[1:5,1:5])
   
   dtm.tfidf.df = cbind(dtm.tfidf.df , dtm.tfidf.2.df)
+  
+  rm(dtm.tfidf.2)
   rm(dtm.tfidf.2.df)
 }
 
@@ -373,6 +422,8 @@ if ( as.logical(settings[settings$variant == "trigrams" , ]$value) ) {
   print(dtm.tfidf.3.df[1:5,1:5])
   
   dtm.tfidf.df = cbind(dtm.tfidf.df , dtm.tfidf.3.df)
+  
+  rm(dtm.tfidf.3)
   rm(dtm.tfidf.3.df)
 }
 
@@ -385,12 +436,31 @@ dtm.tfidf.df = cbind(dtm.tfidf.df , qlen)
 dtm.tfidf.df = cbind(dtm.tfidf.df , ptlen)
 dtm.tfidf.df = cbind(dtm.tfidf.df , pdlen)
 
+dtm.tfidf.df = cbind(dtm.tfidf.df , ufos.q)
+dtm.tfidf.df = cbind(dtm.tfidf.df , ufos.pt)
+dtm.tfidf.df = cbind(dtm.tfidf.df , ufos.same)
+
 dtm.tfidf.df = cbind(dtm.tfidf.df , sm)
+dtm.tfidf.df = cbind(dtm.tfidf.df , am)
+dtm.tfidf.df = cbind(dtm.tfidf.df , amd)
+
+dtm.tfidf.df = cbind(dtm.tfidf.df , prtm)
+dtm.tfidf.df = cbind(dtm.tfidf.df , pdm)
 
 rm(qlen)
 rm(ptlen)
 rm(pdlen)
+
+rm(ufos.q)
+rm(ufos.pt)
+rm(ufos.same)
+
 rm(sm)
+rm(am)
+rm(amd)
+
+rm(prtm)
+rm(pdm)
 
 cat (">>> dtm.tfidf.df dim: ",dim(dtm.tfidf.df),"\n")
 
@@ -404,7 +474,24 @@ teind = (nrow(train)+1):nrow(x)
 
 y = train$median_relevance-1 
 
-# Set necessary parameter
+rm(train)
+rm(test)
+
+### some data transformation  
+# cat(">>> Applying some transformation to data ... \n")
+# ptm <- proc.time()
+# trans <- preProcess(x, method = c("center", "scale") )
+# # trans <- preProcess(x, method = c("BoxCox","center", "scale","pca") )
+# # trans <- preProcess(x, method = c("center", "scale","pca") )
+# # trans <- preProcess(x, method = c("BoxCox","center", "scale","ica") )
+# # trans <- preProcess(x, method = c("center", "scale","ica") )
+# # trans <- preProcess(x, method = c("center", "scale", "spatialSign") )
+# print(trans)
+# x = predict(trans,x)
+# cat(">Time elapsed:",(proc.time() - ptm),"\n")
+# rm(trans)
+
+##### xgboost --> set necessary parameter
 param <- list("objective" = "multi:softmax",
                       "num_class" = 4,
                       "eta" = 0.05,  ## suggested in ESLII
@@ -412,7 +499,6 @@ param <- list("objective" = "multi:softmax",
                       "max_depth" = 25, 
                       "subsample" = 0.5 , ## suggested in ESLII
                       "nthread" = 10, 
-                      
                       "min_child_weight" = 1 , 
                       "colsample_bytree" = 0.5, 
                       "max_delta_step" = 1)
@@ -480,9 +566,6 @@ bst = NULL
 
 if (as.character(settings[settings$variant == "lossfunc" , ]$value) == "qwk") {
   cat(">>> maximizing ScoreQuadraticWeightedKappa ...\n")
-#   bst = xgboost(param = param, data = x[trind,], label = y, 
-#                 nrounds = early.stop,
-#                 feval = ScoreQuadraticWeightedKappa , maximize = T) 
 
   dtrain <- xgb.DMatrix(x[trind,], label = y)
   watchlist <- list(train = dtrain)
@@ -499,12 +582,12 @@ cat(">> Making prediction ... \n")
 pred = predict(bst,x[teind,])
 pred = pred + 1 
 
-print(">> prediction << \n")
+print(">> prediction <<")
 print(table(pred))
 
-print(">> train set labels << \n")
+print(">> train set labels <<")
 print(table(y+1))
 
-fn = paste("sub__",paste(settings$variant,settings$value,sep='',collapse = "_"),"_xval",xval.perf,".csv",sep='')
+fn = paste("sub5__",paste(settings$variant,settings$value,sep='',collapse = "_"),"_xval",xval.perf,".csv",sep='')
 cat(">> writing prediction on disk [",fn,"]... \n")
 write_csv(data.frame(id = sampleSubmission$id , prediction = pred) , paste(getBasePath("data") , fn , sep=''))

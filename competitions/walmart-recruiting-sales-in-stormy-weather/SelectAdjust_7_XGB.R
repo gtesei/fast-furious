@@ -134,7 +134,7 @@ train = getTrain()
 test = getTest()
 
 sub = as.data.frame( fread(paste(getBasePath("data") , 
-                                    "sub_adjust_3.csv" , sep='')))
+                                    "sub_fix_37_5 2.csv" , sep='')))
 
 sampleSubmission = as.data.frame( fread(paste(getBasePath("data") , 
                                               "sampleSubmission.csv" , sep='')))
@@ -158,15 +158,13 @@ verbose = T
 grid = grid[!grid$all0s,]
 grid = grid[order(grid$best.perf , decreasing = T),]
 
-num.adj = 30 
 grid$choice = 'base'
-grid = grid[1:num.adj,]
 
-for (i in 1:num.adj) {
+for (i in 1:nrow(grid)) {
   st = grid[i,]$store
   it = grid[i,]$item
   stat = keys[keys$store_nbr == st,]$station_nbr 
-  cat ("\n >>>> Adjiusting st=",st," -  it=",it," ... \n")
+  cat ("\n >>>> [",i,"/",nrow(grid),"] Adjiusting st=",st," -  it=",it," ... \n")
   
   ########
   pred = NULL
@@ -301,7 +299,7 @@ for (i in 1:num.adj) {
     cat("***************** PERFORMANCES [init=",grid[i,]$best.perf,"]***************** \n")
     cat("perf.xg:",perf.xg,"\n")
 
-    if (perf.xg < (grid[i,]$best.perf * 1.4) ) {
+    if (perf.xg < (grid[i,]$best.perf) ) {
       cat(">>>>>>>>>> use XGB for submissions ... \n ")
       update.sub = T
       grid[i,]$choice = 'xgb'

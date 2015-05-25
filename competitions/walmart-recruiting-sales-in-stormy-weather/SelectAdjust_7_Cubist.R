@@ -156,7 +156,7 @@ verbose = T
 grid = grid[!grid$all0s,]
 grid = grid[order(grid$best.perf , decreasing = T),]
 
-num.adj = 15 
+num.adj = 50
 grid$choice = 'base'
 grid = grid[1:num.adj,]
 
@@ -239,6 +239,7 @@ for (i in 1:num.adj) {
    if (st == 37 & it ==5) {
      cat(">> removing outlier for st = 37 and it = 5")
      traindata.y = ifelse(traindata.y > 1000, 200, traindata.y)
+     next
    } 
 
     ts=createTimeSlices(traindata.y, 
@@ -264,7 +265,7 @@ for (i in 1:num.adj) {
 
     pred.5 = as.numeric( predict(model.5 , testdata )  )
 
-    if ( perf.5 < (grid[i,]$best.perf*1.4) ) {
+    if ( perf.5 < (grid[i,]$best.perf*1.1) ) {
       cat(">> in this case Cubist model performs better, so let's change submissions ... \n ")
       update.sub = T
       pred = pred.5

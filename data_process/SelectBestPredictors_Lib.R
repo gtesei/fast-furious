@@ -248,7 +248,7 @@ getBestPredictors = function(train , response , test ,
                                              verbose = verbose)
   predictors.reg.linear = predictors.reg.linear[order(predictors.reg.linear$pValue,decreasing = F),]
   
-  l = getPredictorsMinPvalue(predPvalues = predictors.reg.linear , data = train , th = NAthreshold , verbose = verbose)
+  l = getPredictorsMinPvalue(predPvalues = predictors.reg.linear , data = traindata , th = 0.05 , verbose = T)
   var.name = l[[1]]
   var.index = l[[2]]
   
