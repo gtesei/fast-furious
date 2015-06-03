@@ -494,7 +494,7 @@ rm(test)
 ##### xgboost --> set necessary parameter
 param <- list("objective" = "multi:softmax",
                       "num_class" = 4,
-                      "eta" = 0.05,  ## suggested in ESLII
+                      "eta" = 0.05,  
                       "gamma" = 0.7,  
                       "max_depth" = 25, 
                       "subsample" = 0.5 , ## suggested in ESLII
@@ -519,7 +519,7 @@ early.stop = cv.nround = xval.perf = -1
 bst.cv = NULL
 
 if (as.character(settings[settings$variant == "lossfunc" , ]$value) == "qwk") { 
-  early.stop = cv.nround = 3000
+  early.stop = cv.nround = 3000 
 } else {
   early.stop = cv.nround = 300
 }

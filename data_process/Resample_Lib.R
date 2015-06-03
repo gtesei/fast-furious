@@ -252,11 +252,11 @@ trainAndPredict.kfold.class = function(k,traindata,
   } ### end of k-fold 
   
   #### results 
-  for ( mo in 1:length(RegModels))  {
+  for ( mo in 1:length(ClassModels))  {
     .grid[1,(1+mo)] = mean(perf.kfold[,mo])
   }
-  .grid$best.perf = max(.grid[1,(1+(1:length(RegModels)))])
-  model.idx = which(.grid[1,(1+(1:length(RegModels)))] == .grid$best.perf)
+  .grid$best.perf = max(.grid[1,(1+(1:length(ClassModels)))])
+  model.idx = which(.grid[1,(1+(1:length(ClassModels)))] == .grid$best.perf)
   .grid$best.model = ClassModels[model.idx]
   
   list(ClassModels[model.idx],.grid,perf.kfold)
