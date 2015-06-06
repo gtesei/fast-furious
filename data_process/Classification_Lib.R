@@ -188,3 +188,39 @@ measure.class = function(
   
   roc.xval.min
 }
+
+get_auc = function(
+  probs , 
+  y,
+  fact.sign = 'preict',
+  verbose=F, 
+  doPlot=F) {
+  
+  ## accuracy 
+  acc = sum(y == (pred.train > 0.5)) / length(y)
+  
+  ## ROC 
+  rocCurve <- pROC::roc(response = y, predictor = probs, levels = levels(y) )
+  roc = as.numeric( pROC::auc(rocCurve) )
+  
+  roc.2 = roc.area(as.numeric(y == fact.sign) , probs )$A
+  
+  roc.min = min(roc.2,roc)
+  
+  ## logging 
+  if (verbose) cat("** acc =",acc, "\n")
+  if (verbose) cat("** roc =",roc,"  \n")
+  if (verbose) cat("** roc.2 =",roc.2,"  \n")
+  if (verbose) cat("** roc.min =",roc.min, " \n")
+  
+  ## poltting 
+  if (doPlot) {
+    plot(rocCurve, legacy.axes = TRUE , main = paste("AUC"  
+                                                     , " - acc=",acc
+                                                     , " - roc=" ,roc
+                                                     , " - roc.2=",roc.2
+                                                     , collapse ="" )   )
+  }
+  
+  roc.min
+}
