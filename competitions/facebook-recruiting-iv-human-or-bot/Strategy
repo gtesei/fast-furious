@@ -1,0 +1,226 @@
+###### Strategy 
+
+### General 
+
+~70 bidder_id that never made a bid in the test set are considered human 
+
+~2311 auctions che non occorrono nel trainset ma occorrono nel testset. A queste 2311 auction partecipano 714 bidders, di cui 
+713 partecipano anche ad auctions che occorrono nel train set. L'unico che resta fuori e' 'f7b6e7e8d3ac5b17ee7673699899e2e0dwvpa' 
+che consideriamo umano  ;-) 
+
+tutti i restanti bidder del test set fanno almeno una bid in un'auction che occorre nel train set ..
+
+### Feture Engineering  
+
+##auctions 
+dei 1984 bidders nel training set in media partecipano a 63 diverse auctions (sd = 147)
+
+  outcome auction.mean auction.sd
+1       0     58.07071   142.9335
+2       1    145.03883   195.1032
+
+>>>> per cui il numero di auction a cui partecipa un bidder e' una feature 
+
+ha senso tracciare anche a quale auction partecipa un bidder ? 
+Forse ... 
+(+) di 15051 auctions in media ci sono 32 robot (sd 675)  
+(+) molto facile da estrarre 
+(+) ci sono 509 auction con soli robot e 6350 con soli human (= tutti i bidders di quella auction nel train set sono human)
+(-) 11688 colonne in piu' di features (delle 15051 auctions solo 11688 occorrono nel train set) 
+
+>>>> si, tracciamo anche se un certo bidder partecipa o meno ad un'auction che occorre nel train set 
+
+##merchandise 
+Dei 1984 bidders nel training set in media usano 1.000504 diversi merchandise (sd=0.02245066) 
+Per la precisione solo e90e4701234b13b7a233a86967436806wqqw4 usa 2 merchandise (ed e' pure human!!).
+
+>>>> per cui encodiamo in 10 variabili (es. merchandise_books_and_music) se il bidder usa o meno un certo merchandise. 
+
+Nota che la  coppia <auction_lev,merchandise_lev> ci dice con alta probabilita' se il bidder ha usato merchandise_lev 
+nell'auction auction_lev. 
+
+##device 
+on average, robots use 163 different devices (sd 222) and humans use 73 different devices (sd 184)
+
+>>> so the number of different used by a bidder is a feature 
+
+>>> poi tracciamo anche il tipo di devices che un bidder ha utilizzato 
+
+##country
+
+on average robots uses  26.47573 different countries [sd= 31.15862 ] 
+on average humans uses  12.67677 different countries [sd= 22.87037 ] 
+
+>>> so the number of countrues used by a bidder is a feature 
+
+>>> poi tracciamo anche il tipo di country che un bidder ha utilizzato 
+
+##ip
+
+on average robots uses  2387.796 different ips [sd= 11269.67 ] 
+on average humans uses  581.2562 different ips [sd= 4140.678 ] 
+
+>>> so the number of ips used by a bidder is a feature 
+
+>>> poi tracciamo anche il tipo di ip che un bidder ha utilizzato 
+
+**NB: attenzione ci sono ~450 bidders di test che usano ip che mai sono occorsi in train. 
+      Il che implica che hanno una sfilza di 0 (ip_lev1,..) 
+
+##url
+
+on average robots uses  544.5825 different urls [sd= 1163.91 ]
+on average humans uses  335.1871 different urls [sd= 2735.527 ] 
+
+>>> so the number of urls used by a bidder is a feature 
+
+>>> poi tracciamo anche il tipo di url che un bidder ha utilizzato 
+
+**NB: attenzione ci sono ~900 bidders di test che usano url che mai sono occorsi in train. 
+      Il che implica che hanno una sfilza di 0 (url_lev1,..) 
+
+##bids 
+on average robots uses  4004.039 different bids [sd= 16370.1 ] 
+on average humans uses  1413.508 different bids [sd= 14597.54 ]
+
+>>> aggiungi rumore!!! 
+
+### Models 
+
+-- utilizzando tutte le features a fronte di un xval(xgboost) di ~ 1 ho ottenuto in leaderboard ~ 0.73 
+
+-- utilizzando solo le frequenze a fronte di un xval(xgboost) di ~ 0.80 ho ottenuto in leaderboard ~ 0.81
+   con lo stesso training set NNetClass e KNNClass performano in xval ~ 0.76
+
+  train.num LogisticReg       LDA PLSDA   PMClass       NSC NNetClass  SVMClass
+1      1984    0.674857 0.6994941     0 0.7126497 0.7184209 0.7696818 0.5349224
+   KNNClass ClassTrees BoostedTreesClass BaggingTreesClass best.perf best.model
+1 0.7675293  0.7142345         0.6248727          0.701605 0.7696818  NNetClass
+
+
+-- utilizzando solo le frequenze+merchandise a fronte di un xval(xgboost) di ~ 0.865283 (scal ~ 0.815613) ho ottenuto in leaderboard ~ ??
+   tutte le merchandise in test set occorrono anche nel train set 
+
+-- utilizzando solo le frequenze+merchandise+country a fronte di un xval(xgboost) di ~ 0.88 (scal ~ 0.87) ho ottenuto in leaderboard ~ 0.88
+   country in test set not in the train set: 1 ( 0.5076142 %)
+
+--- device in test set not in the train set: 1622 ( 24.67295 %)
+
+- puoi implemetare la versione standard (std), i.e. fai l'encoding della variabile categirica
+   - xval 0.89 - leaderboard 0.88753 (improving my best score by 0.00612) --> before discarded and then saved !!! 
+
+- oppure (list) implementare solo le white list (lista di device utilizzati solo da human) / black list (lista di device utiizzati solo da robots) 
+   - xval 0.93 - leaderboard 0.82 --> discard from baseline 
+
+--- ip in test set not in the train set: 1273040 ( 82.38589 %) --> discard from baseline 
+    -- anche utilizzando 2 liste: black_list(all persons who used are bots) and white_list(all human) in xval ~0.99 and on LB  ~0.77
+
+--- url in test set not in the train set: 1122478 ( 95.56778 %) --> discard from baseline  
+
+--- timing 
+per ogni bidder tracciamo 
+(A)
+ - il numero di volte che e' stato il bidder piu' veloce in un'auction (% sul totale delle auction a cui ha partecipato)
+ - il numero di volte che e' stato tra gli ultimi 6 bidders (% sul totale delle auction a cui ha partecipato)
+ - xval 0.878497 - LB ??
+
+(B)
+ - il numero di volte che e' stato il bidder piu' veloce in un'auction 
+ - il numero di volte che e' stato tra gli ultimi 6 bidders 
+ - xval 0.879826 - LB 0.87571   
+
+(C)
+ - il numero di volte che e' stato il bidder piu' veloce in un'auction 
+ - il numero di volte che e' stato tra gli ultimi 6 bidders 
+ - il numero di volte che e' stato il bidder piu' lento in un'auction 
+ - xval 0.882009 - LB  ??
+
+(D)
+ - il numero di volte che e' stato il bidder piu' veloce in un'auction (% sul totale delle auction a cui ha partecipato)
+ - il numero di volte che e' stato tra gli ultimi 6 bidders (% sul totale delle auction a cui ha partecipato)
+ - il numero di volte che e' stato il bidder piu' lento in un'auction (% sul totale delle auction a cui ha partecipato)
+ - xval 0.882483 - LB  ?? 
+
+(E)
+ - il numero di volte che e' stato il bidder piu' veloce in un'auction e il min.time.seq == 0
+ - il numero di volte che e' stato l'ultimo bidder 
+ - il numero di volte che e' stato il bidder piu' lento in un'auction 
+ - xval 0.89 - LB  0.87 
+
+(F)
+ - il numero di volte che e' stato il bidder piu' veloce in un'auction e il min.time.seq == 0
+ - il numero di volte che e' stato l'ultimo bidder e il min.time.seq == 0
+ - il numero di volte che e' stato il bidder piu' lento in un'auction 
+ - xval 0.887047 - LB  ?? 
+
+(G)
+ - numero di volte che fa la sequenza piu' lunga di bid consecutive 
+   - (sequenze > 2)  xval 0.890418 0.878865  0.891182 0.889923 0.883156 -- mean = 0.8867088 LB ?? 
+   - (sequenze > 3)  xval 0.88909 0.898215 0.884867 0.885733 0.887013 -- mean 0.8889836 = LB ??      
+   - (sequenze > 4)  xval 0.892427 0.881366 0.892522 0.893707 0.890908 -- mean = 0.890186 LB ?    <<<<<----- (sub_xgboost_seq_mag4__xval0.895473.csv.gz)
+   - (sequenze > 5)  xval 0.896054 0.88355 0.88513 0.887464 0.885281  -- mean = 0.8874958  LB ??
+
+(H1)
+ - numero di volte che fa la sequenza piu' lunga di bid consecutive (sequenze > 4)  e 
+ - il numero di volte che e' il piu' veloce a rispondere nelle auction in cui la sequenza piu' lunga e' maggiore di 4 
+    0.886111 0.892697 
+
+(H2)
+ - numero di volte che fa la sequenza piu' lunga di bid consecutive (sequenze > 4)  e 
+ - il numero di volte che e' il piu' veloce a rispondere nelle auction in cui min.time.seq == 0
+    0.890259 0.897439
+
+(I)
+ - numero di volte che fa la sequenza piu' lunga di bid consecutive (sequenze > 4)  e 
+ - il numero di volte che e' il piu' lento a rispondere nelle auction in cui bid.num > 5
+    xval 0.887836  0.900911 0.889054 0.889576 0.885166 - mean = 0.8905086
+
+(L)
+ - numero di volte che fa la sequenza piu' lunga di bid consecutive (sequenze > 4)  e 
+ - il numero di volte che e' l'ultimo a fare una bid 
+   (*)       0.898092  
+   (bids>3)  0.905044 0.893411 0.887382 
+   (bids>5)  0.894176 
+
+(L)
+ - numero di volte che fa la sequenza piu' lunga di bid consecutive (sequenze > 4)  e 
+ - il numero di volte che e' l'ultimo a fare una bid 
+   (*)       0.898092  
+   (bids>3)  0.905044 0.893411 0.887382 
+   (bids>5)  0.894176 
+
+- per ogni bidder
+    - numero di volte che fa una bid primo 
+
+#### prossimi step 
+- bids x auction 
+- seq_min , seq_max , seq_mean 
+
+- ottmizzare AUC (lavorando sul vettore di probabilita' ) 
+- trovare se ci sono dei bidder che fanno bid a intervalli costanti 
+    
+
+model winner:  ****** BoostedTreesClass ******
+
+*****
+  LogisticReg LDA     PLSDA   PMClass       NSC  SVMClass  KNNClass ClassTrees
+1   0.6910828   0 0.8811353 0.8886755 0.9031238 0.7088095 0.8976442  0.8978550
+2   0.4307046   0 0.7733378 0.7677832 0.8127693 0.6448424 0.7342866  0.8071724
+3   0.5771377   0 0.6672299 0.8577829 0.8627496 0.8007168 0.8309524  0.8410906
+  BoostedTreesClass BaggingTreesClass
+1         0.8645326         0.7686868
+2         0.8214075         0.6613585
+3         0.8993856         0.7699949
+
+*****
+  train.num LogisticReg LDA    PLSDA   PMClass       NSC  SVMClass  KNNClass
+1      1984   0.5663084   0 0.773901 0.8380806 0.8595476 0.7181229 0.8209611
+  ClassTrees BoostedTreesClass BaggingTreesClass best.perf        best.model
+1   0.848706         0.8617752         0.7333467 0.8617752 BoostedTreesClass
+
+selected: BoostedTreesClass , SVMClass , xgBoost , 
+
+
+
+
+

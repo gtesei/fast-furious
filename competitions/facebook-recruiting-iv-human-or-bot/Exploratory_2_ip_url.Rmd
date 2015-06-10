@@ -1,0 +1,155 @@
+---
+title: "Exploratory_2_ip_url"
+author: "Gino Tesei"
+date: "May 25, 2015"
+output: html_document
+---
+
+
+```{r, echo=FALSE , results="hide" , include=FALSE}
+library(caret)
+library(Hmisc)
+library(data.table)
+library(kernlab)
+library(subselect)
+library(plyr)
+library(binhf)
+library(fBasics)
+library(lattice)
+
+getBasePath = function (type = "data") {
+  ret = ""
+  base.path1 = ""
+  base.path2 = ""
+  
+  if(type == "data") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/facebook-recruiting-iv-human-or-bot"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/facebook-recruiting-iv-human-or-bot/"
+  } else if (type == "code") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/competitions/facebook-recruiting-iv-human-or-bot"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/competitions/facebook-recruiting-iv-human-or-bot/"
+  } else if (type == "process") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/data_process"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/data_process/"
+  } else {
+    stop("unrecognized type.")
+  }
+  
+  if (file.exists(base.path1))  {
+    ret = paste0(base.path1,"/")
+  } else {
+    ret = base.path2
+  }
+  
+  ret
+}
+sampleSubmission = as.data.frame( fread(paste(getBasePath("data") , 
+                                              "sampleSubmission.csv" , sep=''))) ## outcome = 0 human 
+
+train = as.data.frame( fread(paste(getBasePath("data") , 
+                                   "train.csv" , sep=''))) 
+
+test = as.data.frame( fread(paste(getBasePath("data") , 
+                                  "test.csv" , sep='')))
+
+bids = as.data.frame( fread(paste(getBasePath("data") , 
+                                  "bids.csv" , sep='')))
+
+train.full = merge(x = bids , y = train , by="bidder_id"  )
+test.full = merge(x = bids , y = test , by="bidder_id"  )
+
+train.full$merchandise = factor(train.full$merchandise)
+train.full$device = factor(train.full$device)
+train.full$ip = factor(train.full$ip)
+```
+
+# Bids & bidders
+
+Trainset bidders/bids are strictly disjoint with testset bidders/bids.
+Bidders are unique inside train/test set. 
+
+```{r}
+
+sum(train$bidder_id %in% test$bidder_id)
+sum(test$bidder_id %in% train$bidder_id)
+
+sum(train.full$bid_id %in% test.full$bid_id)
+sum(test.full$bid_id %in% train.full$bid_id)
+
+length(unique(train$bidder_id)) == nrow(train)
+length(unique(test$bidder_id)) == nrow(test)
+
+```
+
+# Address / Payment account 
+
+Trainset addresses/payment accounts are stricly disjoint with testset addresses/payment accounts.
+Address/payment account are unique inside train/test sets. 
+
+```{r}
+
+sum(train$address %in% test$address)
+sum(test$address %in% train$address)
+
+sum(train$payment_account %in% test$payment_account)
+sum(test$payment_account %in% train$payment_account)
+
+length(unique(train$payment_account)) == nrow(train)
+length(unique(test$payment_account)) == nrow(test)
+
+length(unique(train$address)) == nrow(train)
+length(unique(test$address)) == nrow(test)
+
+```
+
+# Ips
+
+There are 29 bidders in the train set (and 70 in the test set) that didn't partecipate to any auction. I suppose they are human ;-)
+The other 1984 bidders in the train set use, on average, 675 different ip addresses (sd 4790).
+Robot bidders use on average 2387 different ip addresses (sd 11269) vs. 581 different ip addresses of human (sd 4140). 
+On the other hand, the same ip address has been used on average by 1.3 different bidders (sd 2.4). 
+
+```{r}
+sum(!train$bidder_id %in% bids$bidder_id)
+sum(!test$bidder_id %in% bids$bidder_id)
+
+ee = ddply(train.full,.(bidder_id),function(x)c(ip=length(unique(x$ip))))
+mean(ee$ip)
+sd(ee$ip)
+ddf = merge(x = ee , y = train , by="bidder_id")
+ddply(ddf , .(outcome) , function(x) c(ip.mean = mean(x$ip) , ip.sd = sd(x$ip) )  )
+
+aa = ddply(train.full,.(ip),function(x)c(bidders=length(x$bidder_id)))
+bb = ddply(train.full,.(ip),function(x)c(bidders=length(unique(x$bidder_id))))
+cc = ddply(train.full,.(ip),function(x)c(bidders=length(unique(x$url))))
+
+mean(bb$bidders)
+sd(bb$bidders)
+
+uu = ddply(train.full,.(bidder_id),function(x)c(url.len=length(unique(x$url))))
+mean(uu$url.len)
+
+```
+
+# Urls 
+
+The 1984 bidders partecipating in auctions on average have 346 different urls (sd 2676).
+Humans have on average 335 different urls while robots 544.   
+On the other hand, an url is used on average by 1.03 different bidders 
+
+```{r}
+uu = ddply(train.full,.(bidder_id),function(x)c(url.len=length(unique(x$url))))
+mean(uu$url.len)
+sd(uu$url.len)
+
+uu = ddply(train.full,.(bidder_id,outcome),function(x)c(url.len=length(unique(x$url))))
+mean(uu[uu$outcome==0,]$url.len)
+sd(uu[uu$outcome==0,]$url.len)
+mean(uu[uu$outcome==1,]$url.len)
+sd(uu[uu$outcome==1,]$url.len)
+
+cc = ddply(train.full,.(url),function(x)c(bidders=length(unique(x$bidder_id))))
+mean(cc$bidders)
+sd(cc$bidders)
+```
+

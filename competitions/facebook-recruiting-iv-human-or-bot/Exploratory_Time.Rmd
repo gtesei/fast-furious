@@ -1,0 +1,78 @@
+---
+title: "Exploratory_Time"
+author: "Gino Tesei"
+date: "May 30, 2015"
+output: html_document
+---
+
+
+
+```{r, echo=FALSE , results="hide" , include=FALSE}
+library(caret)
+library(Hmisc)
+library(data.table)
+library(kernlab)
+library(subselect)
+library(plyr)
+library(binhf)
+library(fBasics)
+library(lattice)
+
+getBasePath = function (type = "data") {
+  ret = ""
+  base.path1 = ""
+  base.path2 = ""
+  
+  if(type == "data") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/dataset/facebook-recruiting-iv-human-or-bot"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/facebook-recruiting-iv-human-or-bot/"
+  } else if (type == "code") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/competitions/facebook-recruiting-iv-human-or-bot"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/competitions/facebook-recruiting-iv-human-or-bot/"
+  } else if (type == "process") {
+    base.path1 = "C:/docs/ff/gitHub/fast-furious/data_process"
+    base.path2 = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/data_process/"
+  } else {
+    stop("unrecognized type.")
+  }
+  
+  if (file.exists(base.path1))  {
+    ret = paste0(base.path1,"/")
+  } else {
+    ret = base.path2
+  }
+  
+  ret
+}
+
+time.bids = as.data.frame( fread(paste(getBasePath("data") , 
+                                              "time_bids01.csv" , sep=''))) 
+
+
+```
+
+
+## Time Delta,delta %, 0 1  
+
+```{r,echo=FALSE}
+
+delta_mean = mean(time.bids$time.delta)
+delta_mean_perc = mean(time.bids$time.delta.perc)
+
+time_mean = mean(time.bids[time.bids$num.0>1 & time.bids$num.1>1 , ]$time.mean)
+time_mean_perc = mean(time.bids[time.bids$num.0>1 & time.bids$num.1>1 , ]$time.mean.perc)
+
+time_0_mean_perc = mean(time.bids[time.bids$num.0>1 & time.bids$num.1>1 , ]$time.0.mean.perc)
+time_1_mean_perc = mean(time.bids[time.bids$num.0>1 & time.bids$num.1>1 , ]$time.1.mean.perc)
+
+cat("delta_mean:",delta_mean,"\n")
+cat("delta_mean_perc:",delta_mean_perc,"\n")
+cat("time_mean:",time_mean,"\n")
+cat("time_mean_perc:",time_mean_perc,"\n")
+cat("time_0_mean_perc:",time_0_mean_perc,"\n")
+cat("time_1_mean_perc:",time_1_mean_perc,"\n")
+
+
+```
+
+

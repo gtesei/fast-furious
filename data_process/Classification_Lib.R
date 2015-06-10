@@ -197,7 +197,7 @@ get_auc = function(
   doPlot=F) {
   
   ## accuracy 
-  acc = sum(y == (pred.train > 0.5)) / length(y)
+  acc = sum(y == (probs > 0.5)) / length(y)
   
   ## ROC 
   rocCurve <- pROC::roc(response = y, predictor = probs, levels = levels(y) )
