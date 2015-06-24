@@ -13,9 +13,18 @@
 ## My model implementations 
   * **Neural Networks** (package ```neural``` in Matlab/Octave)
     + for basic use cases just run command line ```>octave GO_Neural.m```
-    + for binary classification problems use _nnCostFunction.m_ cost function (multiclass still in beta)
+    + for binary classification problems use _nnCostFunction.m_ cost function (multiclass still in beta) wrapped in _trainNeuralNetwork.m_. E.g. 
+    ```
+    NNMeta = buildNNMeta([400 25 10]);
+    p = 1; lambda = 0;
+    [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, featureScaled = 1);
+    pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
+    pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
+    acc_train = mean(double(pred_train == ytrain)) * 100;
+    acc_val = mean(double(pred_val == yval)) * 100;
+    ```
     + for regression problems use _nnCostFunctionReg.m_ cost function 
-    + for large dataset (e.g. 80GB train set on a machine with 8GB RAM) use _nnCostFunction_Buff.m_ that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as _stochastic gradient descent_ or k (k < number of observations on trainset) observations in each iteration as _mini-batch gradient descent_    
+    + for large dataset (e.g. **80GB train set on a machine with 8GB RAM**) use _nnCostFunction_Buff.m_ that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as _stochastic gradient descent_ or k (k < number of observations on trainset) observations in each iteration as _mini-batch gradient descent_    
     + for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use _nnCostFunctionRegEGS.m_ cost function 
     
   * **Regularized Linear and Polynomial Regression** (package ```linear_reg``` in Matlab/Octave)
