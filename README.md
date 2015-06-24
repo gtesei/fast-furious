@@ -2,7 +2,7 @@
 
 
 ## What is it?
-  Fast-Furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models of my Kaggle competitions.
+  fast-furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models of my Kaggle competitions.
   
 
 ## Highlights
