@@ -4,12 +4,12 @@
 ## What is it?
   fast-furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models I needed in my Machine Learning Lab but I didn't found on the shelf.
   
-## Requirements and installation
+## Requirements, installation and how to use fast-furious in your scripts 
 fast-furious has been built in interpretable languages like R, Matlab/Octave, Python (hence, it does not require compilation) and **(Mac) OSX**, **Windows**, **Linux** are **fully supported**. 
 
 ### Requirements
-  * [Octave](http://www.gnu.org/software/octave/download.html) or Matlab is mandatory 
-  * [R](http://www.r-project.org/) is mandatory 
+  * [Octave](http://www.gnu.org/software/octave/download.html) or Matlab is **mandatory** for fast-furious model implementations (*regularized neural networks, regularized linear and polynomial regression, regularized logistic regression*). If you are using only these fast-furious models Octave or Matlab installed on your machine is the only requirement. 
+  * [R](http://www.r-project.org/) is mandatory for 
   * [Python](https://www.python.org/downloads/) is optional as most of the python stuff is available in R as well 
   
 ### Installation  
@@ -21,6 +21,31 @@ fast-furious has been built in interpretable languages like R, Matlab/Octave, Py
   git clone https://github.com/gtesei/fast-furious.git
   ```
   
+### How to use fast-furious in your Octave/Matlab scripts  
+Assuming you are launching your Octave/Matlab script in fast-furious base dir, you just need to call at the begin of your script the fast-furious 
+```menv``` function to set up the enviroment. Typically, your script should look like this 
+
+```
+%% setting enviroment 
+menv;
+
+... here your stuff ...
+```
+For example, this is the code of fast-furious ```GO_Neural.m``` script located on fast-furious base dir: 
+```
+#! /opt/local/bin/octave -qf 
+
+%% setting enviroment 
+menv;
+
+%% load use cases and go  
+source "./neural/README.m";
+go();
+```
+
+### How to use fast-furious in your R scripts  
+Assuming you are launching your R script in fast-furious base dir,
+
 ## fast-furious model implementations 
   * **Regularized Neural Networks** (package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave)
     + for **basic use cases** just run command line (fast-furious base dir) ```>octave GO_Neural.m```
