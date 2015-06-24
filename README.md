@@ -8,8 +8,8 @@
   
   **Highlights**
   -----------
-  * **_8th/504_ - American Epilepsy Society Seizure Prediction Challenge** (package __competitions/seizure-prediction__)
-  * _371st/3514_ - Otto Group Product Classification Challenge (package __competitions/otto-group-product-classification-challenge__)
-  * _59th/485_ - Walmart Recruiting II: Sales in Stormy Weather (package __competitions/walmart-recruiting-sales-in-stormy-weather__)
+  * **_8th/504_ - American Epilepsy Society Seizure Prediction Challenge** (package _competitions/seizure-prediction_)
+  * _371st/3514_ - Otto Group Product Classification Challenge (package _competitions/otto-group-product-classification-challenge_)
+  * _59th/485_ - Walmart Recruiting II: Sales in Stormy Weather (package _competitions/walmart-recruiting-sales-in-stormy-weather_)
   
   
