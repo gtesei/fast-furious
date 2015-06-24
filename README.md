@@ -117,4 +117,5 @@ Most parts of fast-furious are based on the following resources:
 * J. Friedman, T. Hastie, R. Tibshirani, *The Elements of Statistical Learning*, Springer, 2009
 * G. James, D. Witten, T. Hastie, R. Tibshirani, *An Introduction to Statistical Learning*, Springer, 2013
 * Max Kuhn and Kjell Johnson, *Applied Predictive Modeling*, Springer, 2013
+* Hadley Wickham, *Advanced R*, Chapman & Hall/CRC The R Series, 2014 
 * Paul S.P. Cowpertwait, Andrew V. Metcalfe, *Introductory Time Series with R*, Springer, 2009
