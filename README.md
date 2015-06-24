@@ -9,8 +9,8 @@ fast-furious has been built in interpretable languages like R, Matlab/Octave, Py
 
 ### Requirements
   * [Octave](http://www.gnu.org/software/octave/download.html) or Matlab is **mandatory** for fast-furious model implementations (*regularized neural networks, regularized linear and polynomial regression, regularized logistic regression*). If you are using only these fast-furious models Octave or Matlab installed on your machine is the only requirement. 
-  * [R](http://www.r-project.org/) is mandatory for 
-  * [Python](https://www.python.org/downloads/) is optional as most of the python stuff is available in R as well 
+  * [R](http://www.r-project.org/) is **mandatory** for data process, feature engineering, model selection and model ensembling best practices 
+  * [Python](https://www.python.org/downloads/) is **optional** as most of the python stuff is available in R as well 
   
 ### Installation  
   Installation is pretty easy and quick. You can choose
@@ -42,7 +42,21 @@ go();
 ```
 
 ### How to use fast-furious in your R scripts  
-Assuming you are launching your R script in fast-furious base dir,
+Assuming you are launching your R script in fast-furious base dir, you just need to ```source``` fast-furious resources at the begin of your script. For example, this is the code to perform imputation with fast-furious ```blackGuido``` function. 
+```
+source("./data_process/Impute_Lib.R")
+
+## imputing missing values ...
+l = blackGuido (data = weather[,-c(1,2)]  
+                verbose = T , 
+                debug = F)
+weather.imputed = l[[1]]
+ImputePredictors = l[[2]]
+DecisionMatrix = l[[3]]
+
+weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
+```
+
 
 ## fast-furious model implementations 
   * **Regularized Neural Networks** (package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave)
