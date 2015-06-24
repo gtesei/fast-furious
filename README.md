@@ -46,7 +46,8 @@ Assuming you are launching your R script in fast-furious base dir,
 
 ## fast-furious model implementations 
   * **Regularized Neural Networks** (package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave)
-    + for **basic use cases** just run command line (fast-furious base dir) ```>octave GO_Neural.m```
+    + for **basic use cases** just run command line (fast-furious base dir) 
+    ```>octave GO_Neural.m```
     + for **binary classification problems** use ```nnCostFunction``` cost function (multiclass still in beta) wrapped in ```trainNeuralNetwork```. *E.g. for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added* 
     ```
     %% 400 neurons at input layer
@@ -108,8 +109,10 @@ Assuming you are launching your R script in fast-furious base dir,
     + for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use ```nnCostFunctionRegEGS``` cost function 
     
   * **Regularized Linear and Polynomial Regression** (package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/Octave)
-    + for **basic use cases** just run command line (fast-furious base dir) ```>octave GO_LinearReg.m```
-    + for a **performance comparison** (=RMSE) among **(fast-furiuos) Regularized Polynomial Regression**, **(libsvm) epsilon-SVR**, **(libsvm) nu-SVR**, **(fast-furiuos) Neural Networks** on dataset *solubility* of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/) run command line ```>octave linear_reg/____testRegression.m```
+    + for **basic use cases** just run command line (fast-furious base dir) 
+    ```>octave GO_LinearReg.m```
+    + for a **performance comparison** (=RMSE) among **(fast-furiuos) Regularized Polynomial Regression**, **(libsvm) epsilon-SVR**, **(libsvm) nu-SVR**, **(fast-furiuos) Neural Networks** on dataset *solubility* of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/) run command line 
+    ```>octave linear_reg/____testRegression.m```
   
 ## References 
 Most parts of fast-furious are based on the following resources: 
