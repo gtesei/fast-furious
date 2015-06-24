@@ -17,14 +17,22 @@
     %% regularization parameter 
     lambda = 0.001; 
     
+    %% train on train set 
     [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, featureScaled = 1); 
-    pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
-    pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
     
+    %% predict on train set 
+    probs_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
+    pred_train = (probs_train > 0.5);
+    
+    %% predict on test set 
+    probs_test = NNPredictMulticlass(NNMeta, Theta , Xtest , featureScaled = 1);
+    pred_test = (probs_test > 0.5);
+    
+    %% measure accuracy 
     acc_train = mean(double(pred_train == ytrain)) * 100;
-    acc_val = mean(double(pred_val == yval)) * 100;
+    acc_test = mean(double(pred_test == ytest)) * 100;
     ```
-    + for **tuning parameters** (number of neurons per layer, number of hidden layers, regularization parameter) by cross-validation use the _findOptPAndHAndLambda_ function. *E.g. for finding best number of neurons per layer (p_opt_acc), the best number of hidden layers (h_opt_acc), the best regularization parameter (lambda_opt_acc), using cross validation on a binary classification problem with accuracy as metric on a train set (80% of data) and cross validation set (20% of data) not scaled* 
+    + for **tuning parameters** (number of neurons per layer, number of hidden layers, regularization parameter) by cross-validation use the _findOptPAndHAndLambda_ function. *E.g. for finding the best number of neurons per layer (p_opt_acc), the best number of hidden layers (h_opt_acc), the best regularization parameter (lambda_opt_acc), using cross validation on a binary classification problem with accuracy as metric on a train set (80% of data) and cross validation set (20% of data) not scaled* 
     ```
     %% scale and add bias term 
     [train_data,mu,sigma] = treatContFeatures(train_data,1);
