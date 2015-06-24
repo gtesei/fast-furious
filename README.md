@@ -1,12 +1,12 @@
 # Fast-Furious
 
 
-  **What is it?**
+## What is it?
   -----------
   Fast-Furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models of my Kaggle competitions.
   
-  
-  **Highlights**
+
+## Highlights
   -----------
   * **_8th/504_ - American Epilepsy Society Seizure Prediction Challenge** (package _competitions/seizure-prediction_)
   * _371st/3514_ - Otto Group Product Classification Challenge (package _competitions/otto-group-product-classification-challenge_)
