@@ -15,12 +15,18 @@
     + for basic use cases just run command line ```>octave GO_Neural.m```
     + for binary classification problems use _nnCostFunction.m_ cost function (multiclass still in beta) wrapped in _trainNeuralNetwork.m_. *E.g.* 
     ```
-    %% 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer  
+    %% 400 neurons at input layer
+    %% 25 neurons at hidden layer
+    %% 1 neuron (= binary classification) at output layer  
     NNMeta = buildNNMeta([400 25 1]); 
-    lambda = 0.001; %% regularization parameter 
+    
+    %% regularization parameter 
+    lambda = 0.001; 
+    
     [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, featureScaled = 1); 
     pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
     pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
+    
     acc_train = mean(double(pred_train == ytrain)) * 100;
     acc_val = mean(double(pred_val == yval)) * 100;
     ```
