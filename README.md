@@ -42,7 +42,7 @@ go();
 ```
 
 ### How to use fast-furious in your R scripts  
-Assuming you are launching your R script in fast-furious base dir, you just need to ```source``` fast-furious resources at the begin of your script. For example, this is the code to perform imputation with fast-furious ```blackGuido``` function on a given data set _weather_ (excluding first two predictors) and using the best performing (RMSE) models among linear regression, KNN, PLS, Ridge regression, SVM, Cubist for continuous imputing predictors, and using the best performing (AUC) models among mode and SVM for categorical features.   
+Assuming you are launching your R script in fast-furious base dir, you just need to ```source``` fast-furious resources at the begin of your script. For example, this is the code to perform imputation with fast-furious ```blackGuido``` function on a given data set _weather_ (excluding first two predictors) and using the best performing (RMSE) models among linear regression, KNN, PLS, Ridge regression, SVM, Cubist for continuous imputing predictors, and using the best performing (AUC) models among mode and SVM for categorical imputing predictors.   
 ```
 source("./data_process/Impute_Lib.R")
 
