@@ -5,7 +5,7 @@
   fast-furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models I needed in my Machine Learning Lab but I didn't found on the shelf.
   
 ## Requirements and installation
-fast-furious has been built in interpretable languages like R, Matlab/Octave, Python (hence, it does not require compilation) and (Mac) OSX, Windows, Linux are fully supported. 
+fast-furious has been built in interpretable languages like R, Matlab/Octave, Python (hence, it does not require compilation) and **(Mac) OSX**, **Windows**, **Linux** are **fully supported**. 
 
 ### Requirements
   * [Octave](http://www.gnu.org/software/octave/download.html) or Matlab is mandatory 
@@ -21,7 +21,7 @@ fast-furious has been built in interpretable languages like R, Matlab/Octave, Py
   git clone https://github.com/gtesei/fast-furious.git
   ```
   
-## My model implementations 
+## fast-furious model implementations 
   * **Regularized Neural Networks** (package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave)
     + for **basic use cases** just run command line (fast-furious base dir) ```>octave GO_Neural.m```
     + for **binary classification problems** use ```nnCostFunction``` cost function (multiclass still in beta) wrapped in ```trainNeuralNetwork```. *E.g. for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added* 
