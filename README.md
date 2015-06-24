@@ -4,20 +4,14 @@
 ## What is it?
   fast-furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models of my Kaggle competitions.
   
-
-## Highlights
-  * **_8th/504_ - American Epilepsy Society Seizure Prediction Challenge** (package _competitions/seizure-prediction_)
-  * _371st/3514_ - Otto Group Product Classification Challenge (package _competitions/otto-group-product-classification-challenge_)
-  * _59th/485_ - Walmart Recruiting II: Sales in Stormy Weather (package _competitions/walmart-recruiting-sales-in-stormy-weather_)
-  
 ## My model implementations 
-  * **Neural Networks** (package ```neural``` in Matlab/Octave)
+  * **Regularized Neural Networks** (package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave)
     + for basic use cases just run command line ```>octave GO_Neural.m```
-    + for binary classification problems use _nnCostFunction.m_ cost function (multiclass still in beta) wrapped in _trainNeuralNetwork.m_. *E.g.* 
+    + for binary classification problems use _nnCostFunction.m_ cost function (multiclass still in beta) wrapped in _trainNeuralNetwork.m_. *E.g. for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added* 
     ```
     %% 400 neurons at input layer
     %% 25 neurons at hidden layer
-    %% 1 neuron (= binary classification) at output layer  
+    %% 1 neuron at output layer  
     NNMeta = buildNNMeta([400 25 1]); 
     
     %% regularization parameter 
@@ -38,3 +32,7 @@
     + for basic use cases just run command line ```>octave GO_LinearReg.m```
     + for a performance comparison (=RMSE) among **(fast-furiuos) Regularized Polynomial Regression**, **(libsvm) epsilon-SVR**, **(libsvm) nu-SVR**, **(fast-furiuos) Neural Networks** on dataset *solubility* of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/) run command line ```>octave linear_reg/____testRegression.m```
   
+## Some selected competitions  
+  * **_8th/504_ - American Epilepsy Society Seizure Prediction Challenge** (package _competitions/seizure-prediction_)
+  * _371st/3514_ - Otto Group Product Classification Challenge (package _competitions/otto-group-product-classification-challenge_)
+  * _59th/485_ - Walmart Recruiting II: Sales in Stormy Weather (package _competitions/walmart-recruiting-sales-in-stormy-weather_)
