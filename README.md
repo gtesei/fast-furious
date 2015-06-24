@@ -1,4 +1,4 @@
-# Fast-Furious
+# fast-furious
 
 
 ## What is it?
