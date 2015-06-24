@@ -33,8 +33,6 @@ menv;
 ```
 For example, this is the code of fast-furious ```GO_Neural.m``` script located on fast-furious base dir: 
 ```
-#! /opt/local/bin/octave -qf 
-
 %% setting enviroment 
 menv;
 

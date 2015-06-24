@@ -1,5 +1,3 @@
-#! /opt/local/bin/octave -qf 
-
 %%setting enviroment 
 menv;
 
