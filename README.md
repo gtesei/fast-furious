@@ -119,9 +119,11 @@ Assuming you are launching your R script in fast-furious base dir,
   
 ## References 
 Most parts of fast-furious are based on the following resources: 
-* [Stanford professor Andrew NG] (http://cs.stanford.edu/people/ang/) stuff: [1](http://openclassroom.stanford.edu/MainFolder/CoursePage.php?course=MachineLearning), [2](https://www.coursera.org/learn/machine-learning/home/info)
+* Stanford professor Andrew NG stuff: [1](http://openclassroom.stanford.edu/MainFolder/CoursePage.php?course=MachineLearning), [2](https://www.coursera.org/learn/machine-learning/home/info)
 * J. Friedman, T. Hastie, R. Tibshirani, *The Elements of Statistical Learning*, Springer, 2009
-* G. James, D. Witten, T. Hastie, R. Tibshirani, *An Introduction to Statistical Learning*, Springer, 2013
 * Max Kuhn and Kjell Johnson, *Applied Predictive Modeling*, Springer, 2013
+
+Other resources: 
+* G. James, D. Witten, T. Hastie, R. Tibshirani, *An Introduction to Statistical Learning*, Springer, 2013
 * Hadley Wickham, *Advanced R*, Chapman & Hall/CRC The R Series, 2014 
 * Paul S.P. Cowpertwait, Andrew V. Metcalfe, *Introductory Time Series with R*, Springer, 2009
