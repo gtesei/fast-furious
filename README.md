@@ -13,11 +13,12 @@
 ## My model implementations 
   * **Neural Networks** (package ```neural``` in Matlab/Octave)
     + for basic use cases just run command line ```>octave GO_Neural.m```
-    + for binary classification problems use _nnCostFunction.m_ cost function (multiclass still in beta) wrapped in _trainNeuralNetwork.m_. E.g. 
+    + for binary classification problems use _nnCostFunction.m_ cost function (multiclass still in beta) wrapped in _trainNeuralNetwork.m_. *E.g.* 
     ```
-    NNMeta = buildNNMeta([400 25 10]);
-    p = 1; lambda = 0;
-    [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, featureScaled = 1);
+    %% 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer  
+    NNMeta = buildNNMeta([400 25 1]); 
+    lambda = 0.001; %% regularization parameter 
+    [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, featureScaled = 1); 
     pred_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
     pred_val = NNPredictMulticlass(NNMeta, Theta , Xval , featureScaled = 1);
     acc_train = mean(double(pred_train == ytrain)) * 100;
