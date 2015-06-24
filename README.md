@@ -14,8 +14,9 @@ fast-furious has been built in interpretable languages like R, Matlab/Octave, Py
   
 ### Installation  
   Installation is pretty easy and quick. You can choose
-  * to download the zip in the directory you like as fast-furious base dir and unzip  
-  * or to use ```git``` in the directory you like as fast-furious base dir 
+  * to download the zip in the directory you like as **fast-furious base dir** and unzip  
+  * or to use ```git``` in the directory you like as **fast-furious base dir** 
+  
   ```
   git clone https://github.com/gtesei/fast-furious.git
   ```
