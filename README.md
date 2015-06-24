@@ -20,5 +20,5 @@
     
   * **Regularized Linear and Polynomial Regression** (package ```linear_reg``` in Matlab/Octave)
     + for basic use cases just run command line ```>octave GO_LinearReg.m```
-    + for a performance comparison (=RMSE) among **(fast-furiuos) Regularized Polynomial Regression**, **(libsvm) epsilon-SVR**, **(libsvm) nu-SVR**, **(fast-furiuos) Neural Networks** on dataset *solubility* of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/) run *octave linear_reg/____testRegression.m*
+    + for a performance comparison (=RMSE) among **(fast-furiuos) Regularized Polynomial Regression**, **(libsvm) epsilon-SVR**, **(libsvm) nu-SVR**, **(fast-furiuos) Neural Networks** on dataset *solubility* of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/) run command line ```>octave linear_reg/____testRegression.m```
   
