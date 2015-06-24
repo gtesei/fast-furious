@@ -51,7 +51,7 @@
     pred_train = (probs_train > 0.5);
     acc_train = mean(double(pred_train == ytrain)) * 100;
 
-    %% predicting on test set 
+    %% predict on test set 
     probs_test = NNPredictMulticlass(NNMeta, Theta , test_data , featureScaled = 1); 
     pred_test = (probs_test > 0.5);
     ```
