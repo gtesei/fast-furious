@@ -408,6 +408,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
     printf(">>>>> metric: precision - found optimum with p=%i and lambda=%f \n", p_opt_precision , lambda_opt_precision );
     printf(">>>>> metric: recall    - found optimum with p=%i and lambda=%f \n", p_opt_recall , lambda_opt_recall );
     ```
+    
 ## References 
 Most parts of fast-furious are based on the following resources: 
 * Stanford professor Andrew NG resources: [1](http://openclassroom.stanford.edu/MainFolder/CoursePage.php?course=MachineLearning), [2](https://www.coursera.org/learn/machine-learning/home/info)
