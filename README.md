@@ -344,12 +344,60 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_test = MSE(pred_test, ytest);
     ```
   
-### 3.3 Regularized Logistic Regression 
+### 3.3 Regularized Polynomial Logistic Regression 
 Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matlab/Octave
 
 * for **basic use cases** just run command line (fast-furious base dir) 
     
     ```>octave GO_LogisticReg.m```
+* for fitting a **logistic regression** model use ```lrCostFunction``` wrapped in  ```trainLogReg``` function. E.g. this is the code for fitting a regularized logistic regression model with trainset/testset not scaled and with regularization parameter set to 0.001. Note: in this code sketch insteaf of using 0.5 as probability threshold I use the ```selectThreshold``` that select the threshold maximizing F1-score.    
+    ```
+    %% feature scaling (trainset/testset) 
+    [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 1);
+    [Xtest,mu,sigma] = treatContFeatures(Xtest,p = 1,1,mu,sigma);
+    
+    %% regularization parameter 
+    lambda = 0.001;
+    
+    %% train 
+    [theta] = trainLogReg(Xtrain, ytrain, lambda , iter = 200 );
+    
+    %% predict probabilities  
+    probs_train = predictLogReg(Xtrain,theta);
+    probs_test = predictLogReg(Xtest,theta);
+	
+    %% select threshold (instead of 0.5) on train data 
+    %% Note: this usually should be done by cross-validation 
+	  thr = selectThreshold (ytrain,probs_train);
+    
+    %% predict labels   
+   	pred_train = (probs_train > thr);
+   	pred_train = (probs_test > thr);
+    ```
+* for fitting a **logistic polynomial regression** model use ```lrCostFunction``` as well. Just set up the degree of the polynomial trasformation you like in the ```treatContFeatures``` function. E.g. this is the code for fitting a regularized logistic regression model with trainset/testset not scaled, with regularization parameter set to 0.001 and **polynomial degree 10**.   
+    ```
+    %% feature scaling (trainset/testset) 
+    [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 10);
+    [Xtest,mu,sigma] = treatContFeatures(Xtest,p = 10,1,mu,sigma);
+    
+    %% regularization parameter 
+    lambda = 0.001;
+    
+    %% train 
+    [theta] = trainLogReg(Xtrain, ytrain, lambda , iter = 200 );
+    
+    %% predict probabilities  
+    probs_train = predictLogReg(Xtrain,theta);
+    probs_test = predictLogReg(Xtest,theta);
+  
+    %% select threshold (instead of 0.5) on train data 
+    %% Note: this usually should be done by cross-validation 
+	  thr = selectThreshold (ytrain,probs_train);
+    
+    %% predict labels   
+   	pred_train = (probs_train > thr);
+   	pred_train = (probs_test > thr);
+    ```
   
 ## References 
 Most parts of fast-furious are based on the following resources: 
