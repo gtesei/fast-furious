@@ -62,10 +62,12 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
 
 ## fast-furious model implementations 
 ### **Regularized Neural Networks** 
-Package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave
+Package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave.
+
     * for **basic use cases** just run command line (fast-furious base dir) 
     
     ```>octave GO_Neural.m```
+    
     * for **binary classification problems** use ```nnCostFunction``` cost function (multiclass still in beta) wrapped in ```trainNeuralNetwork```. *E.g. for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added* 
     ```
     %% 400 neurons at input layer
