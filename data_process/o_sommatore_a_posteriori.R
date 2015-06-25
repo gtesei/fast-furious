@@ -8,7 +8,7 @@ model.average = function (submissions = data.frame(path =
                           submission.final.path = "/Users/gino/kaggle/fast-furious/gitHub/fast-furious/dataset/seizure-prediction/merge/sommatora_a_posteriori.zat"
                           ) {
   sub = NULL
-  sub.df = NULL 
+  sub.df = NULL    
   for (i in 1:nrow(submissions)) {
     sub.t = as.data.frame(fread(paste(submissions[i,]$path,sep="") , header = T , sep=","  ))
     if (is.null(sub)) {
