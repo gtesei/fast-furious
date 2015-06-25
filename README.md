@@ -174,7 +174,7 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
     pred_test = NNPredictReg(NNMeta, Theta , Xtest , featureScaled = 1);
     RMSE_test = sqrt(MSE(pred_test, ytest));
     ```
-    + for **large dataset** (e.g. **80GB train set on a machine with 8GB RAM**) use ```nnCostFunction_Buff``` that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as _stochastic gradient descent_ or k (k < number of observations on trainset) observations in each iteration as _mini-batch gradient descent_    
+    + for **large dataset** (e.g. **80GB train set on a machine with 8GB RAM**) use ```nnCostFunction_Buff``` (wrapped in ```trainNeuralNetwork_Buff```) that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**.    
     + for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use ```nnCostFunctionRegEGS``` cost function 
     
   * **Regularized Linear and Polynomial Regression** (package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/Octave)
@@ -187,7 +187,7 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
   
 ## References 
 Most parts of fast-furious are based on the following resources: 
-* Stanford professor Andrew NG stuff: [1](http://openclassroom.stanford.edu/MainFolder/CoursePage.php?course=MachineLearning), [2](https://www.coursera.org/learn/machine-learning/home/info)
+* Stanford professor Andrew NG resources: [1](http://openclassroom.stanford.edu/MainFolder/CoursePage.php?course=MachineLearning), [2](https://www.coursera.org/learn/machine-learning/home/info)
 * J. Friedman, T. Hastie, R. Tibshirani, *The Elements of Statistical Learning*, Springer, 2009
 * Max Kuhn and Kjell Johnson, *Applied Predictive Modeling*, Springer, 2013
 
