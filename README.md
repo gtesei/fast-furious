@@ -303,7 +303,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
             lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]' , ...
             verbose = 1, initGrid = [] , initStart = -1 , iter=1000);
             
-    printf(">>>>> found min RMSE=%f  with p=%i and lambda=%f \n", RMSE_opt , p_opt_RMSE , lambda_opt_RMSE );
+    printf('>>>>> found min RMSE=%f  with p=%i and lambda=%f \n', RMSE_opt , p_opt_RMSE , lambda_opt_RMSE );
     ```
  * for **large datasets** (e.g. **80GB train set on a machine with 8GB RAM**) you can use the ```trainLinearReg_MiniBatch``` function that is a **mini-batch gradient descent** implementation, i.e. it uses k observations (k < number of observations on trainset) in each iteration. E.g. this is the code for for fitting a linear regression model with 0.001 as regularization parameter, from file  ```foXtrain ``` for predictors (columns from  ```ciX ``` to  ```ceX ```), and from file  ```fytrain ``` for labels (columns form  ```ciy ``` to  ```cey ```) and buffer equals to 100 observations (= you load in memory 100 observations each time **and you use only these for complete a gradient descent iteration**).
  
@@ -404,9 +404,9 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
     [p_opt_recall,lambda_opt_recall,p_opt_accuracy,lambda_opt_accuracy,p_opt_precision,lambda_opt_precision,p_opt_F1,lambda_opt_F1,grid] = ...
       findOptPAndLambdaRegLog(Xtrain, ytrain, Xval, yval)
       
-    printf(">>>>> metric: F1        - found optimum with p=%i and lambda=%f \n", p_opt_F1 , lambda_opt_F1 );
-    printf(">>>>> metric: precision - found optimum with p=%i and lambda=%f \n", p_opt_precision , lambda_opt_precision );
-    printf(">>>>> metric: recall    - found optimum with p=%i and lambda=%f \n", p_opt_recall , lambda_opt_recall );
+    printf('>>>>> metric: F1        - found optimum with p=%i and lambda=%f \n', p_opt_F1 , lambda_opt_F1 );
+    printf('>>>>> metric: precision - found optimum with p=%i and lambda=%f \n', p_opt_precision , lambda_opt_precision );
+    printf('>>>>> metric: recall    - found optimum with p=%i and lambda=%f \n', p_opt_recall , lambda_opt_recall );
     ```
     
 ## References 
