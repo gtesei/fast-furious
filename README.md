@@ -61,14 +61,14 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
 
 
 ## fast-furious model implementations 
-### **Regularized Neural Networks** 
+### Regularized Neural Networks 
 Package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave.
 
-    * for **basic use cases** just run command line (fast-furious base dir) 
-    
+ * for **basic use cases** just run command line (fast-furious base dir) 
+ 
     ```>octave GO_Neural.m```
     
-    * for **binary classification problems** use ```nnCostFunction``` cost function (multiclass still in beta) wrapped in ```trainNeuralNetwork```. *E.g. for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added* 
+ * for **binary classification problems** use ```nnCostFunction``` cost function (multiclass still in beta) wrapped in ```trainNeuralNetwork```. *E.g. for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added* 
     ```
     %% 400 neurons at input layer
     %% 25 neurons at hidden layer
@@ -93,7 +93,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     acc_train = mean(double(pred_train == ytrain)) * 100;
     acc_test = mean(double(pred_test == ytest)) * 100;
     ```
-    * for **tuning parameters on classification problems** (number of neurons per layer, number of hidden layers, regularization parameter) by cross-validation use the ```findOptPAndHAndLambda``` function. *E.g. for finding the best number of neurons per layer (p_opt_acc), the best number of hidden layers (h_opt_acc), the best regularization parameter (lambda_opt_acc), using cross validation on a binary classification problem with accuracy as metric on a train set (80% of data) and cross validation set (20% of data) not scaled* 
+ * for **tuning parameters on classification problems** (number of neurons per layer, number of hidden layers, regularization parameter) by cross-validation use the ```findOptPAndHAndLambda``` function. *E.g. for finding the best number of neurons per layer (p_opt_acc), the best number of hidden layers (h_opt_acc), the best regularization parameter (lambda_opt_acc), using cross validation on a binary classification problem with accuracy as metric on a train set (80% of data) and cross validation set (20% of data) not scaled* 
     ```
     %% scale and add bias term 
     [train_data,mu,sigma] = treatContFeatures(train_data,1);
@@ -124,7 +124,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     probs_test = NNPredictMulticlass(NNMeta, Theta , test_data , featureScaled = 1); 
     pred_test = (probs_test > 0.5);
     ```
-    * for **regression problems** use ```nnCostFunctionReg``` cost function wrapped in ```trainNeuralNetworkReg```. *E.g. for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added* 
+ * for **regression problems** use ```nnCostFunctionReg``` cost function wrapped in ```trainNeuralNetworkReg```. *E.g. for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added* 
     ```
     %% 400 neurons at input layer
     %% 25 neurons at hidden layer
@@ -147,7 +147,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     RMSE_train = sqrt(MSE(pred_train, ytrain));
     RMSE_test = sqrt(MSE(pred_test, ytest));
     ```
-    * for **tuning parameters on regression problems** (number of neurons per layer, number of hidden layers, regularization parameter) by cross-validation use the ```findOptPAndHAndLambda``` function. *E.g. for finding the best number of neurons per layer (p_opt_rmse), the best number of hidden layers (h_opt_rmse), the best regularization parameter (lambda_opt_rmse), using cross validation on a regression problem with RMSE as metric on a train set (80% of data) and cross validation set (20% of data) not scaled* 
+ * for **tuning parameters on regression problems** (number of neurons per layer, number of hidden layers, regularization parameter) by cross-validation use the ```findOptPAndHAndLambda``` function. *E.g. for finding the best number of neurons per layer (p_opt_rmse), the best number of hidden layers (h_opt_rmse), the best regularization parameter (lambda_opt_rmse), using cross validation on a regression problem with RMSE as metric on a train set (80% of data) and cross validation set (20% of data) not scaled* 
     ```
     %% scale and add bias term 
     [train_data,mu,sigma] = treatContFeatures(train_data,1);
@@ -177,15 +177,15 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     pred_test = NNPredictReg(NNMeta, Theta , Xtest , featureScaled = 1);
     RMSE_test = sqrt(MSE(pred_test, ytest));
     ```
-    * for **large dataset** (e.g. **80GB train set on a machine with 8GB RAM**) use ```nnCostFunction_Buff``` (wrapped in ```trainNeuralNetwork_Buff```) that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**.    
-    * for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use ```nnCostFunctionRegEGS``` cost function 
+ * for **large dataset** (e.g. **80GB train set on a machine with 8GB RAM**) use ```nnCostFunction_Buff``` (wrapped in ```trainNeuralNetwork_Buff```) that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**.    
+ * for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use ```nnCostFunctionRegEGS``` cost function 
     
-### **Regularized Linear and Polynomial Regression** 
+### Regularized Linear and Polynomial Regression 
 Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/Octave
-    * for **basic use cases** just run command line (fast-furious base dir) 
+ * for **basic use cases** just run command line (fast-furious base dir) 
     
     ```>octave GO_LinearReg.m```
-    * for a **performance comparison** (=RMSE) among **(fast-furiuos) Regularized Polynomial Regression**, **(libsvm) epsilon-SVR**, **(libsvm) nu-SVR**, **(fast-furiuos) Neural Networks** on dataset *solubility* of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/) run command line 
+ * for a **performance comparison** (=RMSE) among **(fast-furiuos) Regularized Polynomial Regression**, **(libsvm) epsilon-SVR**, **(libsvm) nu-SVR**, **(fast-furiuos) Neural Networks** on dataset *solubility* of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/) run command line 
     
     ```>octave linear_reg/____testRegression.m```
   
