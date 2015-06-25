@@ -14,12 +14,11 @@ addpath([curr_dir '/SVM']);
 addpath([curr_dir '/competitions/liberty-mutual-fire-peril']);
 addpath([curr_dir '/competitions/seizure-prediction']);
 addpath([curr_dir '/competitions/digit-recognizer']);
-
 addpath([curr_dir '/competitions/restaurant-revenue-prediction']);
 addpath([curr_dir '/competitions/otto-group-product-classification-challenge']);
 
 addpath([curr_dir '/dataset/poly/']);
 
-addpath('/Users/gino/kaggle/libsvm/matlab');
+%% addpath('/Users/gino/kaggle/libsvm/matlab');
 
 
