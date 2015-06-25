@@ -97,7 +97,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     ```
     %% scale and add bias term 
     [train_data,mu,sigma] = treatContFeatures(train_data,1);
-    [test_data,mu_val,sigma_val] = treatContFeatures(test_data,1,1,mu,sigma);
+    [test_data,mu,sigma] = treatContFeatures(test_data,1,1,mu,sigma);
     
     %% split and randomize 
     [Xtrain,ytrain,Xval,yval] = splitTrainValidation(train_data,ytrain,0.80,shuffle=1);
@@ -151,7 +151,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     ```
     %% scale and add bias term 
     [train_data,mu,sigma] = treatContFeatures(train_data,1);
-    [test_data,mu_val,sigma_val] = treatContFeatures(test_data,1,1,mu,sigma);
+    [test_data,mu,sigma] = treatContFeatures(test_data,1,1,mu,sigma);
     
     %% split and randomize 
     [Xtrain,ytrain,Xval,yval] = splitTrainValidation(train_data,ytrain,0.80,shuffle=1);
@@ -233,6 +233,27 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
  * for a **performance comparison** (=RMSE) among **(fast-furiuos) Regularized Polynomial Regression**, **(libsvm) epsilon-SVR**, **(libsvm) nu-SVR**, **(fast-furiuos) Neural Networks** on dataset *solubility* of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/) run command line 
     
     ```>octave linear_reg/____testRegression.m```
+
+ * for fitting a **linear regression** model use ```linearRegCostFunction``` wrapped in  ```trainLinearReg``` function. E.g. this is the code for fitting a regularized liner regression model with trainset/testset not scaled and with regularization parameter set to 0.001.   
+    ```
+    %% feature scaling (trainset/testset) 
+    [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 1);
+    [Xtest,mu,sigma] = treatContFeatures(Xtest,p = 1,1,mu,sigma);
+    
+    %% regularization parameter 
+    lambda = 0.001;
+    
+    %% train 
+    [theta] = trainLinearReg(Xtrain, ytrain, lambda , 200 );
+    
+    %% predict
+    pred_train =predictLinearReg(Xtrain,theta);
+    pred_test = predictLinearReg(Xtest,theta);
+    
+    %% measure MSE
+    mse_train = MSE(pred_train, ytrain);
+    mse_test = MSE(pred_test, ytest);
+    ```
   
 ## References 
 Most parts of fast-furious are based on the following resources: 
