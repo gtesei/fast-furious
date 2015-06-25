@@ -375,7 +375,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
    	pred_train = (probs_test > thr);
     ```
 * for fitting a **logistic polynomial regression** model use ```lrCostFunction``` as well. Just set up the degree of the polynomial trasformation you like in the ```treatContFeatures``` function. E.g. this is the code for fitting a regularized logistic regression model with trainset/testset not scaled, with regularization parameter set to 0.001 and **polynomial degree 10**.   
-    ```
+    ```matlab
     %% feature scaling (trainset/testset) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 10);
     [Xtest,mu,sigma] = treatContFeatures(Xtest,p = 10,1,mu,sigma);
