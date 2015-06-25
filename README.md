@@ -61,7 +61,7 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
 
 
 ## fast-furious model implementations 
-  * **Regularized Neural Networks** (package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave)
+### **Regularized Neural Networks** (package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave)
     + for **basic use cases** just run command line (fast-furious base dir) 
     
     ```>octave GO_Neural.m```
@@ -177,7 +177,7 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
     + for **large dataset** (e.g. **80GB train set on a machine with 8GB RAM**) use ```nnCostFunction_Buff``` (wrapped in ```trainNeuralNetwork_Buff```) that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**.    
     + for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use ```nnCostFunctionRegEGS``` cost function 
     
-  * **Regularized Linear and Polynomial Regression** (package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/Octave)
+### **Regularized Linear and Polynomial Regression** (package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/Octave)
     + for **basic use cases** just run command line (fast-furious base dir) 
     
     ```>octave GO_LinearReg.m```
