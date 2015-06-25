@@ -254,6 +254,26 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_train = MSE(pred_train, ytrain);
     mse_test = MSE(pred_test, ytest);
     ```
+ * for fitting a **linear regression** model using **the normal equation** instead of **batch gradient descent** use the ```normalEqn_RegLin``` function. E.g. this is the code for fitting a regularized liner regression model using **the normal equation** with trainset/testset not scaled and with regularization parameter set to 0.001. 
+    ```
+    %% feature scaling (trainset/testset) 
+    [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 1);
+    [Xtest,mu,sigma] = treatContFeatures(Xtest,p = 1,1,mu,sigma);
+    
+    %% regularization parameter 
+    lambda = 0.001;
+    
+    %% train 
+    [theta] = normalEqn_RegLin(Xtrain,ytrain,lambda);
+    
+    %% predict 
+    pred_train = predictLinearReg(Xtrain,theta);
+    pred_test = predictLinearReg(Xtest,theta);
+    
+    %% measure performance 
+    mse_train = MSE(pred_train, ytrain);
+    mse_test = MSE(pred_test, ytest);
+    ```
  * for fitting a **polynomial regression** model use ```linearRegCostFunction``` as well. Just set up the degree of the polynomial trasformation you like in the ```treatContFeatures``` function. E.g. this is the code for fitting a regularized liner regression model with trainset/testset not scaled and with regularization parameter set to 0.001 and **polynomial degree 5**.   
     ```
     %% feature scaling (trainset/testset) 
@@ -284,7 +304,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
             verbose = 1, initGrid = [] , initStart = -1 , iter=1000);
     printf(">>>>> found min RMSE=%f  with p=%i and lambda=%f \n", RMSE_opt , p_opt_RMSE , lambda_opt_RMSE );
     ```
-    
+
 ### 3.3 Regularized Logistic Regression 
 Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matlab/Octave
 
