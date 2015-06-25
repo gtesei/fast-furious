@@ -350,7 +350,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
 * for **basic use cases** just run command line (fast-furious base dir) 
     
     ```>octave GO_LogisticReg.m```
-* for fitting a **logistic regression** model use ```lrCostFunction``` wrapped in  ```trainLogReg``` function. E.g. this is the code for fitting a regularized logistic regression model with trainset/testset not scaled and with regularization parameter set to 0.001. Note: in this code sketch insteaf of using 0.5 as probability threshold I use the ```selectThreshold``` that select the threshold maximizing F1-score.    
+* for fitting a **logistic regression** model use ```lrCostFunction``` wrapped in  ```trainLogReg``` function. E.g. this is the code for fitting a regularized logistic regression model with trainset/testset not scaled and with regularization parameter set to 0.001. Note: in this code sketch insteaf of using 0.5 as probability threshold I use the ```selectThreshold``` that select the probability threshold maximizing F1-score.    
     ```
     %% feature scaling (trainset/testset) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 1);
@@ -368,7 +368,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
 	
     %% select threshold (instead of 0.5) on train data 
     %% Note: this usually should be done by cross-validation 
-	  thr = selectThreshold (ytrain,probs_train);
+    thr = selectThreshold (ytrain,probs_train);
     
     %% predict labels   
    	pred_train = (probs_train > thr);
@@ -392,7 +392,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
   
     %% select threshold (instead of 0.5) on train data 
     %% Note: this usually should be done by cross-validation 
-	  thr = selectThreshold (ytrain,probs_train);
+    thr = selectThreshold (ytrain,probs_train);
     
     %% predict labels   
    	pred_train = (probs_train > thr);
