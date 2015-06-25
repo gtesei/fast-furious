@@ -254,6 +254,26 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_train = MSE(pred_train, ytrain);
     mse_test = MSE(pred_test, ytest);
     ```
+ * for fitting a **polynomial regression** model use ```linearRegCostFunction``` as well. Just set up the degree of polynomial trasformation you want to use in the ```treatContFeatures``` function. E.g. this is the code for fitting a regularized liner regression model with trainset/testset not scaled and with regularization parameter set to 0.001 and polynomial degree set to 5.   
+    ```
+    %% feature scaling (trainset/testset) 
+    [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 5);
+    [Xtest,mu,sigma] = treatContFeatures(Xtest,p = 5,1,mu,sigma);
+    
+    %% regularization parameter 
+    lambda = 0.001;
+    
+    %% train 
+    [theta] = trainLinearReg(Xtrain, ytrain, lambda , 200 );
+    
+    %% predict
+    pred_train =predictLinearReg(Xtrain,theta);
+    pred_test = predictLinearReg(Xtest,theta);
+    
+    %% measure MSE
+    mse_train = MSE(pred_train, ytrain);
+    mse_test = MSE(pred_test, ytest);
+    ```
  * for **tuning parameters (on regression problems)** (degree of polynomial trasformation, regularization parameter) by cross-validation use the ```findOptPAndLambdaRegLin``` function. E.g. this is the code for finding the best degree of polynomial trasformation (p_opt_RMSE), the best regularization parameter (lambda_opt_RMSE), using cross validation on a regression problem with RMSE as metric on a train set and test set already scaled.
  
     ```
