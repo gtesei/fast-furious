@@ -324,9 +324,9 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_train = MSE(pred_train, ytrain);
     mse_test = MSE(pred_test, ytest);
     ```
-* for **large datasets** (e.g. **80GB train set on a machine with 8GB RAM**) you can use the ```trainLinearReg_Buff``` function that is a **buffered implementation of gradient descent**, i.e. it uses it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**. E.g. this is the code for for fitting a linear regression model with 0.001 as regularization parameter, from file  ```foXtrain ``` for predictors (columns from  ```ciX ``` to  ```ceX ```), and from file  ```fytrain ``` for labels (columns form  ```ciy ``` to  ```cey ```) and buffer equals to 100 observations (= you load in memory 100 observations each time **and you use only these for complete a gradient descent iteration**).
+* for **large datasets** (e.g. **80GB train set on a machine with 8GB RAM**) you can use the ```trainLinearReg_Buff``` function that is a **buffered implementation of gradient descent**, i.e. it uses it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**. E.g. this is the code for for fitting a linear regression model with 0.001 as regularization parameter, from file  ```foXtrain ``` for predictors (columns from  ```ciX ``` to  ```ceX ```), and from file  ```fytrain ``` for labels (columns form  ```ciy ``` to  ```cey ```) and buffer equals to 100 observations (= you load in memory 100 observations each time **but you use all train observations for complete a gradient descent iteration**).
 
-```
+    ```
     %% regularization parameter 
     lambda = 0.001; 
   
