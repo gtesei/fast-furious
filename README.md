@@ -254,6 +254,13 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_train = MSE(pred_train, ytrain);
     mse_test = MSE(pred_test, ytest);
     ```
+    
+### 3.3 Regularized Logistic Regression 
+Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matlab/Octave
+
+* for **basic use cases** just run command line (fast-furious base dir) 
+    
+    ```>octave GO_LogisticReg.m```
   
 ## References 
 Most parts of fast-furious are based on the following resources: 
