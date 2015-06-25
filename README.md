@@ -304,7 +304,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
             verbose = 1, initGrid = [] , initStart = -1 , iter=1000);
     printf(">>>>> found min RMSE=%f  with p=%i and lambda=%f \n", RMSE_opt , p_opt_RMSE , lambda_opt_RMSE );
     ```
- * for **large datasets** (e.g. **80GB train set on a machine with 8GB RAM**) you can use the ```trainLinearReg_MiniBatch``` function that is a mini-batch gradient descent implementation, i.e. it uses k observations (k < number of observations on trainset) in each iteration. E.g. this is the code for for fitting a linear regression model with 0.001 as regularization parameter, from file  ```foXtrain ``` for predictors (columns from  ```ciX ``` to  ```ceX ```), and from file  ```fytrain ``` for labels (columns form  ```ciy ``` to  ```cey ```) and buffer equals to 100 observations (= you load in memory 100 observations each time **and you use only these for complete a gradient descent iteration**).
+ * for **large datasets** (e.g. **80GB train set on a machine with 8GB RAM**) you can use the ```trainLinearReg_MiniBatch``` function that is a **mini-batch gradient descent** implementation, i.e. it uses k observations (k < number of observations on trainset) in each iteration. E.g. this is the code for for fitting a linear regression model with 0.001 as regularization parameter, from file  ```foXtrain ``` for predictors (columns from  ```ciX ``` to  ```ceX ```), and from file  ```fytrain ``` for labels (columns form  ```ciy ``` to  ```cey ```) and buffer equals to 100 observations (= you load in memory 100 observations each time **and you use only these for complete a gradient descent iteration**).
  
     ```
     %% regularization parameter 
