@@ -254,6 +254,15 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_train = MSE(pred_train, ytrain);
     mse_test = MSE(pred_test, ytest);
     ```
+ * for **tuning parameters (on regression problems)** (degree of polynomial trasformation, regularization parameter) by cross-validation use the ```findOptPAndLambdaRegLin``` function. E.g. this is the code for finding the best degree of polynomial trasformation (p_opt_RMSE), the best regularization parameter (lambda_opt_RMSE), using cross validation on a regression problem with RMSE as metric on a train set and test set already scaled.
+    ```
+    [p_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid]  = ... 
+          findOptPAndLambdaRegLin(solTrainX, solTrainY, solTestX, solTestY, ...
+            p_vec = [1 2 3 4 5 6 7 8 9 10 12 20]' , ...
+            lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10]' , ...
+            verbose = 1, initGrid = [] , initStart = -1 , iter=1000);
+    printf(">>>>> found min RMSE=%f  with p=%i and lambda=%f \n", RMSE_opt , p_opt_RMSE , lambda_opt_RMSE );
+    ```
     
 ### 3.3 Regularized Logistic Regression 
 Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matlab/Octave
