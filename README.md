@@ -178,7 +178,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     RMSE_test = sqrt(MSE(pred_test, ytest));
     ```
  * for **large dataset** (e.g. **80GB train set on a machine with 8GB RAM**) use ```nnCostFunction_Buff``` (wrapped in ```trainNeuralNetwork_Buff```) that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**. *E.g. this is the code for for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, from file  ```foXtrain ``` for predictors (columns from  ```ciX ``` to  ```ceX ```), and from file  ```fytrain ``` for labels (columns form  ```ciy ``` to  ```cey ```) and buffer equals to 10000 observations (= you load in memory 10000 observations each time)*      
- ```
+    ```
     %% 400 neurons at input layer
     %% 25 neurons at hidden layer
     %% 1 neuron at output layer  
@@ -196,7 +196,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     
     %% predict (buffer = 10000 observations) on test set 
     pred_train_bf = NNPredictMulticlass_Buff(NNMeta,foXtrain,ciX,ceX,Theta_Buff,10000,',',0);
-  ```
+    ```
  * for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use ```nnCostFunctionRegEGS``` cost function 
     
 ### 3.2 Regularized Linear and Polynomial Regression 
