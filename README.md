@@ -192,7 +192,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     %% from file <fytrain> (columns form <ciy> to <cey>) as labels 
     [Theta_Buff] = trainNeuralNetwork_Buff(NNMeta,foXtrain,ciX,ceX, ... 
                             fytrain,ciy,cey, ... 
-                            _sep=',',b=10000, ... 
+                            sep=',',b=10000, ... 
                             lambda, iter = 50 , ... 
                             featureScaled = 0 , ... 
                             initialTheta = cell(0,0) );
@@ -314,11 +314,11 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     %% train (buffer = 100 observations) 
     %% from file <foXtrain> (columns from <ciX> to <ceX>) as train data
     %% from file <fytrain> (columns form <ciy> to <cey>) as labels 
-    [theta_mb] = trainLinearReg_MiniBatch(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=100, _sep=',' , iter=200);
+    [theta_mb] = trainLinearReg_MiniBatch(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=100, sep=',' , iter=200);
     
     %% predict 
-    pred_train = predictLinearReg_Buff(foXtrain,ciX,ceX,theta_mb,b=10000,_sep=',');
-    pred_test = predictLinearReg_Buff(foXtest,ciX,ceX,theta_mb,b=10000,_sep=',');
+    pred_train = predictLinearReg_Buff(foXtrain,ciX,ceX,theta_mb,b=10000,sep=',');
+    pred_test = predictLinearReg_Buff(foXtest,ciX,ceX,theta_mb,b=10000,sep=',');
     
     
     %% measure performance 
@@ -334,11 +334,11 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     %% train (buffer = 100 observations) 
     %% from file <foXtrain> (columns from <ciX> to <ceX>) as train data
     %% from file <fytrain> (columns form <ciy> to <cey>) as labels 
-    [theta_bf] = trainLinearReg_Buff(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=100, _sep=',' , iter=200);
+    [theta_bf] = trainLinearReg_Buff(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=100, sep=',' , iter=200);
     
     %% predict 
-    pred_train = predictLinearReg_Buff(foXtrain,ciX,ceX,theta_bf,b=10000,_sep=',');
-    pred_test = predictLinearReg_Buff(foXtest,ciX,ceX,theta_bf,b=10000,_sep=',');
+    pred_train = predictLinearReg_Buff(foXtrain,ciX,ceX,theta_bf,b=10000,sep=',');
+    pred_test = predictLinearReg_Buff(foXtest,ciX,ceX,theta_bf,b=10000,sep=',');
     
     %% measure performance 
     mse_train = MSE(pred_train, ytrain);
