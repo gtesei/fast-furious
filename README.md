@@ -255,6 +255,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_test = MSE(pred_test, ytest);
     ```
  * for **tuning parameters (on regression problems)** (degree of polynomial trasformation, regularization parameter) by cross-validation use the ```findOptPAndLambdaRegLin``` function. E.g. this is the code for finding the best degree of polynomial trasformation (p_opt_RMSE), the best regularization parameter (lambda_opt_RMSE), using cross validation on a regression problem with RMSE as metric on a train set and test set already scaled.
+ 
     ```
     [p_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid]  = ... 
           findOptPAndLambdaRegLin(solTrainX, solTrainY, solTestX, solTestY, ...
