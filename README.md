@@ -254,7 +254,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_train = MSE(pred_train, ytrain);
     mse_test = MSE(pred_test, ytest);
     ```
- * for fitting a **polynomial regression** model use ```linearRegCostFunction``` as well. Just set up the degree of polynomial trasformation you want to use in the ```treatContFeatures``` function. E.g. this is the code for fitting a regularized liner regression model with trainset/testset not scaled and with regularization parameter set to 0.001 and polynomial degree set to 5.   
+ * for fitting a **polynomial regression** model use ```linearRegCostFunction``` as well. Just set up the degree of the polynomial trasformation you like in the ```treatContFeatures``` function. E.g. this is the code for fitting a regularized liner regression model with trainset/testset not scaled and with regularization parameter set to 0.001 and **polynomial degree 5**.   
     ```
     %% feature scaling (trainset/testset) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 5);
