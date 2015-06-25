@@ -344,16 +344,6 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_train = MSE(pred_train, ytrain);
     mse_test = MSE(pred_test, ytest);
     ```
- * for **tuning parameters (on classification problems)** (degree of polynomial trasformation, regularization parameter) by cross-validation use the ```findOptPAndLambdaRegLog``` function. E.g. this is the code for finding the best degree of polynomial trasformation, the best regularization parameter, using cross validation on a regression problem on a train set and test set already scaled. **Best parameters are found for metrics F1, precision, recall**. 
- 
-    ```
-    [p_opt_recall,lambda_opt_recall,p_opt_accuracy,lambda_opt_accuracy,p_opt_precision,lambda_opt_precision,p_opt_F1,lambda_opt_F1,grid] = ...
-      findOptPAndLambdaRegLog(Xtrain, ytrain, Xval, yval)
-      
-    printf(">>>>> metric: F1        - found optimum with p=%i and lambda=%f \n", p_opt_F1 , lambda_opt_F1 );
-    printf(">>>>> metric: precision - found optimum with p=%i and lambda=%f \n", p_opt_precision , lambda_opt_precision );
-    printf(">>>>> metric: recall    - found optimum with p=%i and lambda=%f \n", p_opt_recall , lambda_opt_recall );
-    ```
 ### 3.3 Regularized Polynomial Logistic Regression 
 Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matlab/Octave
 
@@ -408,7 +398,16 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
    	pred_train = (probs_train > thr);
    	pred_train = (probs_test > thr);
     ```
-
+ * for **tuning parameters (on classification problems)** (degree of polynomial trasformation, regularization parameter) by cross-validation use the ```findOptPAndLambdaRegLog``` function. E.g. this is the code for finding the best degree of polynomial trasformation, the best regularization parameter, using cross validation on a regression problem on a train set and test set already scaled. **Best parameters are found for metrics F1, precision, recall**. 
+ 
+    ```
+    [p_opt_recall,lambda_opt_recall,p_opt_accuracy,lambda_opt_accuracy,p_opt_precision,lambda_opt_precision,p_opt_F1,lambda_opt_F1,grid] = ...
+      findOptPAndLambdaRegLog(Xtrain, ytrain, Xval, yval)
+      
+    printf(">>>>> metric: F1        - found optimum with p=%i and lambda=%f \n", p_opt_F1 , lambda_opt_F1 );
+    printf(">>>>> metric: precision - found optimum with p=%i and lambda=%f \n", p_opt_precision , lambda_opt_precision );
+    printf(">>>>> metric: recall    - found optimum with p=%i and lambda=%f \n", p_opt_recall , lambda_opt_recall );
+    ```
 ## References 
 Most parts of fast-furious are based on the following resources: 
 * Stanford professor Andrew NG resources: [1](http://openclassroom.stanford.edu/MainFolder/CoursePage.php?course=MachineLearning), [2](https://www.coursera.org/learn/machine-learning/home/info)
