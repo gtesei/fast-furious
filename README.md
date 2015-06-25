@@ -204,8 +204,8 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     pred_train_bf = NNPredictMulticlass_Buff(NNMeta,foXtrain,ciX,ceX,Theta_Buff,10000,',',0);
     ```
  * for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use ```nnCostFunctionRegEGS``` cost function wrapped in ```trainNeuralNetworkRegEGS``` function. E.g. this is the code for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added. 
-     ```
-     %% 400 neurons at input layer
+    ```
+    %% 400 neurons at input layer
     %% 25 neurons at hidden layer
     %% 1 neuron at output layer  
     NNMeta = buildNNMeta([400 25 1]); 
