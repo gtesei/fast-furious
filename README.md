@@ -324,6 +324,26 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_train = MSE(pred_train, ytrain);
     mse_test = MSE(pred_test, ytest);
     ```
+* for **large datasets** (e.g. **80GB train set on a machine with 8GB RAM**) you can use the ```trainLinearReg_Buff``` function that is a **buffered implementation of gradient descent**, i.e. it uses it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**. E.g. this is the code for for fitting a linear regression model with 0.001 as regularization parameter, from file  ```foXtrain ``` for predictors (columns from  ```ciX ``` to  ```ceX ```), and from file  ```fytrain ``` for labels (columns form  ```ciy ``` to  ```cey ```) and buffer equals to 100 observations (= you load in memory 100 observations each time **and you use only these for complete a gradient descent iteration**).
+
+```
+    %% regularization parameter 
+    lambda = 0.001; 
+  
+    %% train (buffer = 100 observations) 
+    %% from file <foXtrain> (columns from <ciX> to <ceX>) as train data
+    %% from file <fytrain> (columns form <ciy> to <cey>) as labels 
+    [theta_bf] = trainLinearReg_Buff(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=100, _sep=',' , iter=200);
+    
+    %% predict 
+    pred_train = predictLinearReg_Buff(foXtrain,ciX,ceX,theta_bf,b=10000,_sep=',');
+    pred_test = predictLinearReg_Buff(foXtest,ciX,ceX,theta_bf,b=10000,_sep=',');
+    
+    %% measure performance 
+    mse_train = MSE(pred_train, ytrain);
+    mse_test = MSE(pred_test, ytest);
+    ```
+  
 ### 3.3 Regularized Logistic Regression 
 Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matlab/Octave
 
