@@ -254,7 +254,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_train = MSE(pred_train, ytrain);
     mse_test = MSE(pred_test, ytest);
     ```
- * for fitting a **linear regression** model using **the normal equation** instead of **batch gradient descent** use the ```normalEqn_RegLin``` function. E.g. this is the code for fitting a regularized liner regression model using **the normal equation** with trainset/testset not scaled and with regularization parameter set to 0.001. 
+ * for fitting a **linear regression** model using **the normal equation** instead of **batch gradient descent** use the ```normalEqn_RegLin``` function. **I recommend not to use the normal equation for large dataset**. E.g. this is the code for fitting a regularized liner regression model using **the normal equation** with trainset/testset not scaled and with regularization parameter set to 0.001. 
     ```
     %% feature scaling (trainset/testset) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 1);
