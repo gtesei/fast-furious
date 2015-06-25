@@ -1,18 +1,18 @@
 # fast-furious
 
 
-## What is it?
+## 1. What is it?
   fast-furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models I needed in my Machine Learning Lab but I didn't found on the shelf.
   
-## Requirements, installation and how to use fast-furious in your scripts 
+## 2. Requirements, installation and how to use fast-furious in your scripts 
 fast-furious has been built in interpretable languages like R, Matlab/Octave, Python (hence, it does not require compilation) and **(Mac) OSX**, **Windows**, **Linux** are **fully supported**. 
 
-### Requirements
+### 2.1 Requirements
   * [Octave](http://www.gnu.org/software/octave/download.html) or Matlab is **mandatory** for fast-furious model implementations (*regularized neural networks, regularized linear and polynomial regression, regularized logistic regression*). If you are using only these fast-furious models Octave or Matlab installed on your machine is the only requirement. 
   * [R](http://www.r-project.org/) is **mandatory** for data process, feature engineering, model selection and model ensembling best practices 
   * [Python](https://www.python.org/downloads/) is **optional** as most of the python stuff is available in R as well 
   
-### Installation  
+### 2.2 Installation  
   Installation is pretty easy and quick. You can choose
   * to download the zip in the directory you like as **fast-furious base dir** and unzip  
   * or to use ```git``` in the directory you like as **fast-furious base dir** 
@@ -21,7 +21,7 @@ fast-furious has been built in interpretable languages like R, Matlab/Octave, Py
   git clone https://github.com/gtesei/fast-furious.git
   ```
   
-### How to use fast-furious in your Octave/Matlab scripts  
+### 2.3 How to use fast-furious in your Octave/Matlab scripts  
 Assuming you are launching your Octave/Matlab script in fast-furious base dir, you just need to call at the begin of your script the fast-furious 
 ```menv``` function to set up the enviroment. Typically, your script should look like this 
 
@@ -41,7 +41,7 @@ source "./neural/README.m";
 go();
 ```
 
-### How to use fast-furious in your R scripts  
+### 2.4 How to use fast-furious in your R scripts  
 Assuming you are launching your R script in fast-furious base dir, you just need to ```source``` fast-furious resources at the begin of your script. For example, this is the code to perform imputation with fast-furious ```blackGuido``` function on a given data set _weather_ (excluding first two predictors) and using the best performing (RMSE) models among linear regression, KNN, PLS, Ridge regression, SVM, Cubist for continuous imputing predictors, and using the best performing (AUC) models among mode and SVM for categorical imputing predictors.   
 ```
 source("./data_process/Impute_Lib.R")
@@ -60,8 +60,8 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
 ```
 
 
-## fast-furious model implementations 
-### Regularized Neural Networks 
+## 3. fast-furious model implementations 
+### 3.1 Regularized Neural Networks 
 Package ```neural``` **very fast 100% vectorized implementation of backpropagation** in Matlab/Octave.
 
  * for **basic use cases** just run command line (fast-furious base dir) 
@@ -180,7 +180,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
  * for **large dataset** (e.g. **80GB train set on a machine with 8GB RAM**) use ```nnCostFunction_Buff``` (wrapped in ```trainNeuralNetwork_Buff```) that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**.    
  * for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use ```nnCostFunctionRegEGS``` cost function 
     
-### Regularized Linear and Polynomial Regression 
+### 3.2 Regularized Linear and Polynomial Regression 
 Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/Octave
  * for **basic use cases** just run command line (fast-furious base dir) 
     
