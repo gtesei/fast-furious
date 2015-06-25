@@ -310,7 +310,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     %% regularization parameter 
     lambda = 0.001; 
   
-    %% train (buffer = 10000 observations) 
+    %% train (buffer = 100 observations) 
     %% from file <foXtrain> (columns from <ciX> to <ceX>) as train data
     %% from file <fytrain> (columns form <ciy> to <cey>) as labels 
     [theta_mb] = trainLinearReg_MiniBatch(foXtrain,ciX,ceX,fytrain,ciy,cey,lambda, b=100, _sep=',' , iter=200);
