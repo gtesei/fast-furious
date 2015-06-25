@@ -121,7 +121,29 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
     probs_test = NNPredictMulticlass(NNMeta, Theta , test_data , featureScaled = 1); 
     pred_test = (probs_test > 0.5);
     ```
-    + for **regression problems** use ```nnCostFunctionReg``` cost function 
+    + for **regression problems** use ```nnCostFunctionReg``` cost function wrapped in ```trainNeuralNetworkReg```. *E.g. for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added* 
+    ```
+    %% 400 neurons at input layer
+    %% 25 neurons at hidden layer
+    %% 1 neuron at output layer  
+    NNMeta = buildNNMeta([400 25 1]); 
+    
+    %% regularization parameter 
+    lambda = 0.001; 
+    
+    %% train on train set 
+    [Theta] = trainNeuralNetworkReg(NNMeta, Xtrain, ytrain, lambda , iter = 200, featureScaled = 1);
+    
+    %% predict on train set 
+    pred_train = NNPredictReg(NNMeta, Theta , Xtrain , featureScaled = 1);
+    
+    %% predict on test set 
+    pred_test = NNPredictReg(NNMeta, Theta , Xtest , featureScaled = 1);
+    
+    %% measure RMSE 
+    RMSE_train = sqrt(MSE(pred_train, ytrain));
+    RMSE_test = sqrt(MSE(pred_test, ytest));
+    ```
     + for **large dataset** (e.g. **80GB train set on a machine with 8GB RAM**) use ```nnCostFunction_Buff``` that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as _stochastic gradient descent_ or k (k < number of observations on trainset) observations in each iteration as _mini-batch gradient descent_    
     + for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use ```nnCostFunctionRegEGS``` cost function 
     
