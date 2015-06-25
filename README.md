@@ -25,14 +25,14 @@ fast-furious has been built in interpretable languages like R, Matlab/Octave, Py
 Assuming you are launching your Octave/Matlab script in fast-furious base dir, you just need to call at the begin of your script the fast-furious 
 ```menv``` function to set up the enviroment. Typically, your script should look like this 
 
-```
+```matlab
 %% setting enviroment 
 menv;
 
 ... here your stuff ...
 ```
 For example, this is the code of fast-furious ```GO_Neural.m``` script located on fast-furious base dir: 
-```
+```matlab
 %% setting enviroment 
 menv;
 
@@ -43,7 +43,7 @@ go();
 
 ### 2.4 How to use fast-furious in your R scripts  
 Assuming you are launching your R script in fast-furious base dir, you just need to ```source``` fast-furious resources at the begin of your script. For example, this is the code to perform imputation with fast-furious ```blackGuido``` function on a given data set _weather_ (excluding first two predictors) and using the best performing (RMSE) models among linear regression, KNN, PLS, Ridge regression, SVM, Cubist for continuous imputing predictors, and using the best performing (AUC) models among mode and SVM for categorical imputing predictors.   
-```
+```r
 source("./data_process/Impute_Lib.R")
 
 ## imputing missing values ...
@@ -69,7 +69,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     ```>octave GO_Neural.m```
     
  * for **binary classification problems** use ```nnCostFunction``` cost function (multiclass still in beta) wrapped in ```trainNeuralNetwork```. E.g. this is the code for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added.
-    ```
+    ```matlab
     %% 400 neurons at input layer
     %% 25 neurons at hidden layer
     %% 1 neuron at output layer  
@@ -94,7 +94,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     acc_test = mean(double(pred_test == ytest)) * 100;
     ```
  * for **tuning parameters on classification problems** (number of neurons per layer, number of hidden layers, regularization parameter) by cross-validation use the ```findOptPAndHAndLambda``` function. E.g. this is the code for finding the best number of neurons per layer (p_opt_acc), the best number of hidden layers (h_opt_acc), the best regularization parameter (lambda_opt_acc), using cross validation on a binary classification problem with accuracy as metric on a train set (80% of data) and cross validation set (20% of data) not scaled.
-    ```
+    ```matlab
     %% scale and add bias term 
     [train_data,mu,sigma] = treatContFeatures(train_data,1);
     [test_data,mu,sigma] = treatContFeatures(test_data,1,1,mu,sigma);
@@ -125,7 +125,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     pred_test = (probs_test > 0.5);
     ```
  * for **regression problems** use ```nnCostFunctionReg``` cost function wrapped in ```trainNeuralNetworkReg```. E.g. this is the code for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added.
-    ```
+    ```matlab
     %% 400 neurons at input layer
     %% 25 neurons at hidden layer
     %% 1 neuron at output layer  
@@ -148,7 +148,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     RMSE_test = sqrt(MSE(pred_test, ytest));
     ```
  * for **tuning parameters on regression problems** (number of neurons per layer, number of hidden layers, regularization parameter) by cross-validation use the ```findOptPAndHAndLambda``` function. E.g. this is the code for finding the best number of neurons per layer (p_opt_rmse), the best number of hidden layers (h_opt_rmse), the best regularization parameter (lambda_opt_rmse), using cross validation on a regression problem with RMSE as metric on a train set (80% of data) and cross validation set (20% of data) not scaled.
-    ```
+    ```matlab
     %% scale and add bias term 
     [train_data,mu,sigma] = treatContFeatures(train_data,1);
     [test_data,mu,sigma] = treatContFeatures(test_data,1,1,mu,sigma);
@@ -178,7 +178,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     RMSE_test = sqrt(MSE(pred_test, ytest));
     ```
  * for **large datasets** (e.g. **80GB train set on a machine with 8GB RAM**) use ```nnCostFunction_Buff``` (wrapped in ```trainNeuralNetwork_Buff```) that is a **buffered implementation of batch gradient descent**, i.e. it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**. E.g. this is the code for for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, from file  ```foXtrain ``` for predictors (columns from  ```ciX ``` to  ```ceX ```), and from file  ```fytrain ``` for labels (columns form  ```ciy ``` to  ```cey ```) and buffer equals to 10000 observations (= you load in memory 10000 observations each time).      
-    ```
+    ```matlab
     %% 400 neurons at input layer
     %% 25 neurons at hidden layer
     %% 1 neuron at output layer  
@@ -204,7 +204,7 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     pred_train_bf = NNPredictMulticlass_Buff(NNMeta,foXtrain,ciX,ceX,Theta_Buff,10000,',',0);
     ```
  * for **Neural Networks with EGS (= Extended Generalized Shuffle) interconnection pattern among layers** in regression problesm use ```nnCostFunctionRegEGS``` cost function wrapped in ```trainNeuralNetworkRegEGS``` function. E.g. this is the code for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added. 
-    ```
+    ```matlab
     %% 400 neurons at input layer
     %% 25 neurons at hidden layer
     %% 1 neuron at output layer  
@@ -235,7 +235,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     ```>octave linear_reg/____testRegression.m```
 
  * for fitting a **linear regression** model use ```linearRegCostFunction``` wrapped in  ```trainLinearReg``` function. E.g. this is the code for fitting a regularized liner regression model with trainset/testset not scaled and with regularization parameter set to 0.001.   
-    ```
+    ```matlab
     %% feature scaling (trainset/testset) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 1);
     [Xtest,mu,sigma] = treatContFeatures(Xtest,p = 1,1,mu,sigma);
@@ -255,7 +255,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_test = MSE(pred_test, ytest);
     ```
  * for fitting a **linear regression** model using **the normal equation** instead of **batch gradient descent** use the ```normalEqn_RegLin``` function. **I recommend not to use the normal equation for large datasets**. E.g. this is the code for fitting a regularized liner regression model using **the normal equation** with trainset/testset not scaled and with regularization parameter set to 0.001. 
-    ```
+    ```matlab
     %% feature scaling (trainset/testset) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 1);
     [Xtest,mu,sigma] = treatContFeatures(Xtest,p = 1,1,mu,sigma);
@@ -275,7 +275,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     mse_test = MSE(pred_test, ytest);
     ```
  * for fitting a **polynomial regression** model use ```linearRegCostFunction``` as well. Just set up the degree of the polynomial trasformation you like in the ```treatContFeatures``` function. E.g. this is the code for fitting a regularized liner regression model with trainset/testset not scaled and with regularization parameter set to 0.001 and **polynomial degree 5**.   
-    ```
+    ```matlab
     %% feature scaling (trainset/testset) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 5);
     [Xtest,mu,sigma] = treatContFeatures(Xtest,p = 5,1,mu,sigma);
@@ -296,7 +296,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     ```
  * for **tuning parameters (on regression problems)** (degree of polynomial trasformation, regularization parameter) by cross-validation use the ```findOptPAndLambdaRegLin``` function. E.g. this is the code for finding the best degree of polynomial trasformation (p_opt_RMSE), the best regularization parameter (lambda_opt_RMSE), using cross validation on a regression problem with RMSE as metric on a train set and test set already scaled.
  
-    ```
+    ```matlab
     [p_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid]  = ... 
           findOptPAndLambdaRegLin(solTrainX, solTrainY, solTestX, solTestY, ...
             p_vec = [1 2 3 4 5 6 7 8 9 10 12 20]' , ...
@@ -307,7 +307,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     ```
  * for **large datasets** (e.g. **80GB train set on a machine with 8GB RAM**) you can use the ```trainLinearReg_MiniBatch``` function that is a **mini-batch gradient descent** implementation, i.e. it uses k observations (k < number of observations on trainset) in each iteration. E.g. this is the code for for fitting a linear regression model with 0.001 as regularization parameter, from file  ```foXtrain ``` for predictors (columns from  ```ciX ``` to  ```ceX ```), and from file  ```fytrain ``` for labels (columns form  ```ciy ``` to  ```cey ```) and buffer equals to 100 observations (= you load in memory 100 observations each time **and you use only these for complete a gradient descent iteration**).
  
-    ```
+    ```matlab
     %% regularization parameter 
     lambda = 0.001; 
   
@@ -327,7 +327,7 @@ Package ```linear_reg``` **very fast 100% vectorized implementation** in Matlab/
     ```
  * for **large datasets** (e.g. **80GB train set on a machine with 8GB RAM**) you can use the ```trainLinearReg_Buff``` function that is a **buffered implementation of gradient descent**, i.e. it uses it uses all train observations in each iteration vs. one observation as **stochastic gradient descent** or k (k < number of observations on trainset) observations in each iteration as **mini-batch gradient descent**. E.g. this is the code for for fitting a linear regression model with 0.001 as regularization parameter, from file  ```foXtrain ``` for predictors (columns from  ```ciX ``` to  ```ceX ```), and from file  ```fytrain ``` for labels (columns form  ```ciy ``` to  ```cey ```) and buffer equals to 100 observations (= you load in memory 100 observations each time **but you use all train observations for complete a gradient descent iteration**).
 
-    ```
+    ```matlab
     %% regularization parameter 
     lambda = 0.001; 
   
@@ -351,7 +351,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
     
     ```>octave GO_LogisticReg.m```
 * for fitting a **logistic regression** model use ```lrCostFunction``` wrapped in  ```trainLogReg``` function. E.g. this is the code for fitting a regularized logistic regression model with trainset/testset not scaled and with regularization parameter set to 0.001. Note: in this code sketch insteaf of using 0.5 as probability threshold I use the ```selectThreshold``` that select the probability threshold maximizing F1-score.    
-    ```
+    ```matlab
     %% feature scaling (trainset/testset) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,p = 1);
     [Xtest,mu,sigma] = treatContFeatures(Xtest,p = 1,1,mu,sigma);
@@ -400,7 +400,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
     ```
 * for **tuning parameters (on classification problems)** (degree of polynomial trasformation, regularization parameter) by cross-validation use the ```findOptPAndLambdaRegLog``` function. E.g. this is the code for finding the best degree of polynomial trasformation, the best regularization parameter, using cross validation on a train set and cross-validation set already scaled. **Best parameters are found for metrics F1, precision, recall**. 
  
-    ```
+    ```matlab
     [p_opt_recall,lambda_opt_recall,p_opt_accuracy,lambda_opt_accuracy,p_opt_precision,lambda_opt_precision,p_opt_F1,lambda_opt_F1,grid] = ...
       findOptPAndLambdaRegLog(Xtrain, ytrain, Xval, yval)
       
