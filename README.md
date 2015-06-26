@@ -409,6 +409,33 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
     printf('>>>>> metric: recall    - found optimum with p=%i and lambda=%f \n', p_opt_recall , lambda_opt_recall );
     ```
     
+## 4. fast-furious best practices  
+### 4.1 Data process best practices   
+Package ```data_process``` in R. 
+
+* for **imputing missing values on trainset/testset** use the ```blackGuido``` function. In literature you can find many imputing algorithms, among whom an important role is played by the KNN based ones. I find this approach pretty funny, as I consider **the problem of imputing missing values just a regression problem, if the imputing predictor is continuous, or a classification problem, if the imputing predictor is discrete**. This is the idea behind ```blackGuido```. Basically ```blackGuido```, for each predictor with a missing value, 
+  + builds a **decision matrix** for choosing the best predictors to use for building the related supervised learning model; in order to select best predictors ```blackGuido``` uses a **filter method of feature selection** choosing the most correlated predictor (CHI-SQUARE test among discrete variables, ANOVA test among discrete-continuous variables, PEARSON test among continuous-continuous variables) that has **no missing values in missing observations**. **Notice that a predictor with missing values can be used to estimate another predictor with missing values**.   
+  + choose the **best perfomant supervised learning model** among the ones you specify to use.  
+
+For example, this is the code to perform imputation with fast-furious ```blackGuido``` function on a given data set _weather_ (excluding first two predictors) and using the best performing (RMSE) models among linear regression, KNN, PLS, Ridge regression, SVM, Cubist for continuous imputing predictors, and using the best performing (AUC) models among mode and SVM for categorical imputing predictors.  
+
+```r
+source("./data_process/Impute_Lib.R")
+
+## imputing missing values ...
+l = blackGuido (data = weather[,-c(1,2)], 
+                RegModels = c("LinearReg","KNN_Reg", "PLS_Reg" , "Ridge_Reg" , "SVM_Reg", "Cubist_Reg")  , 
+                ClassModels = c("Mode" , "SVMClass"), 
+                verbose = T , 
+                debug = F)
+weather.imputed = l[[1]]
+ImputePredictors = l[[2]]
+DecisionMatrix = l[[3]]
+
+weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
+```
+
+    
 ## References 
 Most parts of fast-furious are based on the following resources: 
 * Stanford professor Andrew NG resources: [1](http://openclassroom.stanford.edu/MainFolder/CoursePage.php?course=MachineLearning), [2](https://www.coursera.org/learn/machine-learning/home/info)
