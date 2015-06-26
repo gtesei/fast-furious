@@ -398,7 +398,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
    	pred_train = (probs_train > thr);
    	pred_train = (probs_test > thr);
     ```
-* for **tuning parameters (on classification problems)** (degree of polynomial trasformation, regularization parameter) by cross-validation use the ```findOptPAndLambdaRegLog``` function. E.g. this is the code for finding the best degree of polynomial trasformation, the best regularization parameter, using cross validation on a train set and cross-validation set already scaled. **Best parameters are found for metrics** [F1](https://en.wikipedia.org/wiki/F1_score), [precision](https://en.wikipedia.org/wiki/Precision_and_recall), [recall](https://en.wikipedia.org/wiki/Precision_and_recall). 
+* for **tuning parameters (on classification problems)** (degree of polynomial trasformation, regularization parameter) by cross-validation use the ```findOptPAndLambdaRegLog``` function. E.g. this is the code for finding the best degree of polynomial trasformation, the best regularization parameter, using cross validation on a train set and cross-validation set already scaled. **Best parameters are found for metrics** [F1-score](https://en.wikipedia.org/wiki/F1_score), [precision](https://en.wikipedia.org/wiki/Precision_and_recall), [recall](https://en.wikipedia.org/wiki/Precision_and_recall). 
  
     ```matlab
     [p_opt_recall,lambda_opt_recall,p_opt_accuracy,lambda_opt_accuracy,p_opt_precision,lambda_opt_precision,p_opt_F1,lambda_opt_F1,grid] = ...
