@@ -96,5 +96,5 @@ featureSelect <- function(traindata,
   testdata = data[1:(dim(testdata)[1]),]
   traindata = data[((dim(testdata)[1])+1):(dim(data)[1]),]
   
-  list(traindata,testdata)
+  return(list(traindata = traindata,testdata = testdata))
 }

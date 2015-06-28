@@ -438,11 +438,20 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
   ```r
   source("./data_process/FeatureSelection_Lib.R")
   
-  l = featureSelect (train,test)
-  traindata = l[[1]]
-  testdata = l[[2]]
+  fs = featureSelect (train,test)
+  train = fs$traindata
+  test = fs$testdata
   ```
-  + For example, this is the code for invoking  the default behaviour of ```featureSelect```.  
+  + For example, this is the code for invoking ```featureSelect``` in order to remove only zero-variance predictors on trainset. 
+  ```r
+  source("./data_process/FeatureSelection_Lib.R")
+  
+  fs = featureSelect (train,test,y=ytrain,
+                   removeOnlyZeroVariacePredictors = T,
+                   performVarianceAnalysisOnTrainSetOnly = T)
+  train = fs$traindata
+  test = fs$testdata
+  ```
     
 ## References 
 Most parts of fast-furious are based on the following resources: 
