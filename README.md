@@ -442,23 +442,36 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
   train = fs$traindata
   test = fs$testdata
   ```
-  + For example, this is the code for invoking ```featureSelect``` in order to **remove only zero-variance predictors on trainset**, to remove high correlated predictors and to perform feature scaling.
+  + For example, this is the code for invoking ```featureSelect``` in order to **remove only zero-variance predictors on trainset**, to remove predictors that make ill-conditioned square matrix, to remove high correlated predictors and to perform feature scaling.
   ```r
   source("./data_process/FeatureSelection_Lib.R")
   
-  fs = featureSelect (train,test,y=ytrain,
+  fs = featureSelect (train,test,
                    removeOnlyZeroVariacePredictors = T,
                    performVarianceAnalysisOnTrainSetOnly = T)
   train = fs$traindata
   test = fs$testdata
   ```
-  + For example, this is the code for invoking ```featureSelect``` in order to **remove near zero-variance predictors on trainset having pearson correlation coefficient (with response variable) < 0.75**, to remove high correlated predictors and to perform feature scaling. 
+  + For example, this is the code for invoking ```featureSelect``` in order to **remove near zero-variance predictors on trainset having pearson correlation coefficient (with response variable) < 0.75**, , to remove predictors that make ill-conditioned square matrix, to remove high correlated predictors and to perform feature scaling. 
   ```r
   source("./data_process/FeatureSelection_Lib.R")
   
   fs = featureSelect (train,test,y=ytrain,
                    removeOnlyZeroVariacePredictors = F,
                    correlationThreshold = 0.75)
+  train = fs$traindata
+  test = fs$testdata
+  ```
+  + For example, this is the code for invoking ```featureSelect``` in order to **remove only zero-variance predictors on trainset**. 
+  ```r
+  source("./data_process/FeatureSelection_Lib.R")
+  
+  fs = featureSelect (train,test,
+                   removeOnlyZeroVariacePredictors = T,
+                   performVarianceAnalysisOnTrainSetOnly = T,
+                   removePredictorsMakingIllConditionedSquareMatrix = F, 
+                   removeHighCorrelatedPredictors = F, 
+                   featureScaling = F)
   train = fs$traindata
   test = fs$testdata
   ```
