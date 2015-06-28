@@ -433,12 +433,14 @@ DecisionMatrix = l[[3]]
 
 weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
 ```
-* for **basic feature selection** use the ```featureSelect``` function in ```FeatureSelection_Lib.R```. This function is particularly useful when you are going to feed a boundle of many different models on the same dataset for selecting best candidates on which focusing your efforts later. So, many models (but not all ones like random forests, decision trees, extreme gradient boosting) relies on certain algebraic of trainset like not having predictors that are linear combinations of other predictors or zero-variance predictors, or statistical properties like not having predictors that are high correlated to other predictors. 
+* for **basic feature selection** use the ```featureSelect``` function in ```FeatureSelection_Lib.R```. This function is particularly useful when you are going to feed a boundle of many different models on the same dataset for selecting best candidates on which focusing your efforts later. So, many models (but not all ones like random forests, decision trees or extreme gradient boosting) relies on certain algebraic properties of the trainset like not having predictors that are linear combinations of other predictors or zero-variance predictors, or statistical properties like not having predictors that are high correlated to other predictors. By default, ```featureSelect``` removes **near zero var predictors** (using caret  ```nearZeroVar ```) on trainset, it removes **predictors that make ill-conditioned square matrix**, it removes **high correlated predictors** and it perform **feature scaling**. For example, this is the code for invoking  the default behaviour of ```featureSelect```.      
 
 ```r
 source("./data_process/FeatureSelection_Lib.R")
 
-
+l = featureSelect (train,test)
+traindata = l[[1]]
+testdata = l[[2]]
 ```
 
     
