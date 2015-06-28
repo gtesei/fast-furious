@@ -413,7 +413,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
 ### 4.1 Data process best practices   
 Package ```data_process``` in R. 
 
-* for **imputing missing values on trainset/testset** use the ```blackGuido``` function. In literature you can find many imputing algorithms, among which an important role is played by the KNN based ones. I find this approach pretty funny, as I consider **the problem of imputing missing values just a regression problem, if the imputing predictor is continuous, or a classification problem, if the imputing predictor is discrete**. This is the idea behind ```blackGuido```. Basically ```blackGuido```, for each predictor with a missing value, 
+* for **imputing missing values on trainset/testset** use the ```blackGuido``` in ```Impute_Lib.R```. In literature you can find many imputing algorithms, among which an important role is played by the KNN based ones. I find this approach pretty funny, as I consider **the problem of imputing missing values just a regression problem, if the imputing predictor is continuous, or a classification problem, if the imputing predictor is discrete**. This is the idea behind ```blackGuido```. Basically ```blackGuido```, for each predictor with a missing value, 
   + builds a **decision matrix** for choosing the best predictors to use for building the related supervised learning model; in order to select best predictors ```blackGuido``` uses a **filter method of feature selection** (you can find a good introduction to filter methods of feature selection in chapter 19 of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/)) choosing the most correlated predictor (CHI-SQUARE test among discrete variables, ANOVA test among discrete-continuous variables, PEARSON test among continuous-continuous variables) that has **no missing values in missing observations**. **Notice that a predictor with missing values could be used to estimate missing values of another predictor**. In order to choose the best imputating model, ```blackGuido``` uses internally [caret](http://caret.r-forge.r-project.org/). Anyway, only a few caret models are used (see  ```All.RegModels.impute``` and ```All.ClassModels.impute``` vectors in ```data_process/Impute_Lib.R```). So, a natural question here is why not using all regression/classification models caret supports? The answer is basically practical meaning that the supported imputating models are the ones that in my experience perform good computationally. 
   + chooses the **best performing supervised learning model** among the ones you specify to use.  
 For example, this is the code to perform imputation with ```blackGuido``` function on a given data set _weather_ (excluding first two predictors) and using the best performing (RMSE) models among linear regression, KNN, PLS, Ridge regression, SVM, Cubist for continuous imputing predictors, and using the best performing (AUC) models among mode and SVM for categorical imputing predictors.  
@@ -432,6 +432,13 @@ ImputePredictors = l[[2]]
 DecisionMatrix = l[[3]]
 
 weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
+```
+* for **basic feature selection** use the ```featureSelect``` function in ```FeatureSelection_Lib.R```. This function is particularly useful when you are going to feed a boundle of many different models on the same dataset for selecting best candidates on which focusing your efforts later. So, many models (but not all ones like random forests, decision trees, extreme gradient boosting) relies on certain algebraic of trainset like not having predictors that are linear combinations of other predictors or zero-variance predictors, or statistical properties like not having predictors that are high correlated to other predictors. 
+
+```r
+source("./data_process/FeatureSelection_Lib.R")
+
+
 ```
 
     
