@@ -6,7 +6,7 @@ featureSelect <- function(traindata,
                           y = NULL,
                           removeOnlyZeroVariacePredictors=F,
                           performVarianceAnalysisOnTrainSetOnly = T , 
-                          correlationRhreshold = NA, 
+                          correlationThreshold = NA, 
                           removePredictorsMakingIllConditionedSquareMatrix = T, 
                           removeHighCorrelatedPredictors = T, 
                           featureScaling = T) {
@@ -24,13 +24,13 @@ featureSelect <- function(traindata,
       PredToDel = nearZeroVar(data)
     }
     
-    if (! is.na(correlationRhreshold) ) {
+    if (! is.na(correlationThreshold) ) {
       cat(">>> computing correlation ... \n")
       corrValues <- apply(traindata,
                                MARGIN = 2,
                                FUN = function(x, y) cor(x, y),
                                y = y)
-      PredToReinsert = as.numeric(which(! is.na(corrValues) & corrValues > correlationRhreshold))
+      PredToReinsert = as.numeric(which(! is.na(corrValues) & corrValues > correlationThreshold))
       
       cat(">> There are high correlated predictors with response variable. N. ",length(PredToReinsert)," - predictors: ", 
           paste(colnames(data) [PredToReinsert] , collapse=" " ) , " ... \n ")
