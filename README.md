@@ -452,7 +452,7 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
   train = fs$traindata
   test = fs$testdata
   ```
-  + For example, this is the code for invoking ```featureSelect``` in order to **remove near zero-variance predictors on trainset having pearson correlation coefficient < 0.75**, to remove high correlated predictors and to perform feature scaling. 
+  + For example, this is the code for invoking ```featureSelect``` in order to **remove near zero-variance predictors on trainset having pearson correlation coefficient (with response variable) < 0.75**, to remove high correlated predictors and to perform feature scaling. 
   ```r
   source("./data_process/FeatureSelection_Lib.R")
   
