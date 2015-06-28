@@ -458,7 +458,7 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
   
   fs = featureSelect (train,test,y=ytrain,
                    removeOnlyZeroVariacePredictors = F,
-                   correlationRhreshold = 0.75)
+                   correlationThreshold = 0.75)
   train = fs$traindata
   test = fs$testdata
   ```
