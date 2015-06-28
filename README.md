@@ -434,7 +434,7 @@ DecisionMatrix = l[[3]]
 weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
 ```
 * for **basic feature selection** use the ```featureSelect``` function in ```FeatureSelection_Lib.R```. This function is particularly useful when you are going to feed a boundle of many different models on a common crossvalidation holdout set for selecting best candidates on which focusing your efforts later. So, many models (but not all ones like random forests, decision trees or extreme gradient boosting) relies on certain algebraic properties of the trainset like not having predictors that are linear combinations of other predictors or zero-variance predictors, or statistical properties like not having predictors that are high correlated to other predictors. By default, ```featureSelect``` removes **near zero variance predictors** (using caret  ```nearZeroVar ```) on trainset, it removes **predictors that make ill-conditioned square matrix**, it removes **high correlated predictors** and it performs **feature scaling**. 
-  + For example, this is the code for invoking  the default behaviour of ```featureSelect```.      
+  + For example, this is the code for invoking  the **default behaviour** of ```featureSelect```.      
   ```r
   source("./data_process/FeatureSelection_Lib.R")
   
@@ -442,13 +442,23 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
   train = fs$traindata
   test = fs$testdata
   ```
-  + For example, this is the code for invoking ```featureSelect``` in order to remove only zero-variance predictors on trainset. 
+  + For example, this is the code for invoking ```featureSelect``` in order to **remove only zero-variance predictors on trainset**, to remove high correlated predictors and to perform feature scaling.
   ```r
   source("./data_process/FeatureSelection_Lib.R")
   
   fs = featureSelect (train,test,y=ytrain,
                    removeOnlyZeroVariacePredictors = T,
                    performVarianceAnalysisOnTrainSetOnly = T)
+  train = fs$traindata
+  test = fs$testdata
+  ```
+  + For example, this is the code for invoking ```featureSelect``` in order to **remove near zero-variance predictors on trainset having pearson correlation coefficient < 0.75**, to remove high correlated predictors and to perform feature scaling. 
+  ```r
+  source("./data_process/FeatureSelection_Lib.R")
+  
+  fs = featureSelect (train,test,y=ytrain,
+                   removeOnlyZeroVariacePredictors = F,
+                   correlationRhreshold = 0.75)
   train = fs$traindata
   test = fs$testdata
   ```
