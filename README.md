@@ -442,6 +442,7 @@ l = featureSelect (train,test)
 traindata = l[[1]]
 testdata = l[[2]]
 ```
+
   + For example, this is the code for invoking  the default behaviour of ```featureSelect```.  
     
 ## References 
