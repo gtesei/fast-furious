@@ -481,15 +481,14 @@ weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
   source("./data_process/SelectBestPredictors_Lib.R")
   
   
-  predictors.reg.linear = getPvalueFeatures( features = train , 
+  predictors.props = getPvalueFeatures( features = train , 
                                              response = ytrain , 
                                              p = 3 , 
                                              pValueAdjust = T, 
                                              pValueAdjustMethod = "default", 
                                              verbose = T)
-  predictors.reg.linear = predictors.reg.linear[order(predictors.reg.linear$pValue,
+  predictors.props = predictors.props[order(predictors.props$pValue,
                                                       decreasing = F),]
-  
   ```
 
     
