@@ -10,7 +10,6 @@ fast-furious has been built in interpretable languages like R, Matlab/Octave, Py
 ### 2.1 Requirements
   * [Octave](http://www.gnu.org/software/octave/download.html) or Matlab is **mandatory** for fast-furious model implementations (*regularized neural networks, regularized linear and polynomial regression, regularized logistic regression*). If you are using only these fast-furious models Octave or Matlab installed on your machine is the only requirement. Currently, I am working on matlab compatibility issues. 
   * [R](http://www.r-project.org/) is **mandatory** for data process, feature engineering, model selection and model ensembling best practices 
-  * [Python](https://www.python.org/downloads/) is **optional** as most of the python stuff is available in R as well 
   
 ### 2.2 Installation  
   Installation is pretty easy and quick. You can choose
