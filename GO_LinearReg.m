@@ -2,7 +2,7 @@
 menv;
 
 %%load and run use cases
-source "./linear_reg/README.m";
+source './linear_reg/README.m';
 go();
 
 

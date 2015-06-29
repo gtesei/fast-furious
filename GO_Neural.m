@@ -2,7 +2,7 @@
 menv;
 
 %% load use cases and go  
-source "./neural/README.m";
+source './neural/README.m';
 go();
 
 
