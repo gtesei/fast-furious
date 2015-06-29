@@ -462,7 +462,8 @@ rm(amd)
 rm(prtm)
 rm(pdm)
 
-cat (">>> dtm.tfidf.df dim: ",dim(dtm.tfidf.df),"\n")
+cat (">>> dtm.tfidf.df dim: ",dim(dtm.tfidf.df)," ... saving on disk ... \n")
+write_csv(dtm.tfidf.df , paste(getBasePath("data") , "base_matrix.csv" , sep=''))
 
 #### preparing xboost 
 x = as.matrix(dtm.tfidf.df)
