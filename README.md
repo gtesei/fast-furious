@@ -67,8 +67,11 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
  
     ```>octave GO_Neural.m```
     
- * for **binary classification problems** use ```nnCostFunction``` cost function (multiclass still in beta) wrapped in ```trainNeuralNetwork```. E.g. this is the code for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added.
+ * for **binary classification problems** use ```nnCostFunction``` cost function wrapped in ```trainNeuralNetwork```. E.g. this is the code for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron (= binary classification) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added.
     ```matlab
+    % y must a 01 vector (e.g. [1 0 1 0 0 0 0 0 1 1 0 1] )
+    % train_data and test_data are the train set and test set 
+    
     %% 400 neurons at input layer
     %% 25 neurons at hidden layer
     %% 1 neuron at output layer  
@@ -94,6 +97,10 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     ```
  * for **tuning parameters on classification problems** (number of neurons per layer, number of hidden layers, regularization parameter) by cross-validation use the ```findOptPAndHAndLambda``` function. E.g. this is the code for finding the best number of neurons per layer (p_opt_acc), the best number of hidden layers (h_opt_acc), the best regularization parameter (lambda_opt_acc), using cross validation on a binary classification problem with accuracy as metric on a train set (80% of data) and cross validation set (20% of data) not scaled.
     ```matlab
+    
+    % y must a 01 vector (e.g. [1 0 1 0 0 0 0 0 1 1 0 1] )
+    % train_data and test_data are the train set and test set 
+    
     %% scale and add bias term 
     [train_data,mu,sigma] = treatContFeatures(train_data,1);
     [test_data,mu,sigma] = treatContFeatures(test_data,1,1,mu,sigma);
@@ -122,6 +129,33 @@ Package ```neural``` **very fast 100% vectorized implementation of backpropagati
     %% predict on test set 
     probs_test = NNPredictMulticlass(NNMeta, Theta , test_data , featureScaled = 1); 
     pred_test = (probs_test > 0.5);
+    ```
+* for **multiclass classification problems** use ```nnCostFunction``` cost function wrapped in ```trainNeuralNetwork``` as well. E.g. this is the code for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 5 neurons (= 5 class classification problem) at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added.
+    ```matlab
+    % y must be 1-based and, in this case a 12345 vector, (e.g. [1 2 5 4 3 2 3 4 5 2 3 4 1 2 3 4 5] )
+    % train_data and test_data are the train set and test set 
+    
+    %% 400 neurons at input layer
+    %% 25 neurons at hidden layer
+    %% 1 neuron at output layer  
+    NNMeta = buildNNMeta([400 25 1]); 
+    
+    %% regularization parameter 
+    lambda = 0.001; 
+    
+    %% train on train set 
+    [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda , iter = 100, featureScaled = 1); 
+    
+    %% predict on train set 
+    probs_train = NNPredictMulticlass(NNMeta, Theta , Xtrain , featureScaled = 1);
+    pred_train = (probs_train > 0.5);
+    
+    %% predict on test set 
+    probs_test = NNPredictMulticlass(NNMeta, Theta , Xtest , featureScaled = 1);
+    
+    %% measure accuracy 
+    acc_train = mean(double(pred_train == ytrain)) * 100;
+    acc_test = mean(double(pred_test == ytest)) * 100;
     ```
  * for **regression problems** use ```nnCostFunctionReg``` cost function wrapped in ```trainNeuralNetworkReg```. E.g. this is the code for fitting a neural neural network with 400 neurons at input layer, 25 neurons at hidden layer, 1 neuron at output layer, 0.001 as regularization parameter, where trainset/testset has been already scaled and with the bias term added.
     ```matlab

@@ -1,6 +1,7 @@
 function [J grad] = nnCostFunction(nn_params, ...
                                    NNMeta, ...
-                                   X, y, lambda, featureScaled = 0,weigth = [1 1])
+%                                   X, y, lambda, featureScaled = 0,weigth = [1 1])
+                                   X, y, lambda, featureScaled = 0)
                                    
 m = size(X, 1);
 L = length(NNMeta.NNArchVect); 
@@ -67,7 +68,8 @@ hx = cell2mat(a(L,1));
 %S = ( -1 * (  log(hx) .* yVect) -1 * ( ( log((1 .- hx))) .* (1 .- yVect) ) );
 %J = (1/m) * sum(S(:));
 
-S = ( -1 * weigth(1) * innerProductMat_Y_1_X(yVect , log(hx)) -1 * weigth(2) * innerProductMat_Y_1_X((1 .- yVect), log(1 .- hx)));
+%S = ( -1 * weigth(1) * innerProductMat_Y_1_X(yVect , log(hx)) -1 * weigth(2) * innerProductMat_Y_1_X((1 .- yVect), log(1 .- hx)));
+S = ( -1 * innerProductMat_Y_1_X(yVect , log(hx)) -1 * innerProductMat_Y_1_X((1 .- yVect), log(1 .- hx)));
 J = (1/m) * S;
 
 %-------------BACK PROP
@@ -76,7 +78,7 @@ d = cell(L,1);
 d(L,1) = cell2mat(a(L,1)) - yVect;
 
 %%%%%% pesi  (non funzionano per le multiclass!!!)
-d(L,1) = cell2mat(d(L,1)) .* ( (cell2mat(d(L,1)) < 0 ) * weigth(1) + (cell2mat(d(L,1)) > 0 ) * weigth(2) );
+%d(L,1) = cell2mat(d(L,1)) .* ( (cell2mat(d(L,1)) < 0 ) * weigth(1) + (cell2mat(d(L,1)) > 0 ) * weigth(2) );
 %%%%%%%
 
 for i = fliplr(2:L-1)
