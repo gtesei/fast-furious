@@ -50,5 +50,5 @@ colnames(mm) = paste(paste(colname.prefix,"_",sep=''),    colns   ,sep='')
   testdata = mm[1:(length(data.test)),]
   traindata = mm[((length(data.test))+1):(dim(mm)[1]),]
   
-  list(traindata,testdata)
+  list(traindata = traindata ,testdata = testdata)
 }
