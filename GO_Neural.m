@@ -2,7 +2,7 @@
 menv;
 
 %% load use cases and go  
-README_Neural
+README_Neural;
 go();
 
 

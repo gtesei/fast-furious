@@ -2,7 +2,7 @@
 menv;
 
 %% load use cases
-source './logistic_reg/README.m';
+README_Log_Reg;
 go();
 
 
