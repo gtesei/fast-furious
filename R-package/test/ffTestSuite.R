@@ -8,7 +8,7 @@ ff_test_param = list(
 
 ## before testing menv (make env)
 base_path = '/Users/gino/kaggle/fast-furious/gitHub/fast-furious/'
-source(paste(base_path,'R-package/menv.R',sep=''))
+source(paste(base_path,'R-package/R/menv.R',sep=''))
 runTestFile('/Users/gino/kaggle/fast-furious/gitHub/fast-furious/R-package/test/Test_menv.R')
 
 ## test all 
