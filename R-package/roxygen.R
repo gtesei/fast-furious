@@ -1,4 +1,3 @@
 
 
-roxygenize(package.dir = ".", roclets = NULL, load_code = source_package,
-           clean = FALSE)
+roxygen2::roxygenise(package.dir = '/Users/gino/kaggle/fast-furious/gitHub/fast-furious/R-package')
