@@ -1,6 +1,6 @@
-Package: fast-furious
+Package: fast_furious
 Type: Package
-Title: fast-furious
+Title: fast_furious
 Version: 0.1-1
 Date: 2015-08-03
 Author: Gino Tesei <gtesei@yahoo.com>
