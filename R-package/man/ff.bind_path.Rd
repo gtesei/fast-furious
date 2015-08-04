@@ -15,7 +15,8 @@ ff.bind_path(type, sub_path)
 Bind an absolute path for a kind of resources.
 }
 \examples{
-ff.set_base_path('./')
-ff.bind_path(type = "data",sub_path = "dataset")
+ff.set_base_path(getwd())
+if(! dir.exists("mydata") ) dir.create('mydata')
+ff.bind_path(type = "data",sub_path = "mydata")
 }
 

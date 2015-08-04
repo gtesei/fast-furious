@@ -51,8 +51,9 @@ ff.get_path = function (type="base") {
 #' @param sub_path the suffix to concatenate to the absolute path to get the absolute path of the kind of resource.
 #' 
 #' @examples
-#' ff.set_base_path('./')
-#' ff.bind_path(type = "data",sub_path = "dataset")
+#' ff.set_base_path(getwd())
+#' if(! dir.exists("mydata") ) dir.create('mydata')
+#' ff.bind_path(type = "data",sub_path = "mydata")
 #' @export
 #' 
 ff.bind_path = function (type,sub_path) {
@@ -64,7 +65,7 @@ ff.bind_path = function (type,sub_path) {
   if(!identical( substr(path, nchar(path), nchar(path) ) , .Platform$file.sep))
     path = paste0(path,.Platform$file.sep)
   
-  #stopifnot(file.exists(path)) 
+  stopifnot(file.exists(path)) 
   
   FAST_FURIOUS_PTH_BINDINGS[[type]] <<- path
 }
@@ -73,8 +74,9 @@ ff.bind_path = function (type,sub_path) {
 #' 
 #' 
 #' @examples
-#' ff.set_base_path('./')
-#' ff.bind_path(type = "data",sub_path = "dataset")
+#' ff.set_base_path(getwd())
+#' if(! dir.exists("mydata") ) dir.create('mydata')
+#' ff.bind_path(type = "data",sub_path = "mydata")
 #' ff.get_path_bindings()
 #' @export
 #' 
