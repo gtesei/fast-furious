@@ -23,7 +23,7 @@ ff.set <- function(key , val, force = F)  {
 #' @param path the absolute path. 
 #' 
 #' @examples
-#' ff.set_base_path('/Users/gg/root')
+#' ff.set_base_path('./')
 #' @export
 #' 
 ff.set_base_path = function (path) {
@@ -40,6 +40,7 @@ ff.set_base_path = function (path) {
 #' @param type the type of resource.
 #' 
 #' @examples
+#' ff.set_base_path('./')
 #' ff.get_path() ## equivalent to ff.get_path = function (type="base") gets the base path 
 #' @export
 #' 
@@ -59,6 +60,7 @@ ff.get_path = function (type="base") {
 #' @param sub_path the suffix to concatenate to the absolute path to get the absolute path of the kind of resource.
 #' 
 #' @examples
+#' ff.set_base_path('./')
 #' ff.bind_path(type = "data",sub_path = "dataset")
 #' @export
 #' 
@@ -80,6 +82,8 @@ ff.bind_path = function (type,sub_path) {
 #' 
 #' 
 #' @examples
+#' ff.set_base_path('./')
+#' ff.bind_path(type = "data",sub_path = "dataset")
 #' ff.get_bindings()
 #' @export
 #' 

@@ -13,6 +13,6 @@ ff.set_base_path(path)
 Set base path
 }
 \examples{
-ff.set_base_path('/Users/gg/root')
+ff.set_base_path('./')
 }
 

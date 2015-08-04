@@ -10,6 +10,8 @@ ff.get_path_bindings()
 Get the list of bindings (type of resource , absolutepath)
 }
 \examples{
+ff.set_base_path('./')
+ff.bind_path(type = "data",sub_path = "dataset")
 ff.get_bindings()
 }
 

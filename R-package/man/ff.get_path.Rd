@@ -13,6 +13,7 @@ ff.get_path(type = "base")
 Get the absolute path for a kind of resources.
 }
 \examples{
+ff.set_base_path('./')
 ff.get_path() ## equivalent to ff.get_path = function (type="base") gets the base path
 }
 
