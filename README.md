@@ -1,5 +1,6 @@
 # fast-furious
 
+[![Build Status](https://api.travis-ci.org/gtesei/fast-furious.svg?branch=master)](https://travis-ci.org/gtesei/fast-furious)
 
 ## 1. What is it?
   fast-furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models I needed in my Machine Learning Lab but I didn't found on the shelf.
