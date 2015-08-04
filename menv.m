@@ -21,4 +21,4 @@ addpath([curr_dir '/dataset/poly/']);
 
 %% addpath('/Users/gino/kaggle/libsvm/matlab');
 
-
+setenv("GNUTERM","qt")
