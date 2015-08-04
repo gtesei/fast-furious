@@ -1,22 +1,9 @@
 
 ### CONSTANTS  
-FAST_FURIOUS_BASE_PATH_KEY = "FAST_FURIOUS_BASE_PATH"
-FAST_FURIOUS_BASE_PATH_VALUE = NULL
-FAST_FURIOUS_PTH_BINDINGS = list()
+assign("FAST_FURIOUS_BASE_PATH_VALUE", NULL, .GlobalEnv)
+assign("FAST_FURIOUS_PTH_BINDINGS", list(), .GlobalEnv)
 
 ### FUNCS 
-ff.set <- function(key , val, force = F)  {
-  
-  stopifnot(is.character(key), length(key) == 1)
-  
-  if (is.null(FAST_FURIOUS_BASE_PATH_VALUE) || force) {
-    FAST_FURIOUS_BASE_PATH_VALUE <<- val 
-    FAST_FURIOUS_PTH_BINDINGS <<- list()
-    FAST_FURIOUS_PTH_BINDINGS[["base"]] <<- val
-  } else {
-    stop( "Can't set up " , key, call. = FALSE)
-  }
-}
 
 #' Set base path 
 #' 
@@ -32,7 +19,11 @@ ff.set_base_path = function (path) {
   if(!identical( substr(path, nchar(path), nchar(path) ) , .Platform$file.sep))
     path = paste0(path,.Platform$file.sep)
   
-  ff.set(FAST_FURIOUS_BASE_PATH_KEY , path, force = T)
+  #unlockBinding("FAST_FURIOUS_BASE_PATH_VALUE", .GlobalEnv)
+  assign("FAST_FURIOUS_BASE_PATH_VALUE", path, .GlobalEnv)
+  FAST_FURIOUS_PTH_BINDINGS <<- list()
+  FAST_FURIOUS_PTH_BINDINGS[["base"]] <<- path
+  #lockBinding("FAST_FURIOUS_BASE_PATH_VALUE", .GlobalEnv)
 }
 
 #' Get the absolute path for a kind of resources.  
