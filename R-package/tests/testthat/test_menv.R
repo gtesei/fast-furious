@@ -6,7 +6,7 @@ test_that('set_path and get_path in basic contest', {
   ff.set_base_path(base_path)
   
   expect_equal(paste0(base_path,.Platform$file.sep) , ff.get_path() )
-  expect_equal(length(ff.get_path_bindings()),1)
+  expect_equal(length(ff.get_path_bindings()),1) 
 })
 
 test_that('bind_path in basic contest', {
