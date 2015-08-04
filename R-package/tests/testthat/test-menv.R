@@ -1,7 +1,7 @@
 context("menv")
 
 test_that('set_path and get_path in basic contest', {
-  skip_on_cran()
+  #skip_on_cran()
   ff.set_base_path(getwd())
   
   expect_equal(paste0(getwd(),.Platform$file.sep) , ff.get_path() )
@@ -9,7 +9,7 @@ test_that('set_path and get_path in basic contest', {
 })
 
 test_that('bind_path in basic contest', {
-  skip_on_cran()
+  #skip_on_cran()
   base_path = getwd()
   ff.set_base_path(base_path)
   if(! dir.exists("mydata") ) dir.create('mydata')
@@ -23,7 +23,7 @@ do_inside_func = function(key,val) {
 } 
 
 test_that('bind_path inside a function', {
-  skip_on_cran()
+  #skip_on_cran()
   ff.set_base_path(getwd())
   if(! dir.exists("mydata") ) dir.create('mydata')
   ff.bind_path(type = "data",sub_path = "mydata")
