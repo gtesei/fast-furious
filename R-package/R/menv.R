@@ -59,7 +59,7 @@ ff.get_path = function (type="base") {
 #' @param sub_path the suffix to concatenate to the absolute path to get the absolute path of the kind of resource.
 #' 
 #' @examples
-#' ff.bind_sub_path(type = "data",sub_path = "dataset")
+#' ff.bind_path(type = "data",sub_path = "dataset")
 #' @export
 #' 
 ff.bind_path = function (type,sub_path) {

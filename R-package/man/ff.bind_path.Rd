@@ -15,6 +15,6 @@ ff.bind_path(type, sub_path)
 Bind an absolute path for a kind of resources.
 }
 \examples{
-ff.bind_sub_path(type = "data",sub_path = "dataset")
+ff.bind_path(type = "data",sub_path = "dataset")
 }
 
