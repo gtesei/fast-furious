@@ -64,7 +64,7 @@ ff.bind_path = function (type,sub_path) {
   if(!identical( substr(path, nchar(path), nchar(path) ) , .Platform$file.sep))
     path = paste0(path,.Platform$file.sep)
   
-  stopifnot(file.exists(path))
+  #stopifnot(file.exists(path)) 
   
   FAST_FURIOUS_PTH_BINDINGS[[type]] <<- path
 }
