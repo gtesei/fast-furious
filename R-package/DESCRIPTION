@@ -13,6 +13,7 @@ VignetteBuilder: knitr
 Suggests:
     knitr,
     ggplot2 (>= 1.0.0),
-    caret
+    caret,
+    testthat
 Depends:
     R (>= 2.10)
