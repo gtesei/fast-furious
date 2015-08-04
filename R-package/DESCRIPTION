@@ -6,7 +6,7 @@ Date: 2015-08-03
 Author: Gino Tesei <gtesei@yahoo.com>
 Maintainer: Gino Tesei <gtesei@yahoo.com>
 Description: fast-furiuos gathers code (R, Matlab/Octave, Python), models and meta-models I needed in my Machine Learning Lab but I didn't found on the shelf.
-License: Apache License (== 2.0) | file LICENSE
+License: MIT + file LICENSE
 URL: https://github.com/gtesei/fast-furious
 BugReports: https://github.com/gtesei/fast-furious/issues
 VignetteBuilder: knitr
