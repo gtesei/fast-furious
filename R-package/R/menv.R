@@ -75,7 +75,7 @@ ff.bind_path = function (type,sub_path) {
 #' @examples
 #' ff.set_base_path('./')
 #' ff.bind_path(type = "data",sub_path = "dataset")
-#' ff.get_bindings()
+#' ff.get_path_bindings()
 #' @export
 #' 
 ff.get_path_bindings = function() {
