@@ -5,7 +5,6 @@ FAST_FURIOUS_BASE_PATH_VALUE = NULL
 FAST_FURIOUS_PTH_BINDINGS = list()
 
 ### FUNCS 
-
 ff.set <- function(key , val, force = F)  {
   
   stopifnot(is.character(key), length(key) == 1)
@@ -63,7 +62,7 @@ ff.get_path = function (type="base") {
 #' ff.bind_sub_path(type = "data",sub_path = "dataset")
 #' @export
 #' 
-ff.bind_sub_path = function (type,sub_path) {
+ff.bind_path = function (type,sub_path) {
   stopifnot(is.character(type), length(type) == 1)
   stopifnot( ! is.null(FAST_FURIOUS_BASE_PATH_VALUE) )
   stopifnot( ! identical(type,'base') )
@@ -84,7 +83,7 @@ ff.bind_sub_path = function (type,sub_path) {
 #' ff.get_bindings()
 #' @export
 #' 
-ff.get_bindings = function() {
+ff.get_path_bindings = function() {
   return(FAST_FURIOUS_PTH_BINDINGS)
 }
 
