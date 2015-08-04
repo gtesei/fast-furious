@@ -1,6 +1,9 @@
 # fast-furious
 
 [![Build Status](https://api.travis-ci.org/gtesei/fast-furious.svg?branch=master)](https://travis-ci.org/gtesei/fast-furious)
+[![Coverage Status](https://coveralls.io/repos/gtesei/fast-furious/badge.svg?branch=master&service=github)](https://coveralls.io/github/gtesei/fast-furious?branch=master)
+[![Code Climate](http://img.shields.io/codeclimate/github//gtesei/fast-furious.svg)](https://codeclimate.com/github//gtesei/fast-furious)
+[![Badges](http://img.shields.io/:badges-3/3-ff6799.svg)](https://github.com/badges/badgerbadgerbadger)
 
 ## 1. What is it?
   fast-furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models I needed in my Machine Learning Lab but I didn't found on the shelf.
