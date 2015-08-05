@@ -62,16 +62,14 @@ ff.encodeCategoricalFeature = function(data.train ,
     fact_min = min(unique(data))
     facts = fact_min:fact_max
   } else {
-    
     if(is.null(levels)) facts = sort(unique(data))
     else facts = levels 
-    
-    colns = facts
     
     if (! is.null(replaceWhiteSpaceInLevelsWith) ) 
       colns = gsub(" ", replaceWhiteSpaceInLevelsWith , sort(unique(data)))
   }
   
+  colns = facts
   mm = outer(data,facts,function(x,y) ifelse(x==y,1,0))
   colnames(mm) = paste(colname.prefix,"_",colns,sep='')  
   
