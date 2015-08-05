@@ -1,0 +1,24 @@
+context("featureEncode")
+
+test_that('encode categorical feature', {
+  #skip_on_cran()
+  Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, c = letters[1:6])
+  Xtest <- data.frame( a = rep(2:4 , each = 2), b = 1:6, c = letters[6:1])
+  l = ff.encodeCategoricalFeature (Xtrain$c , Xtest$c , "c")
+  expect_equal(ncol(l$traindata),6)
+  expect_equal(ncol(l$testdata),6)
+  expect_equal(nrow(l$traindata),6)
+  expect_equal(nrow(l$testdata),6)
+})
+
+test_that('extract date feature', {
+  #skip_on_cran()
+  Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, c = rep(as.Date(c("2007-06-22", "2004-02-13")),3) )
+  Xtest <- data.frame( a = rep(2:4 , each = 2), b = 1:6, c = rep(as.Date(c("2007-03-01", "2004-05-23")),3) )
+  l = ff.extractDateFeature(Xtrain$c,Xtest$c)
+  expect_equal(length(l$traindata),6)
+  expect_equal(length(l$testdata),6)
+  expect_equal(l$traindata[2],0)
+})
+
+
