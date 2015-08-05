@@ -10,10 +10,10 @@ assign("FAST_FURIOUS_PTH_BINDINGS", list(), .GlobalEnv)
 #' @param path the absolute path. 
 #' 
 #' @examples
-#' ff.set_base_path('./')
+#' ff.setBasePath('./')
 #' @export
 #' 
-ff.set_base_path = function (path) {
+ff.setBasePath = function (path) {
   stopifnot(is.character(path), length(path) == 1 , file.exists(path) )
   
   if(!identical( substr(path, nchar(path), nchar(path) ) , .Platform$file.sep))
@@ -31,11 +31,11 @@ ff.set_base_path = function (path) {
 #' @param type the type of resource.
 #' 
 #' @examples
-#' ff.set_base_path('./')
-#' ff.get_path() ## equivalent to ff.get_path(type="base") 
+#' ff.setBasePath('./')
+#' ff.getPath() ## equivalent to ff.getPath(type="base") 
 #' @export
 #' 
-ff.get_path = function (type="base") {
+ff.getPath = function (type="base") {
   stopifnot(is.character(type), length(type) == 1)
   stopifnot( ! is.null(FAST_FURIOUS_BASE_PATH_VALUE) )
   stopifnot( sum(unlist(lapply(names(FAST_FURIOUS_PTH_BINDINGS) , function(x) {
@@ -51,12 +51,12 @@ ff.get_path = function (type="base") {
 #' @param sub_path the suffix to concatenate to the absolute path to get the absolute path of the kind of resource.
 #' 
 #' @examples
-#' ff.set_base_path(getwd())
+#' ff.setBasePath(getwd())
 #' if(! dir.exists("mydata") ) dir.create('mydata')
-#' ff.bind_path(type = "data",sub_path = "mydata")
+#' ff.bindPath(type = "data",sub_path = "mydata")
 #' @export
 #' 
-ff.bind_path = function (type,sub_path) {
+ff.bindPath = function (type,sub_path) {
   stopifnot(is.character(type), length(type) == 1)
   stopifnot( ! is.null(FAST_FURIOUS_BASE_PATH_VALUE) )
   stopifnot( ! identical(type,'base') )
@@ -70,20 +70,15 @@ ff.bind_path = function (type,sub_path) {
   FAST_FURIOUS_PTH_BINDINGS[[type]] <<- path
 }
 
-#' Get the list of bindings (type of resource , absolutepath)   
-#' 
+#' Get the list of bindings, i.e. (type resource,absolute path) pairs as a list 
 #' 
 #' @examples
-#' ff.set_base_path(getwd())
+#' ff.setBasePath(getwd())
 #' if(! dir.exists("mydata") ) dir.create('mydata')
-#' ff.bind_path(type = "data",sub_path = "mydata")
-#' ff.get_path_bindings()
+#' ff.bindPath(type = "data",sub_path = "mydata")
+#' ff.getPathBindings()
 #' @export
 #' 
-ff.get_path_bindings = function() {
+ff.getPathBindings = function() {
   return(FAST_FURIOUS_PTH_BINDINGS)
 }
-
-
- 
-
