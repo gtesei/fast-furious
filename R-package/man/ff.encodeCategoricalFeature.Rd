@@ -54,7 +54,7 @@ l$traindata
 
 Xtrain[,'c'] = NULL
 Xtest[,'c'] = NULL
-Xtrain = cbind(Xtrain,c=l$traindata)
-Xtest = cbind(Xtest,c=l$testdata)
+Xtrain = cbind(Xtrain,l$traindata)
+Xtest = cbind(Xtest,l$testdata)
 }
 
