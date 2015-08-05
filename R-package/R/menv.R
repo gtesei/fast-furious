@@ -32,7 +32,7 @@ ff.set_base_path = function (path) {
 #' 
 #' @examples
 #' ff.set_base_path('./')
-#' ff.get_path() ## equivalent to ff.get_path = function (type="base") gets the base path 
+#' ff.get_path() ## equivalent to ff.get_path(type="base") 
 #' @export
 #' 
 ff.get_path = function (type="base") {
