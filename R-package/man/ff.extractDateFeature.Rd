@@ -17,8 +17,10 @@ Extracts a numerical feature from a date predictor. The feature is built as the 
 the oldest date in bothe train set and test set and any given observation.
 }
 \examples{
-Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, c = rep(as.Date(c("2007-06-22", "2004-02-13")),3) )
-Xtest <- data.frame( a = rep(2:4 , each = 2), b = 1:6, c = rep(as.Date(c("2007-03-01", "2004-05-23")),3) )
+Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1,
+   c = rep(as.Date(c("2007-06-22", "2004-02-13")),3) )
+Xtest <- data.frame( a = rep(2:4 , each = 2), b = 1:6,
+   c = rep(as.Date(c("2007-03-01", "2004-05-23")),3) )
 l = ff.extractDateFeature(Xtrain$c,Xtest$c)
 Xtrain[,'c'] = NULL
 Xtest[,'c'] = NULL

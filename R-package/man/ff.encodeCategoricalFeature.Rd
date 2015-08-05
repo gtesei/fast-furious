@@ -4,7 +4,7 @@
 \alias{ff.encodeCategoricalFeature}
 \title{Encode a generic predictor as a categorical features using both observations of train set and test for levels.
 It's anyway possible to adopt more levels by using the parameter levels.
-Notice that modeling a generic vector, e.g. c(1,2,3,4,5,2,3) as a categorical predictor xor a numeric predictor is a
+Notice that modeling a generic vector, e.g. \code{c(1,2,3,4,5,2,3)} as a categorical predictor xor a numeric predictor is a
 modeling choice (eventually to be assessed by cross-validation).}
 \usage{
 ff.encodeCategoricalFeature(data.train, data.test, colname.prefix,
@@ -18,16 +18,16 @@ ff.encodeCategoricalFeature(data.train, data.test, colname.prefix,
 
 \item{colname.prefix}{the prefix of output data frame.}
 
-\item{asNumericSequence}{set T if the predictor is a numeric sequence filling any possible hole between min and max in observations that could occour both in train set and test set.}
+\item{asNumericSequence}{set \code{T} if the predictor is a numeric sequence filling any possible hole between min and max in observations that could occour both in train set and test set.}
 
 \item{replaceWhiteSpaceInLevelsWith}{replace possible spaces in the train/test name of feature.}
 
-\item{levels}{the levels of the categorical feature. Must be NULL if asNumericSequence is T.}
+\item{levels}{the levels of the categorical feature. Must be \code{NULL} if asNumericSequence is \code{T}.}
 }
 \description{
 Encode a generic predictor as a categorical features using both observations of train set and test for levels.
 It's anyway possible to adopt more levels by using the parameter levels.
-Notice that modeling a generic vector, e.g. c(1,2,3,4,5,2,3) as a categorical predictor xor a numeric predictor is a
+Notice that modeling a generic vector, e.g. \code{c(1,2,3,4,5,2,3)} as a categorical predictor xor a numeric predictor is a
 modeling choice (eventually to be assessed by cross-validation).
 }
 \examples{

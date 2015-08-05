@@ -1,14 +1,14 @@
 #' Encode a generic predictor as a categorical features using both observations of train set and test for levels. 
 #' It's anyway possible to adopt more levels by using the parameter levels. 
-#' Notice that modeling a generic vector, e.g. c(1,2,3,4,5,2,3) as a categorical predictor xor a numeric predictor is a 
+#' Notice that modeling a generic vector, e.g. \code{c(1,2,3,4,5,2,3)} as a categorical predictor xor a numeric predictor is a 
 #' modeling choice (eventually to be assessed by cross-validation).
 #' 
 #' @param data.train the observations of the predictor in train set. 
 #' @param data.test the observations of the predictor in test set. 
 #' @param colname.prefix the prefix of output data frame. 
-#' @param asNumericSequence set T if the predictor is a numeric sequence filling any possible hole between min and max in observations that could occour both in train set and test set. 
+#' @param asNumericSequence set \code{T} if the predictor is a numeric sequence filling any possible hole between min and max in observations that could occour both in train set and test set. 
 #' @param replaceWhiteSpaceInLevelsWith replace possible spaces in the train/test name of feature. 
-#' @param levels the levels of the categorical feature. Must be NULL if asNumericSequence is T.  
+#' @param levels the levels of the categorical feature. Must be \code{NULL} if asNumericSequence is \code{T}.  
 #' 
 #' @examples
 #' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, c = letters[1:6])
@@ -92,8 +92,10 @@ ff.encodeCategoricalFeature = function(data.train ,
 #' @param data.test the observations of the predictor in test set. 
 #' 
 #' @examples
-#' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, c = rep(as.Date(c("2007-06-22", "2004-02-13")),3) )
-#' Xtest <- data.frame( a = rep(2:4 , each = 2), b = 1:6, c = rep(as.Date(c("2007-03-01", "2004-05-23")),3) )
+#' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, 
+#'    c = rep(as.Date(c("2007-06-22", "2004-02-13")),3) )
+#' Xtest <- data.frame( a = rep(2:4 , each = 2), b = 1:6, 
+#'    c = rep(as.Date(c("2007-03-01", "2004-05-23")),3) )
 #' l = ff.extractDateFeature(Xtrain$c,Xtest$c)
 #' Xtrain[,'c'] = NULL
 #' Xtest[,'c'] = NULL
