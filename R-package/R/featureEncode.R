@@ -73,7 +73,7 @@ ff.encodeCategoricalFeature = function(data.train ,
   }
   
   mm = outer(data,facts,function(x,y) ifelse(x==y,1,0))
-  colnames(mm) = paste(paste(colname.prefix,"_",sep=''),    colns   ,sep='')  
+  colnames(mm) = paste(colname.prefix,"_",colns,sep='')  
   
   ##
   mm = as.data.frame(mm)
@@ -118,5 +118,5 @@ ff.extractDateFeature = function(data.train ,
   traindata = as.numeric(as.Date(data.train) - rep(all_date_uniq[1] , length(data.train))) 
   testdata = as.numeric(as.Date(data.test) - rep(all_date_uniq[1] , length(data.test))) 
   
-  return(list(traindata = traindata ,testdata = testdata))
+  return(list(traindata = traindata ,testdata = testdata,drange = drange))
 }
