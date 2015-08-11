@@ -39,6 +39,7 @@ ff.featureFilter <- function(traindata,
   
   stopifnot(  ! (is.null(testdata) && is.null(traindata)) )
   stopifnot(  ! (removeOnlyZeroVariacePredictors && (! is.null(correlationThreshold))) )
+  stopifnot(  ! (is.null(y) && (! is.null(correlationThreshold))) )
   
   data = rbind(testdata,traindata)
   
