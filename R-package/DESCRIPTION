@@ -13,10 +13,10 @@ VignetteBuilder: knitr
 Suggests:
     knitr,
     ggplot2 (>= 1.0.0),
-    caret,
     testthat, 
     subselect
 Depends:
     R (>= 2.10), 
     lattice (>= 0.20), 
-    ggplot2
+    ggplot2, 
+    caret
