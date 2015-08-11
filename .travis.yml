@@ -17,7 +17,6 @@ before_install:
   - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
   - chmod 755 ./travis-tool.sh
   - ./travis-tool.sh bootstrap
-  - cat /home/travis/build/gtesei/fast-furious/R-package/fastfurious.Rcheck/00check.log
 
 install:
   - ./travis-tool.sh install_deps
@@ -28,7 +27,9 @@ install:
   - ./travis-tool.sh github_package hadley/devtools@52bc15bb7eb87105bbf799d7f784054921146c02
   - ./travis-tool.sh github_package hadley/testthat@c67018fa4970ee3390ea2056efe56726626b07e3
 
-script: ./travis-tool.sh run_tests
+script: 
+  - ./travis-tool.sh run_tests
+  - cat /home/travis/build/gtesei/fast-furious/R-package/fastfurious.Rcheck/00check.log
 
 on_failure:
   - ./travis-tool.sh dump_logs
