@@ -17,4 +17,6 @@ Suggests:
     testthat, 
     subselect
 Depends:
-    R (>= 2.10)
+    R (>= 2.10), 
+    lattice (>= 0.20), 
+    ggplot2
