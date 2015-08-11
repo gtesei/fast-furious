@@ -14,6 +14,7 @@ Suggests:
     knitr,
     ggplot2 (>= 1.0.0),
     caret,
-    testthat
+    testthat, 
+    subselect
 Depends:
     R (>= 2.10)
