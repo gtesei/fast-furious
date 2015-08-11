@@ -6,7 +6,7 @@
 \usage{
 ff.featureFilter(traindata, testdata, y = NULL,
   removeOnlyZeroVariacePredictors = FALSE,
-  performVarianceAnalysisOnTrainSetOnly = TRUE, correlationThreshold = NA,
+  performVarianceAnalysisOnTrainSetOnly = TRUE, correlationThreshold = NULL,
   removePredictorsMakingIllConditionedSquareMatrix = TRUE,
   removeHighCorrelatedPredictors = TRUE, featureScaling = TRUE,
   verbose = TRUE)

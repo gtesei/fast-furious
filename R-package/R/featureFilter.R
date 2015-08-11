@@ -31,13 +31,14 @@ ff.featureFilter <- function(traindata,
                           y = NULL,
                           removeOnlyZeroVariacePredictors=FALSE,
                           performVarianceAnalysisOnTrainSetOnly = TRUE , 
-                          correlationThreshold = NA, 
+                          correlationThreshold = NULL, 
                           removePredictorsMakingIllConditionedSquareMatrix = TRUE, 
                           removeHighCorrelatedPredictors = TRUE, 
                           featureScaling = TRUE, 
                           verbose = TRUE) {
   
   stopifnot(  ! (is.null(testdata) && is.null(traindata)) )
+  stopifnot(  ! (removeOnlyZeroVariacePredictors && (! is.null(correlationThreshold))) )
   
   data = rbind(testdata,traindata)
   
@@ -52,7 +53,7 @@ ff.featureFilter <- function(traindata,
       PredToDel = caret::nearZeroVar(data)
     }
     
-    if (! is.na(correlationThreshold) ) {
+    if (! is.null(correlationThreshold) ) {
       if (verbose) cat(">>> computing correlation ... \n")
       corrValues <- apply(traindata,
                                MARGIN = 2,
