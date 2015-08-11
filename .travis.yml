@@ -31,6 +31,7 @@ script: ./travis-tool.sh run_tests
 
 on_failure:
   - ./travis-tool.sh dump_logs
+  - cat /home/travis/build/gtesei/fast-furious/R-package/fastfurious.Rcheck/00check.log
 
 after_success:
   - Rscript -e 'library(covr);coveralls()'
