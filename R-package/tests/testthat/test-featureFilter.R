@@ -50,7 +50,7 @@ test_that('removing high correlated predictors', {
   expect_equal(ncol(l$testdata),2)
 })
 
-test_that('removing high correlated predictors', {
+test_that('removing predictors making ill conditioned saquare matrices', {
   #skip_on_cran()
   Xtrain <- data.frame( a = rep(1:3 , each = 2), b = c(4:1,6,6))
   Xtrain = cbind(Xtrain,c = Xtrain$a)

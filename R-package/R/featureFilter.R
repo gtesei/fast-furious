@@ -5,7 +5,7 @@ library(subselect)
 #' 
 #' @param traindata the train set 
 #' @param testdata the test set 
-#' @param y the response variable 
+#' @param y the response variable. Must be not \code{NULL} if \code{correlationThreshold} is not \code{NULL}. 
 #' @param removeOnlyZeroVariacePredictors \code{TRUE} to remove only zero variance predictors  
 #' @param performVarianceAnalysisOnTrainSetOnly \code{TRUE} to perform the variance analysis on the train set only  
 #' @param correlationThreshold a correlation threshold above which keeping predictors 

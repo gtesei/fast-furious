@@ -16,7 +16,7 @@ ff.featureFilter(traindata, testdata, y = NULL,
 
 \item{testdata}{the test set}
 
-\item{y}{the response variable}
+\item{y}{the response variable. Must be not \code{NULL} if \code{correlationThreshold} is not \code{NULL}.}
 
 \item{removeOnlyZeroVariacePredictors}{\code{TRUE} to remove only zero variance predictors}
 
