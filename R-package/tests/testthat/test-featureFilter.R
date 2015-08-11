@@ -83,6 +83,18 @@ test_that('removing correlated predictors below threshold', {
                         verbose=TRUE)
   
   expect_equal(ncol(l$testdata),3)
+  
+  expect_error(ff.featureFilter (traindata = Xtrain,
+                                     testdata = Xtrain,
+                                     removeOnlyZeroVariacePredictors=TRUE,
+                                     y = Xtrain$a, 
+                                     correlationThreshold = 0.75 ,  
+                                     removePredictorsMakingIllConditionedSquareMatrix = FALSE, 
+                                     removeHighCorrelatedPredictors = FALSE, 
+                                     performVarianceAnalysisOnTrainSetOnly = FALSE, 
+                                     featureScaling = FALSE, 
+                                     verbose=TRUE)) 
+  
 })
 
 
