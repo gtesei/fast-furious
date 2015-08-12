@@ -200,22 +200,22 @@ ff.makeFeatureSet = function(data.train ,
   currIdx = 1 
   for (i in seq_along(l)) {
     if (identical(meta[i],'C')) {
+      
       traindata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$traindata
       colnames(traindata)[currIdx:(currIdx+l[[i]]$dim-1)] = colnames(l[[i]]$traindata)
-      
       testdata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$testdata
       colnames(testdata)[currIdx:(currIdx+l[[i]]$dim-1)] = colnames(l[[i]]$testdata)
       
-      currIdx = currIdx + l[[i]]$dim
     } else if ( identical(meta[i],'N') || identical(meta[i],'D') ) {
+      
       traindata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$traindata
       colnames(traindata)[currIdx:(currIdx+l[[i]]$dim-1)] = l[[i]]$x.name
-      
       testdata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$testdata
       colnames(testdata)[currIdx:(currIdx+l[[i]]$dim-1)] = l[[i]]$y.name
       
-      currIdx = currIdx + l[[i]]$dim
     } else stop('unrecognized type of meta-data')
+    
+    currIdx = currIdx + l[[i]]$dim
   }
   
   #
