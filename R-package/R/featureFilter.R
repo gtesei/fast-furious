@@ -23,6 +23,9 @@ library(subselect)
 #'                        removeOnlyZeroVariacePredictors=TRUE)
 #' Xtrain = l$traindata
 #' Xtest = l$testdata 
+#' @importFrom caret preProcess
+#' @importFrom caret nearZeroVar
+#' @importFrom subselect trim.matrix
 #' @export
 #' 
 

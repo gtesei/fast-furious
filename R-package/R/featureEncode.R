@@ -139,12 +139,15 @@ ff.extractDateFeature = function(data.train ,
 #' l = ff.makeFeatureSet(Xtrain,Xtest,c('C','N','D'))
 #' Xtrain = l$traindata
 #' Xtest = l$testdata
+#' @importFrom caret preProcess
+#' @importFrom parallel mcMap
 #' @export
 #' 
 ff.makeFeatureSet = function(data.train , 
                              data.test, 
                              meta,
-                             scaleNumericFeatures = F) { 
+                             scaleNumericFeatures = FALSE,
+                             parallelize = FALSE) { 
 
   ##
   stopifnot(  ! (is.null(data.train) || is.null(data.test)) )
@@ -174,7 +177,7 @@ ff.makeFeatureSet = function(data.train ,
   
   
   ##
-  l = Map(function(x,y,m,nx,ny) {
+  doEncoding = function(x,y,m,nx,ny) {
     if (identical(m,'D')) {
       ll = ff.extractDateFeature(x,y)
       ll['x.name'] = nx 
@@ -192,7 +195,16 @@ ff.makeFeatureSet = function(data.train ,
       ll['dim'] = 1
       return(ll)
     } else stop('unrecognized type of meta-data')
-  } , data.train , data.test, meta,colnames(data.train),colnames(data.test))
+  }
+  
+  l = NULL
+  if (parallelize) { 
+    library(parallel)
+    l = mcMap( doEncoding , data.train , data.test, meta,colnames(data.train),colnames(data.test) , 
+               mc.cores = min(colnames(data.test),2) )
+  } else {
+    l = Map( doEncoding , data.train , data.test, meta,colnames(data.train),colnames(data.test))
+  }
   
   ##
   ncols = sum(unlist(lapply(l,function(x) return(x$dim))))

@@ -41,7 +41,25 @@ test_that('make feature set', {
   expect_equal(ncol(Xtest)+3,ncol(l$testdata))
   
   ## scaling 
-  l = ff.makeFeatureSet(data.train = Xtrain , data.test = Xtest , meta = meta , scaleNumericFeatures = T)
+  l = ff.makeFeatureSet(data.train = Xtrain , data.test = Xtest , meta = meta , scaleNumericFeatures = TRUE)
+  
+  expect_equal(nrow(l$traindata),nrow(Xtrain))
+  expect_equal(nrow(l$testdata),nrow(Xtest))
+  
+  expect_equal(ncol(Xtrain)+3,ncol(l$traindata))
+  expect_equal(ncol(Xtest)+3,ncol(l$testdata))
+  
+  ## scaling and parallelize 
+  l = ff.makeFeatureSet(data.train = Xtrain , data.test = Xtest , meta = meta , scaleNumericFeatures = TRUE ,parallelize = TRUE)
+  
+  expect_equal(nrow(l$traindata),nrow(Xtrain))
+  expect_equal(nrow(l$testdata),nrow(Xtest))
+  
+  expect_equal(ncol(Xtrain)+3,ncol(l$traindata))
+  expect_equal(ncol(Xtest)+3,ncol(l$testdata))
+  
+  ## scaling and ! parallelize 
+  l = ff.makeFeatureSet(data.train = Xtrain , data.test = Xtest , meta = meta , scaleNumericFeatures = TRUE ,parallelize = FALSE)
   
   expect_equal(nrow(l$traindata),nrow(Xtrain))
   expect_equal(nrow(l$testdata),nrow(Xtest))
