@@ -14,6 +14,10 @@ ff.makeFeatureSet(data.train, data.test, meta, scaleNumericFeatures = FALSE,
 
 \item{meta}{the meata data. It should be a vector of the character \code{'C'} , \code{'N'} , \code{'D'} ,
 e.g. \code{c('N','C','D')} of the same length of the train set / test set columns}
+
+\item{scaleNumericFeatures}{seto to \code{'TRUE'} to center and scale numeric features}
+
+\item{parallelize}{seto to \code{'TRUE'} to enable paralyzation (require \code{parallel} package)}
 }
 \description{
 Encode the feature set according to meta data passed as input.
