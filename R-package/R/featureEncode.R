@@ -131,7 +131,7 @@ ff.extractDateFeature = function(data.train ,
 #' @param meta the meata data. It should be a vector of the character \code{'C'} , \code{'N'} , \code{'D'} , 
 #'        e.g. \code{c('N','C','D')} of the same length of the train set / test set columns 
 #' @param scaleNumericFeatures seto to \code{'TRUE'} to center and scale numeric features 
-#' @param parallelize seto to \code{'TRUE'} to enable paralyzation (require \code{parallel} package)  
+#' @param parallelize seto to \code{'TRUE'} to enable parallelization (require \code{parallel} package)  
 #' 
 #' @examples
 #' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, 
