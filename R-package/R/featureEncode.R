@@ -1,3 +1,5 @@
+library(caret)
+
 #' Encode a generic predictor as a categorical features using both observations of train set and test for levels. 
 #' It's anyway possible to adopt more levels by using the parameter levels. 
 #' Notice that modeling a generic vector, e.g. \code{c(1,2,3,4,5,2,3)} as a categorical predictor xor a numeric predictor is a 
@@ -141,10 +143,11 @@ ff.extractDateFeature = function(data.train ,
 #' 
 ff.makeFeatureSet = function(data.train , 
                              data.test, 
-                             meta) { 
+                             meta,
+                             scaleNumericFeatures = F) { 
 
   ##
-  stopifnot(  ! (is.null(data.train) && is.null(data.test)) )
+  stopifnot(  ! (is.null(data.train) || is.null(data.test)) )
   
   stopifnot(  (length(meta) != nrow(data.train)) )
   stopifnot(  (length(meta) != nrow(data.test)) )
@@ -207,10 +210,20 @@ ff.makeFeatureSet = function(data.train ,
       colnames(testdata)[currIdx:(currIdx+l[[i]]$dim-1)] = colnames(l[[i]]$testdata)
       
     } else if ( identical(meta[i],'N') || identical(meta[i],'D') ) {
+      trdata = l[[i]]$traindata
+      tsdata = l[[i]]$testdata
       
-      traindata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$traindata
+      if (scaleNumericFeatures) {
+        data = as.data.frame(c(trdata,tsdata))
+        scaler = caret::preProcess(data,method = c("center","scale"))
+        data = predict(scaler,data)
+        trdata = data[1:length(trdata),]
+        tsdata = data[(length(trdata)+1):nrow(data),]
+      }
+      
+      traindata[,currIdx:(currIdx+l[[i]]$dim-1)]  = trdata
       colnames(traindata)[currIdx:(currIdx+l[[i]]$dim-1)] = l[[i]]$x.name
-      testdata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$testdata
+      testdata[,currIdx:(currIdx+l[[i]]$dim-1)]  = tsdata
       colnames(testdata)[currIdx:(currIdx+l[[i]]$dim-1)] = l[[i]]$y.name
       
     } else stop('unrecognized type of meta-data')

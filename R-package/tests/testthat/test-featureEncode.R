@@ -31,8 +31,17 @@ test_that('make feature set', {
   Xtest <- data.frame( a = rep(2:4 , each = 2), b = 1:6, c = rep(as.Date(c("2007-03-01", "2004-05-23")),3) )
   meta = c('C','N','D')
   
-  ## verbose TRUE
+  ## no scaling 
   l = ff.makeFeatureSet(data.train = Xtrain , data.test = Xtest , meta = meta)
+  
+  expect_equal(nrow(l$traindata),nrow(Xtrain))
+  expect_equal(nrow(l$testdata),nrow(Xtest))
+  
+  expect_equal(ncol(Xtrain)+3,ncol(l$traindata))
+  expect_equal(ncol(Xtest)+3,ncol(l$testdata))
+  
+  ## scaling 
+  l = ff.makeFeatureSet(data.train = Xtrain , data.test = Xtest , meta = meta , scaleNumericFeatures = T)
   
   expect_equal(nrow(l$traindata),nrow(Xtrain))
   expect_equal(nrow(l$testdata),nrow(Xtest))

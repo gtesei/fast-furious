@@ -4,7 +4,7 @@
 \alias{ff.makeFeatureSet}
 \title{Encode the feature set according to meta data passed as input.}
 \usage{
-ff.makeFeatureSet(data.train, data.test, meta)
+ff.makeFeatureSet(data.train, data.test, meta, scaleNumericFeatures = F)
 }
 \arguments{
 \item{data.train}{the observations of the predictor in train set.}
