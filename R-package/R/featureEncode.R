@@ -128,7 +128,6 @@ ff.extractDateFeature = function(data.train ,
 #' @param data.test the observations of the predictor in test set. 
 #' @param meta the meata data. It should be a vector of the character \code{'C'} , \code{'N'} , \code{'D'} , 
 #' e.g. \code{c('N','C','D')} of the same length of the train set / test set columns 
-#' @param verbose set to \code{TRUE} for enabling verbose mode 
 #' 
 #' @examples
 #' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, 
@@ -142,8 +141,7 @@ ff.extractDateFeature = function(data.train ,
 #' 
 ff.makeFeatureSet = function(data.train , 
                              data.test, 
-                             meta, 
-                             verbose=T ) { 
+                             meta) { 
 
   ##
   stopifnot(  ! (is.null(data.train) && is.null(data.test)) )

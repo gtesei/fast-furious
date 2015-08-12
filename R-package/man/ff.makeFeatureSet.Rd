@@ -4,7 +4,7 @@
 \alias{ff.makeFeatureSet}
 \title{Encode the feature set according to meta data passed as input.}
 \usage{
-ff.makeFeatureSet(data.train, data.test, meta, verbose = T)
+ff.makeFeatureSet(data.train, data.test, meta)
 }
 \arguments{
 \item{data.train}{the observations of the predictor in train set.}
@@ -13,8 +13,6 @@ ff.makeFeatureSet(data.train, data.test, meta, verbose = T)
 
 \item{meta}{the meata data. It should be a vector of the character \code{'C'} , \code{'N'} , \code{'D'} ,
 e.g. \code{c('N','C','D')} of the same length of the train set / test set columns}
-
-\item{verbose}{set to \code{TRUE} for enabling verbose mode}
 }
 \description{
 Encode the feature set according to meta data passed as input.

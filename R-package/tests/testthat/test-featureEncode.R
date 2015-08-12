@@ -32,7 +32,7 @@ test_that('make feature set', {
   meta = c('C','N','D')
   
   ## verbose TRUE
-  l = ff.makeFeatureSet(data.train = Xtrain , data.test = Xtest , meta = meta , verbose = TRUE)
+  l = ff.makeFeatureSet(data.train = Xtrain , data.test = Xtest , meta = meta)
   
   expect_equal(nrow(l$traindata),nrow(Xtrain))
   expect_equal(nrow(l$testdata),nrow(Xtest))
@@ -40,14 +40,6 @@ test_that('make feature set', {
   expect_equal(ncol(Xtrain)+3,ncol(l$traindata))
   expect_equal(ncol(Xtest)+3,ncol(l$testdata))
   
-  ## verbose FALSE
-  l = ff.makeFeatureSet(data.train = Xtrain , data.test = Xtest , meta = meta , verbose = FALSE)
-  
-  expect_equal(nrow(l$traindata),nrow(Xtrain))
-  expect_equal(nrow(l$testdata),nrow(Xtest))
-  
-  expect_equal(ncol(Xtrain)+3,ncol(l$traindata))
-  expect_equal(ncol(Xtest)+3,ncol(l$testdata))
 })
 
 
