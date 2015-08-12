@@ -202,7 +202,7 @@ ff.makeFeatureSet = function(data.train ,
   l = NULL
   if (parallelize) { 
     library(parallel)
-    l = mcMap( doEncoding , data.train , data.test, meta,colnames(data.train),colnames(data.test) , 
+    l = parallel::mcMap( doEncoding , data.train , data.test, meta,colnames(data.train),colnames(data.test) , 
                mc.cores = min(colnames(data.test),2) )
   } else {
     l = Map( doEncoding , data.train , data.test, meta,colnames(data.train),colnames(data.test))
