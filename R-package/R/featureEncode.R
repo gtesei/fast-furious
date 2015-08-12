@@ -120,3 +120,110 @@ ff.extractDateFeature = function(data.train ,
   
   return(list(traindata = traindata ,testdata = testdata,drange = drange))
 }
+
+
+#' Encode the feature set according to meta data passed as input.   
+#' 
+#' @param data.train the observations of the predictor in train set. 
+#' @param data.test the observations of the predictor in test set. 
+#' @param meta the meata data. It should be a vector of the character \code{'C'} , \code{'N'} , \code{'D'} , 
+#' e.g. \code{c('N','C','D')} of the same length of the train set / test set columns 
+#' @param verbose set to \code{TRUE} for enabling verbose mode 
+#' 
+#' @examples
+#' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, 
+#'    c = rep(as.Date(c("2007-06-22", "2004-02-13")),3) )
+#' Xtest <- data.frame( a = rep(2:4 , each = 2), b = 1:6, 
+#'    c = rep(as.Date(c("2007-03-01", "2004-05-23")),3) )
+#' l = ff.makeFeatureSet(Xtrain,Xtest,c('C','N','D'))
+#' Xtrain = l$traindata
+#' Xtest = l$testdata
+#' @export
+#' 
+ff.makeFeatureSet = function(data.train , 
+                             data.test, 
+                             meta, 
+                             verbose=T ) { 
+
+  ##
+  stopifnot(  ! (is.null(data.train) && is.null(data.test)) )
+  
+  stopifnot(  (length(meta) != nrow(data.train)) )
+  stopifnot(  (length(meta) != nrow(data.test)) )
+  
+  stopifnot(  sum(unlist(lapply(unique(meta),function(x) {
+    return(!x %in% c("C","N","D"))
+  }))) == 0 )
+  
+  stopifnot(  sum(unlist(lapply(data.train,function(x) {
+    return(! (is.atomic(x) || identical(class(x),'Date')) )
+  }))) == 0 )
+  stopifnot(  sum(unlist(lapply(data.test,function(x) {
+    return(! (is.atomic(x) || identical(class(x),'Date')) )
+  }))) == 0 )
+  
+  stopifnot(  sum(unlist(Map(function(x,y) {
+   if (identical(y,'D')) return(!identical(class(x),'Date'))
+   else return(!is.atomic(x))
+  } , data.train , meta)))==0 )
+  stopifnot(  sum(unlist(Map(function(x,y) {
+    if (identical(y,'D')) return(!identical(class(x),'Date'))
+    else return(!is.atomic(x))
+  } , data.test , meta)))==0 )
+  
+  
+  ##
+  l = Map(function(x,y,m,nx,ny) {
+    if (identical(m,'D')) {
+      ll = ff.extractDateFeature(x,y)
+      ll['x.name'] = nx 
+      ll['y.name'] = ny
+      ll['dim'] = 1
+      return(ll)
+    } else if (identical(m,'C')) {
+      ll = ff.encodeCategoricalFeature (x , y , nx)
+      ll['dim'] = ncol(ll$traindata)
+      return(ll)
+    } else if (identical(m,'N')) {
+      ll = list(traindata=x,testdata=y)
+      ll['x.name'] = nx 
+      ll['y.name'] = ny
+      ll['dim'] = 1
+      return(ll)
+    } else stop('unrecognized type of meta-data')
+  } , data.train , data.test, meta,colnames(data.train),colnames(data.test))
+  
+  ##
+  ncols = sum(unlist(lapply(l,function(x) return(x$dim))))
+  traindata = as.data.frame(matrix(rep(NA,ncols*nrow(data.train)),ncol = ncols))
+  testdata = as.data.frame(matrix(rep(NA,ncols*nrow(data.test)),ncol = ncols))
+  
+  #
+  currIdx = 1 
+  for (i in seq_along(l)) {
+    if (identical(meta[i],'C')) {
+      traindata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$traindata
+      colnames(traindata)[currIdx:(currIdx+l[[i]]$dim-1)] = colnames(l[[i]]$traindata)
+      
+      testdata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$testdata
+      colnames(testdata)[currIdx:(currIdx+l[[i]]$dim-1)] = colnames(l[[i]]$testdata)
+      
+      currIdx = currIdx + l[[i]]$dim
+    } else if ( identical(meta[i],'N') || identical(meta[i],'D') ) {
+      traindata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$traindata
+      colnames(traindata)[currIdx:(currIdx+l[[i]]$dim-1)] = l[[i]]$x.name
+      
+      testdata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$testdata
+      colnames(testdata)[currIdx:(currIdx+l[[i]]$dim-1)] = l[[i]]$y.name
+      
+      currIdx = currIdx + l[[i]]$dim
+    } else stop('unrecognized type of meta-data')
+  }
+  
+  #
+  stopifnot(sum(is.na(traindata))==0)
+  stopifnot(sum(is.na(testdata))==0)
+  
+  #
+  return(list(traindata=traindata,testdata=testdata))
+}
