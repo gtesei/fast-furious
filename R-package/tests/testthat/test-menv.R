@@ -8,6 +8,18 @@ test_that('set_path and get_path in basic contest', {
   expect_equal(length(ff.getPathBindings()),1) 
 })
 
+test_that('max number of concurrent threads', {
+  #skip_on_cran(
+  
+  expect_equal(ff.getMaxCuncurrentThreads() , 2 )
+  
+  ff.setMaxCuncurrentThreads(6)
+  expect_equal(ff.getMaxCuncurrentThreads() , 6 )
+  
+  ff.setMaxCuncurrentThreads(2)
+  expect_equal(ff.getMaxCuncurrentThreads() , 2 )
+})
+
 test_that('bind_path in basic contest', {
   #skip_on_cran()
   base_path = getwd()

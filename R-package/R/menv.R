@@ -1,9 +1,35 @@
 
 ### CONSTANTS  
 assign("FAST_FURIOUS_BASE_PATH_VALUE", NULL, .GlobalEnv)
+assign("FAST_FURIOUS_MAX_THREADS", 2, .GlobalEnv)
 assign("FAST_FURIOUS_PTH_BINDINGS", list(), .GlobalEnv)
 
 ### FUNCS 
+
+#' Set the max number of cuncurrent threads. 
+#' 
+#' @param nThreads max number of cuncurrent threads. 
+#' 
+#' @examples
+#' ff.setMaxCuncurrentThreads(4)
+#' @export
+#' 
+ff.setMaxCuncurrentThreads = function (nThreads=2) {
+  stopifnot(is.numeric(nThreads), length(nThreads) == 1 )
+  assign("FAST_FURIOUS_MAX_THREADS", nThreads, .GlobalEnv)
+}
+
+#' Get the max number of cuncurrent threads. 
+#' 
+#' @examples
+#' ff.getMaxCuncurrentThreads()
+#' @export
+#' 
+ff.getMaxCuncurrentThreads = function() {
+  if (! exists(x = "FAST_FURIOUS_MAX_THREADS" , envir = .GlobalEnv ) ) assign("FAST_FURIOUS_MAX_THREADS", 2, .GlobalEnv) 
+  return(get(x = "FAST_FURIOUS_MAX_THREADS" , envir = .GlobalEnv))
+}
+
 
 #' Set base path 
 #' 
