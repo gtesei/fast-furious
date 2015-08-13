@@ -12,12 +12,11 @@ BugReports: https://github.com/gtesei/fast-furious/issues
 VignetteBuilder: knitr
 Suggests:
     knitr,
+    lattice (>= 0.20),
     ggplot2 (>= 1.0.0),
     testthat
 Depends:
-    R (>= 2.10), 
-    lattice (>= 0.20), 
-    ggplot2, 
+    R (>= 2.10),  
     caret
 Imports:
     parallel, 
