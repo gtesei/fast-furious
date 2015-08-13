@@ -75,6 +75,7 @@ ff.getPath = function (type="base") {
 #' 
 #' @param type the type of resource.
 #' @param sub_path the suffix to concatenate to the absolute path to get the absolute path of the kind of resource.
+#' @param createDir set to \code{'TRUE'} to create the directory if it does not exist
 #' 
 #' @examples
 #' ff.setBasePath(getwd())
@@ -82,7 +83,7 @@ ff.getPath = function (type="base") {
 #' ff.bindPath(type = "data",sub_path = "mydata")
 #' @export
 #' 
-ff.bindPath = function (type,sub_path) {
+ff.bindPath = function (type,sub_path,createDir=FALSE) {
   stopifnot(is.character(type), length(type) == 1)
   stopifnot( ! is.null(FAST_FURIOUS_BASE_PATH_VALUE) )
   stopifnot( ! identical(type,'base') )
@@ -91,7 +92,8 @@ ff.bindPath = function (type,sub_path) {
   if(!identical( substr(path, nchar(path), nchar(path) ) , .Platform$file.sep))
     path = paste0(path,.Platform$file.sep)
   
-  stopifnot(file.exists(path)) 
+  if (! file.exists(path) && ! createDir) stop(paste0(path,' does not exist')) 
+  else if (! file.exists(path) && createDir) dir.create(path)
   
   FAST_FURIOUS_PTH_BINDINGS[[type]] <<- path
 }

@@ -4,12 +4,14 @@
 \alias{ff.bindPath}
 \title{Bind an absolute path for a kind of resources.}
 \usage{
-ff.bindPath(type, sub_path)
+ff.bindPath(type, sub_path, createDir = FALSE)
 }
 \arguments{
 \item{type}{the type of resource.}
 
 \item{sub_path}{the suffix to concatenate to the absolute path to get the absolute path of the kind of resource.}
+
+\item{createDir}{set to \code{'TRUE'} to create the directory if it does not exist}
 }
 \description{
 Bind an absolute path for a kind of resources.

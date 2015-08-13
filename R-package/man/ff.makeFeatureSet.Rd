@@ -17,7 +17,7 @@ e.g. \code{c('N','C','D')} of the same length of the train set / test set column
 
 \item{scaleNumericFeatures}{seto to \code{'TRUE'} to center and scale numeric features}
 
-\item{parallelize}{seto to \code{'TRUE'} to enable parallelization (require \code{parallel} package)}
+\item{parallelize}{set to \code{'TRUE'} to enable parallelization (require \code{parallel} package)}
 }
 \description{
 Encode the feature set according to meta data passed as input.

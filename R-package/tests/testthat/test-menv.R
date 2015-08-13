@@ -28,6 +28,11 @@ test_that('bind_path in basic contest', {
   ff.bindPath(type = "data",sub_path = "mydata")
   expect_equal(length(ff.getPathBindings()),2)
   expect_equal(ff.getPath('data') , paste(ff.getPath(),'mydata',.Platform$file.sep,sep = ''))
+  
+  expect_error(ff.bindPath(type = "data2",sub_path = "mydata2"))
+  ff.bindPath(type = "data2",sub_path = "mydata2" , createDir=TRUE)
+  expect_equal(ff.getPath('data2') , paste(ff.getPath(),'mydata2',.Platform$file.sep,sep = ''))
+  
 })
 
 do_inside_func = function(key,val) {
