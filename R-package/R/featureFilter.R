@@ -1,5 +1,3 @@
-library(caret)
-library(subselect)
 
 #' Filter predictors according to specified criteria. 
 #' 

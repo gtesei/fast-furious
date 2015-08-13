@@ -1,4 +1,3 @@
-library(caret)
 
 #' Encode a generic predictor as a categorical features using both observations of train set and test for levels. 
 #' It's anyway possible to adopt more levels by using the parameter levels. 
