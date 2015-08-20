@@ -93,7 +93,7 @@ ff.bindPath = function (type,sub_path,createDir=FALSE) {
     path = paste0(path,.Platform$file.sep)
   
   if (! file.exists(path) && ! createDir) stop(paste0(path,' does not exist')) 
-  else if (! file.exists(path) && createDir) dir.create(path)
+  else if (! file.exists(path) && createDir) dir.create(path , recursive = TRUE)
   
   FAST_FURIOUS_PTH_BINDINGS[[type]] <<- path
 }
