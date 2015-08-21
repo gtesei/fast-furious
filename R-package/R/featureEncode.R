@@ -38,6 +38,7 @@
 #' Xtrain = cbind(Xtrain,l$traindata)
 #' Xtest = cbind(Xtest,l$testdata)
 #' @export
+#' @return the list of trainset and testset after applying the specified filters 
 #' 
 ff.encodeCategoricalFeature = function(data.train , 
                                     data.test , 
@@ -101,6 +102,7 @@ ff.encodeCategoricalFeature = function(data.train ,
 #' Xtrain = cbind(Xtrain,c=l$traindata)
 #' Xtest = cbind(Xtest,c=l$testdata)
 #' @export
+#' @return the list of trainset and testset after applying the specified encoding and the related date range 
 #' 
 ff.extractDateFeature = function(data.train , 
                                data.test) {
@@ -143,6 +145,7 @@ ff.extractDateFeature = function(data.train ,
 #' @importFrom caret preProcess
 #' @importFrom parallel mcMap
 #' @export
+#' @return the list of trainset and testset after applying the specified encodings 
 #' 
 ff.makeFeatureSet = function(data.train , 
                              data.test, 

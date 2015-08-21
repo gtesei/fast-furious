@@ -19,6 +19,9 @@ e.g. \code{c('N','C','D')} of the same length of the train set / test set column
 
 \item{parallelize}{set to \code{'TRUE'} to enable parallelization (require \code{parallel} package)}
 }
+\value{
+the list of trainset and testset after applying the specified encodings
+}
 \description{
 Encode the feature set according to meta data passed as input.
 }

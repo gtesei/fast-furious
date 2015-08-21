@@ -12,6 +12,9 @@ ff.extractDateFeature(data.train, data.test)
 
 \item{data.test}{the observations of the predictor in test set.}
 }
+\value{
+the list of trainset and testset after applying the specified encoding and the related date range
+}
 \description{
 Extracts a numerical feature from a date predictor. The feature is built as the difference in days from
 the oldest date in bothe train set and test set and any given observation.

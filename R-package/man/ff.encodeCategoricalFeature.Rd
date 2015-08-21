@@ -24,6 +24,9 @@ ff.encodeCategoricalFeature(data.train, data.test, colname.prefix,
 
 \item{levels}{the levels of the categorical feature. Must be \code{NULL} if asNumericSequence is \code{T}.}
 }
+\value{
+the list of trainset and testset after applying the specified filters
+}
 \description{
 Encode a generic predictor as a categorical features using both observations of train set and test for levels.
 It's anyway possible to adopt more levels by using the parameter levels.

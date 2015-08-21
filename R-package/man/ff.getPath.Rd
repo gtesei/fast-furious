@@ -9,6 +9,9 @@ ff.getPath(type = "base")
 \arguments{
 \item{type}{the type of resource.}
 }
+\value{
+the absolute path for a kind of resources (as character)
+}
 \description{
 Get the absolute path for a kind of resources.
 }

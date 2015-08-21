@@ -60,6 +60,7 @@ ff.setBasePath = function (path) {
 #' ff.setBasePath('./')
 #' ff.getPath() ## equivalent to ff.getPath(type="base") 
 #' @export
+#' @return the absolute path for a kind of resources (as character) 
 #' 
 ff.getPath = function (type="base") {
   stopifnot(is.character(type), length(type) == 1)
@@ -106,6 +107,7 @@ ff.bindPath = function (type,sub_path,createDir=FALSE) {
 #' ff.bindPath(type = "data",sub_path = "mydata")
 #' ff.getPathBindings()
 #' @export
+#' @return the list of bindings 
 #' 
 ff.getPathBindings = function() {
   return(FAST_FURIOUS_PTH_BINDINGS)

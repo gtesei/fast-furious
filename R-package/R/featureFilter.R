@@ -25,6 +25,7 @@
 #' @importFrom caret nearZeroVar
 #' @importFrom subselect trim.matrix
 #' @export
+#' @return the list of trainset and testset after applying the specified filters 
 #' 
 
 ff.featureFilter <- function(traindata,

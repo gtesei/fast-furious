@@ -6,6 +6,9 @@
 \usage{
 ff.getPathBindings()
 }
+\value{
+the list of bindings
+}
 \description{
 Get the list of bindings, i.e. (type resource,absolute path) pairs as a list
 }

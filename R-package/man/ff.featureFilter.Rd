@@ -33,6 +33,9 @@ ff.featureFilter(traindata, testdata, y = NULL,
 
 \item{verbose}{\code{TRUE} to set verbose mode}
 }
+\value{
+the list of trainset and testset after applying the specified filters
+}
 \description{
 Filter predictors according to specified criteria.
 }
