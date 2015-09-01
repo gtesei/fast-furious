@@ -136,3 +136,74 @@ ff.featureFilter <- function(traindata,
   
   return(list(traindata = traindata,testdata = testdata))
 }
+
+#' Make polynomial terms of a \code{data.frame} 
+#' 
+#' @param x a \code{data.frame} of \code{numeric}
+#' @param n the polynomial degree 
+#' @param direction if set to \code{0} returns the terms \code{x^(1/n),x^(1/(n-1)),...,x,x^2,...,x^n}. 
+#' If set to \code{-1} returns the terms \code{x^(1/n),x^(1/(n-1)),...,x}.
+#' If set to \code{1} returns the terms\code{x,x^2,...,x^n}. 
+#' 
+#' @examples
+#' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = c(4:1,6,6), c = rep(1,6))
+#' Xtest <-  Xtrain + runif(nrow(Xtrain))
+#' data = rbind(Xtrain,Xtest)
+#' data.poly = ff.poly(x=data,n=3)
+#' Xtrain.poly = data.poly[1:nrow(Xtrain),]
+#' Xtest.poly = data.poly[(nrow(Xtrain)+1):nrow(data),]
+#' @export
+#' @return the \code{data.frame} with the specified polynomial terms
+#'
+
+ff.poly = function (x,n,direction=0) {
+  stopifnot(identical(class(x),'data.frame') , identical(class(n),'numeric') )
+  stopifnot(  sum(unlist(lapply(x,function(x) {
+    return(! (is.atomic(x)  && (! is.character(x)) && ! is.factor(x))  )
+  }))) == 0 )
+  
+  if (n == 1) {
+    return (x)
+  } 
+  
+  x.poly = NULL
+  x.poly.2 = NULL
+  
+  ##
+  if (direction>=0) {
+    x.poly = as.data.frame(matrix(rep(0 , nrow(x)*ncol(x)*(n-1)) , nrow = nrow(x)))
+    lapply(2:n,function(i){
+      d = x 
+      d[] <- lapply(X = x , FUN = function(x){
+        return(x^i)
+      })  
+      colnames(d) = paste(colnames(x),'^',i,sep='')
+      x.poly[,((i-2)*ncol(x)+1):((i-1)*ncol(x))] <<- d 
+      colnames(x.poly)[((i-2)*ncol(x)+1):((i-1)*ncol(x))] <<- colnames(d)
+    })   
+  }
+ 
+  
+  ##
+  if (direction<=0) {
+    x.poly.2 = as.data.frame(matrix(rep(0 , nrow(x)*ncol(x)*(n-1)) , nrow = nrow(x)))
+    lapply(2:n,function(i){
+      d = x 
+      d[] <- lapply(X = x , FUN = function(x){
+        return(x^(1/i))
+      })  
+      colnames(d) = paste(colnames(x),'^1/',i,sep='')
+      x.poly.2[,((i-2)*ncol(x)+1):((i-1)*ncol(x))] <<- d 
+      colnames(x.poly.2)[((i-2)*ncol(x)+1):((i-1)*ncol(x))] <<- colnames(d)
+    })
+  }
+ 
+  ##
+  if (direction>0) {
+    return (cbind(x,x.poly))
+  } else if (direction==0) {
+    return (cbind(x,x.poly,x.poly.2))
+  } else {
+    return (cbind(x,x.poly.2)) 
+  }
+}

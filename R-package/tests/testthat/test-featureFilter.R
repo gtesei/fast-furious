@@ -108,6 +108,25 @@ test_that('removing correlated predictors below threshold', {
   
 })
 
+test_that('removing correlated predictors below threshold', {
+  #skip_on_cran()
+  Xtrain <- data.frame( a = rep(1:3 , each = 2), b = c(4:1,6,6), c = rep(1,6) )
+  Xtest <-  Xtrain + runif(nrow(Xtrain))
+  data = rbind(Xtrain,Xtest)
+  
+  data.poly = ff.poly(x=data,n=2,direction = 0)
+  expect_equal(ncol(data.poly),9)
+  expect_equal(nrow(data.poly),nrow(data))
+  
+  data.poly = ff.poly(x=data,n=2,direction = 1)
+  expect_equal(ncol(data.poly),6)
+  expect_equal(nrow(data.poly),nrow(data))
+  
+  data.poly = ff.poly(x=data,n=2,direction = -1)
+  expect_equal(ncol(data.poly),6)
+  expect_equal(nrow(data.poly),nrow(data))
+})
+
 
 
 
