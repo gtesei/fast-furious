@@ -13,7 +13,7 @@ ff.poly(x, n, direction = 0)
 
 \item{direction}{if set to \code{0} returns the terms \code{x^(1/n),x^(1/(n-1)),...,x,x^2,...,x^n}.
 If set to \code{-1} returns the terms \code{x^(1/n),x^(1/(n-1)),...,x}.
-If set to \code{1} returns the terms\code{x,x^2,...,x^n}.}
+If set to \code{1} returns the terms \code{x,x^2,...,x^n}.}
 }
 \value{
 the \code{data.frame} with the specified polynomial terms

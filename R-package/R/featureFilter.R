@@ -164,7 +164,7 @@ ff.featureFilter <- function(traindata,
 #' @param n the polynomial degree 
 #' @param direction if set to \code{0} returns the terms \code{x^(1/n),x^(1/(n-1)),...,x,x^2,...,x^n}. 
 #' If set to \code{-1} returns the terms \code{x^(1/n),x^(1/(n-1)),...,x}.
-#' If set to \code{1} returns the terms\code{x,x^2,...,x^n}. 
+#' If set to \code{1} returns the terms \code{x,x^2,...,x^n}. 
 #' 
 #' @examples
 #' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = c(4:1,6,6), c = rep(1,6))
