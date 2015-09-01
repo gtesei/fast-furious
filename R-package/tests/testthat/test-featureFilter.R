@@ -108,6 +108,43 @@ test_that('removing correlated predictors below threshold', {
   
 })
 
+test_that('removing identical predictors', {
+  #skip_on_cran()
+  
+  data = data.frame( a = rep(1:3 , each = 2), b = c(4:1,6,6), c = rep(1,6) , d=rep(1:3 , each = 2))
+  data.poly = ff.poly(x=data,n=3,direction = 0)
+  Xtrain = data.poly[1:3,]
+  Xtrain = data.poly[4:6,]
+  
+  l = ff.featureFilter (traindata = Xtrain,
+                    testdata = Xtrain,
+                    removeOnlyZeroVariacePredictors=TRUE,
+                    y = NULL, 
+                    correlationThreshold = NULL ,  
+                    removePredictorsMakingIllConditionedSquareMatrix = FALSE, 
+                    removeIdenticalPredictors = TRUE,
+                    removeHighCorrelatedPredictors = FALSE, 
+                    performVarianceAnalysisOnTrainSetOnly = FALSE, 
+                    featureScaling = FALSE, 
+                    verbose=TRUE)
+  expect_equal(object = ncol(l$traindata) , 10)
+  expect_equal(object = ncol(l$testdata) , 10)
+  
+  l = ff.featureFilter (traindata = Xtrain,
+                        testdata = Xtrain,
+                        removeOnlyZeroVariacePredictors=TRUE,
+                        y = NULL, 
+                        correlationThreshold = NULL ,  
+                        removePredictorsMakingIllConditionedSquareMatrix = FALSE, 
+                        removeIdenticalPredictors = TRUE,
+                        removeHighCorrelatedPredictors = FALSE, 
+                        performVarianceAnalysisOnTrainSetOnly = FALSE, 
+                        featureScaling = FALSE, 
+                        verbose=FALSE)
+  expect_equal(object = ncol(l$traindata) , 10)
+  expect_equal(object = ncol(l$testdata) , 10)
+})
+
 test_that('removing correlated predictors below threshold', {
   #skip_on_cran()
   Xtrain <- data.frame( a = rep(1:3 , each = 2), b = c(4:1,6,6), c = rep(1,6) )

@@ -10,6 +10,7 @@
 #'        (considered only if \code{removeOnlyZeroVariacePredictors} is \code{FALSE}).  
 #' @param removePredictorsMakingIllConditionedSquareMatrix \code{TRUE} to predictors making ill conditioned square matrices 
 #' @param removeHighCorrelatedPredictors \code{TRUE} to remove high correlared predictors 
+#' @param removeIdenticalPredictors \code{TRUE} to remove identical predictors (using \code{base::identical} function) 
 #' @param featureScaling \code{TRUE} to perform feature scaling
 #' @param verbose \code{TRUE} to set verbose mode 
 #' 
@@ -35,6 +36,7 @@ ff.featureFilter <- function(traindata,
                           performVarianceAnalysisOnTrainSetOnly = TRUE , 
                           correlationThreshold = NULL, 
                           removePredictorsMakingIllConditionedSquareMatrix = TRUE, 
+                          removeIdenticalPredictors = FALSE, 
                           removeHighCorrelatedPredictors = TRUE, 
                           featureScaling = TRUE, 
                           verbose = TRUE) {
@@ -104,6 +106,25 @@ ff.featureFilter <- function(traindata,
           paste(colnames(data) [PredToDel$numbers.discarded] , collapse=" " ) , " ... \n ")
       data  =  data  [,-PredToDel$numbers.discarded]
     }
+  }
+  
+  ## removing identical predictors 
+  if (removeIdenticalPredictors) {
+    colToRemove = rep(F,ncol(data))
+    
+    lapply( 1:(ncol(data)-1) , function(i) {
+      lapply( (i+1):ncol(data) ,function(j) {
+        if (identical(data[,i],data[,j])) {
+          colToRemove[j] <<- T
+        } 
+      })
+    })
+    
+    if (sum(colToRemove) > 0) {
+      if (verbose) cat("removing ",sum(colToRemove)," identical predictors: ", 
+                       paste(colnames(data) [colToRemove] , collapse=" " ) , " ... \n ")
+    }
+    data = data[,-which(colToRemove)]
   }
   
   # removing high correlated predictors 

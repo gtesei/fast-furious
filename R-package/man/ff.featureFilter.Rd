@@ -8,8 +8,8 @@ ff.featureFilter(traindata, testdata, y = NULL,
   removeOnlyZeroVariacePredictors = FALSE,
   performVarianceAnalysisOnTrainSetOnly = TRUE, correlationThreshold = NULL,
   removePredictorsMakingIllConditionedSquareMatrix = TRUE,
-  removeHighCorrelatedPredictors = TRUE, featureScaling = TRUE,
-  verbose = TRUE)
+  removeIdenticalPredictors = FALSE, removeHighCorrelatedPredictors = TRUE,
+  featureScaling = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{traindata}{the train set}
@@ -26,6 +26,8 @@ ff.featureFilter(traindata, testdata, y = NULL,
 (considered only if \code{removeOnlyZeroVariacePredictors} is \code{FALSE}).}
 
 \item{removePredictorsMakingIllConditionedSquareMatrix}{\code{TRUE} to predictors making ill conditioned square matrices}
+
+\item{removeIdenticalPredictors}{\code{TRUE} to remove identical predictors (using \code{base::identical} function)}
 
 \item{removeHighCorrelatedPredictors}{\code{TRUE} to remove high correlared predictors}
 
