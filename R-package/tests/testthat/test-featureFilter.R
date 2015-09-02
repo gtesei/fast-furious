@@ -170,6 +170,7 @@ test_that('correlation filter', {
   Xtest <-  Xtrain + runif(nrow(Xtrain))
   y = 1:6
   
+  options(warn=-1)
   l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,rel_th=0.5 , method = 'spearman' , verbose = T)
   expect_equal(ncol(l$Xtrain),1)
   
@@ -188,6 +189,7 @@ test_that('correlation filter', {
   l = NULL
   l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'pearson' , verbose = F)
   expect_equal(ncol(l$Xtrain),1)
+  options(warn=0)
 })
 
 
