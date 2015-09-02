@@ -251,6 +251,7 @@ ff.poly = function (x,n,direction=0) {
 #'
 
 ff.corrFilter = function(Xtrain,Xtest,y,abs_th=NULL,rel_th=1,method = 'pearson',verbose=F) {
+  warn_def = getOption('warn')
   options(warn=-1)
   
   ####
@@ -369,7 +370,7 @@ ff.corrFilter = function(Xtrain,Xtest,y,abs_th=NULL,rel_th=1,method = 'pearson',
   ## cut to the given threshold 
   aadf_cut = aadf[1:int_rel_th,,drop=F]
   
-  options(warn=0)
+  options(warn=warn_def)
   
   return(list(
     Xtrain = Xtrain[,aadf_cut$predictor,drop=F],  
