@@ -164,6 +164,32 @@ test_that('removing correlated predictors below threshold', {
   expect_equal(nrow(data.poly),nrow(data))
 })
 
+test_that('correlation filter', {
+  #skip_on_cran()
+  Xtrain <- data.frame( a = rep(1:3 , each = 2), b = c(4:1,6,6), c = rep(1,6) )
+  Xtest <-  Xtrain + runif(nrow(Xtrain))
+  y = 1:6
+  
+  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,rel_th=0.5 , method = 'spearman' , verbose = T)
+  expect_equal(ncol(l$Xtrain),1)
+  
+  l = NULL
+  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,rel_th=0.5 , method = 'spearman' , verbose = F)
+  expect_equal(ncol(l$Xtrain),1)
+  
+  l = NULL
+  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'spearman' , verbose = F)
+  expect_equal(ncol(l$Xtrain),1)
+  
+  l = NULL
+  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'kendall' , verbose = F)
+  expect_equal(ncol(l$Xtrain),1)
+  
+  l = NULL
+  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'pearson' , verbose = F)
+  expect_equal(ncol(l$Xtrain),1)
+})
+
 
 
 

@@ -228,3 +228,148 @@ ff.poly = function (x,n,direction=0) {
     return (cbind(x,x.poly.2)) 
   }
 }
+
+#' Filter a \code{data.frame} of numeric according to a given threshold of correlation 
+#' 
+#' @param Xtrain a train set \code{data.frame} of \code{numeric}
+#' @param Xtest a test set \code{data.frame} of \code{numeric}
+#' @param abs_th an absolute threshold (= number of data frame columns)
+#' @param rel_th a relative threshold (= percentage of data frame columns)
+#' @param verbose  \code{TRUE} to enable verbose mode 
+#' 
+#' @examples
+#' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = c(4:1,6,6), c = rep(1,6))
+#' Xtest <-  Xtrain + runif(nrow(Xtrain))
+#' y = 1:6
+#' l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,rel_th=0.5)
+#' Xtrain.filtered = l$Xtrain
+#' Xtest.filtered =l$Xtest 
+#' @export
+#' @return a \code{list} of filtered train set and test set with correlation test results 
+#'
+
+ff.corrFilter = function(Xtrain,Xtest,y,abs_th=NULL,rel_th=1,method = 'pearson',verbose=F) {
+  
+  ####
+  stopifnot(is.null(rel_th) || is.null(abs_th))
+  if (! is.null(rel_th) ) stopifnot(  rel_th >0 && rel_th <=1 )
+  if (! is.null(abs_th) ) stopifnot(  abs_th >0 && abs_th <=ncol(Xtrain) )
+  
+  stopifnot(  ! (is.null(Xtrain) || is.null(Xtest)) )
+  stopifnot(  ncol(Xtrain) == ncol(Xtest) )
+  stopifnot(  ncol(Xtrain) > 0  )
+  stopifnot(  nrow(Xtrain) > 0  )
+  stopifnot(  nrow(Xtest) > 0  )
+  
+  stopifnot(  sum(unlist(lapply(Xtrain,function(x) {
+    return(! (is.atomic(x)  && ! is.character(x) && ! is.factor(x)))
+  }))) == 0 )
+  
+  stopifnot(  sum(unlist(lapply(Xtest,function(x) {
+    return(! (is.atomic(x)  && ! is.character(x) && ! is.factor(x)))
+  }))) == 0 )
+  
+  stopifnot(identical(method,'pearson') || identical(method,'kendall') || identical(method,'spearman')) 
+  
+  ### TypeIError test 
+  getPvalueTypeIError = function(x,y) {
+    test = NA
+    pvalue = NA
+    estimate = NA
+    interpretation = NA 
+    
+    ## type casting and understanding stat test 
+    if (class(x) == "integer") x = as.numeric(x)
+    if (class(y) == "integer") y = as.numeric(y)
+    
+    if ( class(x) == "factor" & class(y) == "numeric" ) {
+      # C -> Q
+      test = "anova"
+    } else if (class(x) == "factor" & class(y) == "factor" ) {
+      # C -> C
+      test = "chi-square"
+    } else if (class(x) == "numeric" & class(y) == "numeric" ) {
+      test = method
+    }  else {
+      # Q -> C 
+      # it performs anova test x ~ y 
+      test = "ANOVA"
+      tmp = x 
+      x = y 
+      y = tmp 
+    }
+    
+    ## performing stat test and computing p-value
+    if (test == "anova") {                
+      test.anova = aov(y~x)
+      pvalue = summary(test.anova)[[1]][["Pr(>F)"]][1]
+      estimate = NULL
+      if (pvalue < 0.5) {
+        interpretation = 'means differ'
+      } else {
+        interpretation = 'data do not give you any reason to conclude that means differ'
+      }
+    } else if (test == "chi-square") {    
+      test.chisq = chisq.test(x = x , y = y)
+      pvalue = test.chisq$p.value
+      estimate = NULL
+    } else {                             
+      ###  pearson /  kendall / spearman
+      test.corr = cor.test(x =  x , y =  y , method = method)
+      pvalue = test.corr$p.value
+      estimate = test.corr$estimate
+      if (pvalue < 0.5) {
+        interpretation = 'there is correlation'
+      } else {
+        interpretation = 'data do not give you any reason to conclude that the correlation is real'
+      }
+    }
+    
+    return(list(test=test,pvalue=pvalue,estimate=estimate,interpretation=interpretation))
+  }
+  
+  ## 
+  int_rel_th = abs_th
+  if (! is.null(rel_th) ) {
+    int_rel_th = floor(ncol(Xtrain) * rel_th)
+  } 
+  
+  ## corr analysis 
+  aa = lapply(Xtrain , function(x) {
+    dummy = list(
+      test = method,
+      pvalue=1, 
+      estimate = 0, 
+      interpretation = "error")
+    setNames(object = dummy , nm = names(x))
+    
+    ret = plyr::failwith( dummy, getPvalueTypeIError , quiet = !verbose)(x=x,y=y)
+    
+    return (ret)
+  })
+  
+  ## make data frame test results  
+  aadf = data.frame(predictor = rep(NA,length(aa)) , 
+                    test = rep(NA,length(aa)) , 
+                    pvalue = rep(NA,length(aa)) , 
+                    estimate = rep(NA,length(aa)) , 
+                    interpretation = rep(NA,length(aa)))
+  lapply(seq_along(aa) , function(i) {
+    aadf[i,]$predictor <<- names(aa[i])
+    aadf[i,]$test <<- aa[[i]]$test
+    aadf[i,]$pvalue <<- aa[[i]]$pvalue
+    aadf[i,]$estimate <<- aa[[i]]$estimate
+    aadf[i,]$interpretation <<- aa[[i]]$interpretation
+  })
+  aadf = aadf[order(abs(aadf$estimate) , decreasing = T), ]
+  
+  ## cut to the given threshold 
+  aadf_cut = aadf[1:int_rel_th,,drop=F]
+  
+  return(list(
+    Xtrain = Xtrain[,aadf_cut$predictor,drop=F],  
+    Xtest = Xtest[,aadf_cut$predictor,drop=F], 
+    test.results = aadf
+  ))
+  
+}

@@ -20,4 +20,5 @@ Depends:
     caret
 Imports:
     parallel, 
-    subselect
+    subselect,
+    plyr
