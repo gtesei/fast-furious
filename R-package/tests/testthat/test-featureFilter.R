@@ -170,24 +170,30 @@ test_that('correlation filter', {
   Xtest <-  Xtrain + runif(nrow(Xtrain))
   y = 1:6
   
-  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,rel_th=0.5 , method = 'spearman' , verbose = T)
+  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,rel_th=0.5 , method = 'spearman' , verbose = TRUE)
   expect_equal(ncol(l$Xtrain),1)
   
   l = NULL
-  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,rel_th=0.5 , method = 'spearman' , verbose = F)
+  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,rel_th=0.5 , method = 'spearman' , verbose = FALSE)
   expect_equal(ncol(l$Xtrain),1)
   
   l = NULL
-  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'spearman' , verbose = F)
+  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'spearman' , verbose = FALSE)
   expect_equal(ncol(l$Xtrain),1)
   
   l = NULL
-  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'kendall' , verbose = F)
+  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'kendall' , verbose = FALSE)
   expect_equal(ncol(l$Xtrain),1)
   
   l = NULL
-  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'pearson' , verbose = F)
+  l = ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'pearson' , verbose = FALSE)
   expect_equal(ncol(l$Xtrain),1)
+  
+  expect_error(ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'pippo' , verbose = FALSE))
+  expect_error(ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = NULL , method = 'pippo' , verbose = TRUE))
+  
+  expect_error(ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = 4 , method = 'pearson' , verbose = FALSE))
+  expect_error(ff.corrFilter(Xtrain=Xtrain,Xtest=Xtest,y=y,abs_th=1 , rel_th = 4 , method = 'pearson' , verbose = TRUE))
   
 })
 
