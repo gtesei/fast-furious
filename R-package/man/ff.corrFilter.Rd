@@ -12,9 +12,13 @@ ff.corrFilter(Xtrain, Xtest, y, abs_th = NULL, rel_th = 1,
 
 \item{Xtest}{a test set \code{data.frame} of \code{numeric}}
 
+\item{y}{the output variable (as numeric vector)}
+
 \item{abs_th}{an absolute threshold (= number of data frame columns)}
 
 \item{rel_th}{a relative threshold (= percentage of data frame columns)}
+
+\item{method}{a character string indicating which correlation method is to be used for the test. One of "pearson", "kendall", or "spearman".}
 
 \item{verbose}{\code{TRUE} to enable verbose mode}
 }

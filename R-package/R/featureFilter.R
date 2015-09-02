@@ -233,6 +233,8 @@ ff.poly = function (x,n,direction=0) {
 #' 
 #' @param Xtrain a train set \code{data.frame} of \code{numeric}
 #' @param Xtest a test set \code{data.frame} of \code{numeric}
+#' @param y the output variable (as numeric vector)
+#' @param method a character string indicating which correlation method is to be used for the test. One of "pearson", "kendall", or "spearman".
 #' @param abs_th an absolute threshold (= number of data frame columns)
 #' @param rel_th a relative threshold (= percentage of data frame columns)
 #' @param verbose  \code{TRUE} to enable verbose mode 
@@ -249,6 +251,7 @@ ff.poly = function (x,n,direction=0) {
 #'
 
 ff.corrFilter = function(Xtrain,Xtest,y,abs_th=NULL,rel_th=1,method = 'pearson',verbose=F) {
+  options(warn=-1)
   
   ####
   stopifnot(is.null(rel_th) || is.null(abs_th))
@@ -365,6 +368,8 @@ ff.corrFilter = function(Xtrain,Xtest,y,abs_th=NULL,rel_th=1,method = 'pearson',
   
   ## cut to the given threshold 
   aadf_cut = aadf[1:int_rel_th,,drop=F]
+  
+  options(warn=0)
   
   return(list(
     Xtrain = Xtrain[,aadf_cut$predictor,drop=F],  
