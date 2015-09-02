@@ -75,7 +75,7 @@ ff.featureFilter <- function(traindata,
     if (length(PredToDel) > 0) {
       if (verbose) cat("removing ",length(PredToDel)," nearZeroVar predictors: ", 
           paste(colnames(data) [PredToDel] , collapse=" " ) , " ... \n ")
-      data  =  data  [,-PredToDel]
+      data  =  data  [,-PredToDel,drop=F]
     } 
   } else {
     if (verbose) cat(">>> removing zero variance predictors only  ... \n")
@@ -93,7 +93,7 @@ ff.featureFilter <- function(traindata,
     if (length(PredToDel) > 0) {
       if (verbose) cat("removing ",length(PredToDel)," ZeroVariacePredictors predictors: ", 
           paste(colnames(data) [PredToDel] , collapse=" " ) , " ... \n ")
-      data  =  data  [,-PredToDel]
+      data  =  data  [,-PredToDel,drop=F]
     } 
   }
   
@@ -104,7 +104,7 @@ ff.featureFilter <- function(traindata,
     if (length(PredToDel$numbers.discarded) > 0) {
       if (verbose) cat("removing ",length(PredToDel$numbers.discarded)," predictors that make ill-conditioned square matrix: ", 
           paste(colnames(data) [PredToDel$numbers.discarded] , collapse=" " ) , " ... \n ")
-      data  =  data  [,-PredToDel$numbers.discarded]
+      data  =  data  [,-PredToDel$numbers.discarded,drop=F]
     }
   }
   
@@ -124,7 +124,7 @@ ff.featureFilter <- function(traindata,
       if (verbose) cat("removing ",sum(colToRemove)," identical predictors: ", 
                        paste(colnames(data) [colToRemove] , collapse=" " ) , " ... \n ")
     }
-    data = data[,-which(colToRemove)]
+    data = data[,-which(colToRemove),drop=F]
   }
   
   # removing high correlated predictors 
@@ -134,7 +134,7 @@ ff.featureFilter <- function(traindata,
     if (length(PredToDel) > 0) {
       if (verbose) cat("removing ",length(PredToDel), " removing high correlated predictors: ",
           paste(colnames(data) [PredToDel] , collapse=" " ) , " ... \n ")
-      data =  data  [,-PredToDel]
+      data =  data  [,-PredToDel,drop=F]
     }
   }
 
@@ -322,7 +322,7 @@ ff.corrFilter = function(Xtrain,Xtest,y,abs_th=NULL,rel_th=1,method = 'pearson',
       test.corr = cor.test(x =  x , y =  y , method = method)
       pvalue = test.corr$p.value
       estimate = test.corr$estimate
-      if (pvalue < 0.5) {
+      if (pvalue < 0.05) {
         interpretation = 'there is correlation'
       } else {
         interpretation = 'data do not give you any reason to conclude that the correlation is real'
