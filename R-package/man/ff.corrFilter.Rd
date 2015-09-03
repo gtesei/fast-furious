@@ -5,7 +5,7 @@
 \title{Filter a \code{data.frame} of numeric according to a given threshold of correlation}
 \usage{
 ff.corrFilter(Xtrain, Xtest, y, abs_th = NULL, rel_th = 1,
-  method = "pearson", verbose = F)
+  method = "pearson")
 }
 \arguments{
 \item{Xtrain}{a train set \code{data.frame} of \code{numeric}}

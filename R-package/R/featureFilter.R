@@ -250,7 +250,7 @@ ff.poly = function (x,n,direction=0) {
 #' @return a \code{list} of filtered train set and test set with correlation test results 
 #'
 
-ff.corrFilter = function(Xtrain,Xtest,y,abs_th=NULL,rel_th=1,method = 'pearson',verbose=F) {
+ff.corrFilter = function(Xtrain,Xtest,y,abs_th=NULL,rel_th=1,method = 'pearson') {
   warn_def = getOption('warn')
   options(warn=-1)
   
@@ -310,7 +310,7 @@ ff.corrFilter = function(Xtrain,Xtest,y,abs_th=NULL,rel_th=1,method = 'pearson',
       interpretation = "error")
     setNames(object = dummy , nm = names(x))
     
-    ret = plyr::failwith( dummy, getPvalueTypeIError , quiet = !verbose)(x=x,y=y)
+    ret = plyr::failwith( dummy, getPvalueTypeIError , quiet = TRUE)(x=x,y=y)
     
     return (ret)
   })
