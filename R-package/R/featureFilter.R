@@ -277,56 +277,19 @@ ff.corrFilter = function(Xtrain,Xtest,y,abs_th=NULL,rel_th=1,method = 'pearson',
   
   ### TypeIError test 
   getPvalueTypeIError = function(x,y) {
-    test = NA
-    pvalue = NA
-    estimate = NA
-    interpretation = NA 
+    test = method
+    pvalue = NULL
+    estimate = NULL
+    interpretation = NULL 
     
-    ## type casting and understanding stat test 
-    if (class(x) == "integer") x = as.numeric(x)
-    if (class(y) == "integer") y = as.numeric(y)
-    
-    if ( class(x) == "factor" & class(y) == "numeric" ) {
-      # C -> Q
-      test = "anova"
-    } else if (class(x) == "factor" & class(y) == "factor" ) {
-      # C -> C
-      test = "chi-square"
-    } else if (class(x) == "numeric" & class(y) == "numeric" ) {
-      test = method
-    }  else {
-      # Q -> C 
-      # it performs anova test x ~ y 
-      test = "ANOVA"
-      tmp = x 
-      x = y 
-      y = tmp 
-    }
-    
-    ## performing stat test and computing p-value
-    if (test == "anova") {                
-      test.anova = aov(y~x)
-      pvalue = summary(test.anova)[[1]][["Pr(>F)"]][1]
-      estimate = NULL
-      if (pvalue < 0.5) {
-        interpretation = 'means differ'
-      } else {
-        interpretation = 'data do not give you any reason to conclude that means differ'
-      }
-    } else if (test == "chi-square") {    
-      test.chisq = chisq.test(x = x , y = y)
-      pvalue = test.chisq$p.value
-      estimate = NULL
-    } else {                             
-      ###  pearson /  kendall / spearman
-      test.corr = cor.test(x =  x , y =  y , method = method)
-      pvalue = test.corr$p.value
-      estimate = test.corr$estimate
-      if (pvalue < 0.05) {
-        interpretation = 'there is correlation'
-      } else {
-        interpretation = 'data do not give you any reason to conclude that the correlation is real'
-      }
+    ###  pearson /  kendall / spearman
+    test.corr = cor.test(x =  x , y =  y , method = method)
+    pvalue = test.corr$p.value
+    estimate = test.corr$estimate
+    if (pvalue < 0.05) {
+      interpretation = 'there is correlation'
+    } else {
+      interpretation = 'data do not give you any reason to conclude that the correlation is real'
     }
     
     return(list(test=test,pvalue=pvalue,estimate=estimate,interpretation=interpretation))
