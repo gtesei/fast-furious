@@ -216,13 +216,13 @@ ff.makeFeatureSet = function(data.train ,
   
   #
   currIdx = 1 
-  for (i in seq_along(l)) {
+  lapply(seq_along(l) , function(i) {
     if (identical(meta[i],'C')) {
       
-      traindata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$traindata
-      colnames(traindata)[currIdx:(currIdx+l[[i]]$dim-1)] = colnames(l[[i]]$traindata)
-      testdata[,currIdx:(currIdx+l[[i]]$dim-1)]  = l[[i]]$testdata
-      colnames(testdata)[currIdx:(currIdx+l[[i]]$dim-1)] = colnames(l[[i]]$testdata)
+      traindata[,currIdx:(currIdx+l[[i]]$dim-1)]  <<- l[[i]]$traindata
+      colnames(traindata)[currIdx:(currIdx+l[[i]]$dim-1)] <<- colnames(l[[i]]$traindata)
+      testdata[,currIdx:(currIdx+l[[i]]$dim-1)]  <<- l[[i]]$testdata
+      colnames(testdata)[currIdx:(currIdx+l[[i]]$dim-1)] <<- colnames(l[[i]]$testdata)
       
     } else if ( identical(meta[i],'N') || identical(meta[i],'D') ) {
       trdata = l[[i]]$traindata
@@ -236,15 +236,15 @@ ff.makeFeatureSet = function(data.train ,
         tsdata = data[(length(trdata)+1):nrow(data),]
       }
       
-      traindata[,currIdx:(currIdx+l[[i]]$dim-1)]  = trdata
-      colnames(traindata)[currIdx:(currIdx+l[[i]]$dim-1)] = l[[i]]$x.name
-      testdata[,currIdx:(currIdx+l[[i]]$dim-1)]  = tsdata
-      colnames(testdata)[currIdx:(currIdx+l[[i]]$dim-1)] = l[[i]]$y.name
+      traindata[,currIdx:(currIdx+l[[i]]$dim-1)]  <<- trdata
+      colnames(traindata)[currIdx:(currIdx+l[[i]]$dim-1)] <<- l[[i]]$x.name
+      testdata[,currIdx:(currIdx+l[[i]]$dim-1)]  <<- tsdata
+      colnames(testdata)[currIdx:(currIdx+l[[i]]$dim-1)] <<- l[[i]]$y.name
       
     } else stop('unrecognized type of meta-data')
     
-    currIdx = currIdx + l[[i]]$dim
-  }
+    currIdx <<- currIdx + l[[i]]$dim
+  })
   
   #
   stopifnot(sum(is.na(traindata))==0)
