@@ -19,8 +19,6 @@ ff.corrFilter(Xtrain, Xtest, y, abs_th = NULL, rel_th = 1,
 \item{rel_th}{a relative threshold (= percentage of data frame columns)}
 
 \item{method}{a character string indicating which correlation method is to be used for the test. One of "pearson", "kendall", or "spearman".}
-
-\item{verbose}{\code{TRUE} to enable verbose mode}
 }
 \value{
 a \code{list} of filtered train set and test set with correlation test results

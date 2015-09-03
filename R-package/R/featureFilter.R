@@ -237,7 +237,6 @@ ff.poly = function (x,n,direction=0) {
 #' @param method a character string indicating which correlation method is to be used for the test. One of "pearson", "kendall", or "spearman".
 #' @param abs_th an absolute threshold (= number of data frame columns)
 #' @param rel_th a relative threshold (= percentage of data frame columns)
-#' @param verbose  \code{TRUE} to enable verbose mode 
 #' 
 #' @examples
 #' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = c(4:1,6,6), c = rep(1,6))
