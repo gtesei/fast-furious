@@ -110,9 +110,11 @@ test_that('XGBoost', {
   model = tp$model
   secs = tp$secs
   
+  cat(">>>> length(pred_test): ",length(pred_test),"\n")
+  cat(">>>> nrow(Xtest): ",nrow(Xtest),"\n")
+  
   expect_equal(length(pred_test),nrow(Xtest))
   expect_equal(secs>0,T)
-  
   
   ## restore warnings 
   options(warn=warn_def)
@@ -262,6 +264,7 @@ test_that('base test case', {
   expect_equal(length(predTest),nrow(Xtest))
   
   ## blender 
+  cat(">>> Testing blender ... \n")
   gBlender = ff.blend(bestTune = tp$model$bestTune, 
                                    caretModelName = 'cubist' , 
                                    Xtrain = Xtrain , 
