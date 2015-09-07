@@ -545,11 +545,11 @@ ff.plotPerformance.reg <- function(observed,predicted,main=NULL) {
 #' options(warn=-1)
 #'
 #' ## data 
-#' Xtrain <- data.frame( a = rep(1:10 , each = 2), b = 20:1, 
-#' c = rep(as.Date(c("2007-06-22", "2004-02-13")),10) )
-#' Xtest <- data.frame( a = rep(2:11 , each = 2), b = 1:20, 
-#' c = rep(as.Date(c("2007-03-01", "2004-05-23")),10) )
-#' Ytrain = 1:20 + runif(nrow(Xtrain))
+#' Xtrain <- data.frame( a = rep(1:5 , each = 2), b = 10:1, 
+#' c = rep(as.Date(c("2007-06-22", "2004-02-13")),5) )
+#' Xtest <- data.frame( a = rep(2:6 , each = 2), b = 1:10, 
+#' c = rep(as.Date(c("2007-03-01", "2004-05-23")),5) )
+#' Ytrain = 1:10 + runif(nrow(Xtrain))
 #'
 #' ## encode datasets 
 #' l = ff.makeFeatureSet(Xtrain,Xtest,c("C","N","D"))
