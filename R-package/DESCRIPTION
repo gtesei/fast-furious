@@ -14,7 +14,14 @@ Suggests:
     knitr,
     lattice (>= 0.20),
     ggplot2 (>= 1.0.0),
-    testthat
+    testthat, 
+    Cubist, 
+    arm, 
+    MASS,
+    kknn,
+    kernlab,
+    ipred, 
+    randomForest
 Depends:
     R (>= 2.10),  
     caret
