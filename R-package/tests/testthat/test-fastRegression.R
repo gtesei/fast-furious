@@ -300,6 +300,7 @@ test_that('base test case', {
   ## restore warnings 
   options(warn=warn_def)
   
+  ## restore default 
   ff.setMaxCuncurrentThreads(2)
   
 })
