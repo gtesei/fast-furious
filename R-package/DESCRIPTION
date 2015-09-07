@@ -21,4 +21,5 @@ Depends:
 Imports:
     parallel, 
     subselect,
-    plyr
+    plyr, 
+    xgboost

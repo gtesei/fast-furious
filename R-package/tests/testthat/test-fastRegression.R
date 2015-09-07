@@ -1,0 +1,297 @@
+context("fastRegression")
+
+test_that('XGBoost', { 
+  #skip_on_cran()
+  
+  warn_def = getOption('warn')
+  options(warn=-1)
+  
+  ## data 
+  Xtrain <- data.frame( a = rep(1:10 , each = 2), b = 1:20, c = rep(as.Date(c("2007-06-22", "2004-02-13")),10) )
+  Xtest <- data.frame( a = rep(2:11 , each = 2), b= 1:20, c = rep(as.Date(c("2007-03-01", "2004-05-23")),10) )
+  Ytrain = 1:20 + runif(nrow(Xtrain))
+  
+  ## encode datasets 
+  l = ff.makeFeatureSet(Xtrain,Xtest,c('C','N','D'))
+  Xtrain = l$traindata
+  Xtest = l$testdata
+  
+  ## make a caret control object 
+  controlObject <- trainControl(method = "repeatedcv", repeats = 1, number = 2)
+  
+  ## xgbTreeGTJ best tuning 
+  tp = NULL
+  tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
+                             Xtrain=Xtrain , 
+                             Xtest=Xtest , 
+                             model.label = 'xgbTreeGTJ' , 
+                             controlObject=NULL, 
+                             best.tuning = T, 
+                             verbose=T)  
+  
+  
+  
+  pred_test = tp$pred
+  model = tp$model
+  secs = tp$secs
+  
+  cat(">>>> length(pred_test): ",length(pred_test),"\n")
+  cat(">>>> nrow(Xtest): ",nrow(Xtest),"\n")
+  
+  expect_equal(is.null(tp),FALSE)
+  expect_equal(length(pred_test),nrow(Xtest))
+  expect_equal(secs>0,T)
+  
+  ## xgbTreeGTJ variant 
+  tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
+                             Xtrain=Xtrain , 
+                             Xtest=Xtest , 
+                             model.label = 'xgbTreeGTJ' , 
+                             controlObject=NULL, 
+                             best.tuning = F, 
+                             removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
+                             xgb.metric.fun = RMSE.xgb, 
+                             xgb.maximize =FALSE, 
+                             xgb.metric.label = 'rmse', 
+                             xgb.foldList = NULL,
+                             xgb.eta = 0.03, 
+                             verbose=T)  
+  
+  
+  
+  pred_test = tp$pred
+  model = tp$model
+  secs = tp$secs
+  
+  expect_equal(length(pred_test),nrow(Xtest))
+  expect_equal(secs>0,T)
+  
+  ## xgbTree variant 
+  tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
+                             Xtrain=Xtrain , 
+                             Xtest=Xtest , 
+                             model.label = 'xgbTree' , 
+                             controlObject=controlObject, 
+                             best.tuning = F, 
+                             removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
+                             xgb.metric.fun = RMSE.xgb, 
+                             xgb.maximize =FALSE, 
+                             xgb.metric.label = 'rmse', 
+                             xgb.foldList = NULL,
+                             xgb.eta = 0.03)  
+  
+  
+  
+  pred_test = tp$pred
+  model = tp$model
+  secs = tp$secs
+  
+  expect_equal(length(pred_test),nrow(Xtest))
+  expect_equal(secs>0,T)
+  
+  ## xgbTree variant 
+  tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
+                             Xtrain=Xtrain , 
+                             Xtest=Xtest , 
+                             model.label = 'xgbTree' , 
+                             controlObject=NULL, 
+                             best.tuning = TRUE, 
+                             removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
+                             xgb.metric.fun = RMSE.xgb, 
+                             xgb.maximize =FALSE, 
+                             xgb.metric.label = 'rmse', 
+                             xgb.foldList = NULL,
+                             xgb.eta = 0.03, 
+                             verbose=T)  
+  
+  
+  
+  pred_test = tp$pred
+  model = tp$model
+  secs = tp$secs
+  
+  expect_equal(length(pred_test),nrow(Xtest))
+  expect_equal(secs>0,T)
+  
+  
+  ## restore warnings 
+  options(warn=warn_def)
+  
+})
+
+
+test_that('best tuning TRUE', {
+  #skip_on_cran()
+  warn_def = getOption('warn')
+  options(warn=-1)
+  
+  ## data 
+  Xtrain <- data.frame( a = rep(1:10 , each = 2), b = 1:20, c = rep(as.Date(c("2007-06-22", "2004-02-13")),10) )
+  Xtest <- data.frame( a = rep(2:11 , each = 2), b= 1:20, c = rep(as.Date(c("2007-03-01", "2004-05-23")),10) )
+  Ytrain = 1:20 + runif(nrow(Xtrain))
+  
+  ## encode datasets 
+  l = ff.makeFeatureSet(Xtrain,Xtest,c('C','N','D'))
+  Xtrain = l$traindata
+  Xtest = l$testdata
+  
+  models = c('bayesglm','glm','glmStepAIC','knn','svmRadial','treebag','rf')
+  
+  ## make a caret control object 
+  controlObject <- trainControl(method = "repeatedcv", repeats = 1, number = 2)
+  
+  lapply(models , function(m) {
+    #for (m in models) {
+    cat(">>> model:",m,"\n")
+    
+    
+    tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
+                               Xtrain=Xtrain , 
+                               Xtest=Xtest , 
+                               model.label = m , 
+                               controlObject=controlObject, 
+                               best.tuning = T)  
+    
+    
+    
+    pred_test = tp$pred
+    model = tp$model
+    secs = tp$secs
+    
+    expect_equal(length(pred_test),nrow(Xtest))
+    expect_equal(secs>0,T)
+  })
+  
+  ## restore warnings 
+  options(warn=warn_def)
+  
+})
+
+test_that('base test case', {
+  #skip_on_cran()
+  
+  ## suppress warnings raised because there few obs 
+  warn_def = getOption('warn')
+  options(warn=-1)
+  
+  ## data 
+  Xtrain <- data.frame( a = rep(1:10 , each = 2), b = 20:1, c = rep(as.Date(c("2007-06-22", "2004-02-13")),10) )
+  Xtest <- data.frame( a = rep(2:11 , each = 2), b = 1:20, c = rep(as.Date(c("2007-03-01", "2004-05-23")),10) )
+  Ytrain = 1:20 + runif(nrow(Xtrain))
+  
+  ## encode datasets 
+  l = ff.makeFeatureSet(Xtrain,Xtest,c('C','N','D'))
+  Xtrain = l$traindata
+  Xtest = l$testdata
+  
+  ## make a caret control object 
+  controlObject <- trainControl(method = "repeatedcv", repeats = 1, number = 2)
+  
+  tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
+                             Xtrain=Xtrain , 
+                             Xtest=Xtest , 
+                             model.label = 'cubist' , 
+                             controlObject=controlObject)
+  
+  pred_test = tp$pred
+  model = tp$model
+  secs = tp$secs
+  
+  expect_equal(length(pred_test),nrow(Xtest))
+  expect_equal(secs>0,T)
+  
+  ## create ensemble 
+  en = ff.createEnsemble(Xtrain = Xtrain, 
+                         Xtest = Xtest, 
+                         y = Ytrain, 
+                         bestTune = tp$model$bestTune , 
+                         caretModelName = 'cubist' , 
+                         parallelize = T, 
+                         removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = T, 
+                         controlObject = tp$model$control)
+  predTrain = en$predTrain
+  predTest = en$predTest
+  
+  expect_equal(length(predTrain),nrow(Xtrain))
+  expect_equal(length(predTest),nrow(Xtest))
+  
+  ## parallelize FALSE
+  en = ff.createEnsemble(Xtrain = Xtrain, 
+                         Xtest = Xtest, 
+                         y = Ytrain, 
+                         bestTune = tp$model$bestTune , 
+                         caretModelName = 'cubist' , 
+                         parallelize = F, 
+                         removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = T, 
+                         controlObject = tp$model$control)
+  predTrain = en$predTrain
+  predTest = en$predTest
+  
+  expect_equal(length(predTrain),nrow(Xtrain))
+  expect_equal(length(predTest),nrow(Xtest))
+  
+  ## removePredictorsMakingIllConditionedSquareMatrix_forLinearModels FALSE
+  en = ff.createEnsemble(Xtrain = Xtrain, 
+                         Xtest = Xtest, 
+                         y = Ytrain, 
+                         bestTune = tp$model$bestTune , 
+                         caretModelName = 'cubist' , 
+                         parallelize = T, 
+                         removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
+                         controlObject = tp$model$control)
+  predTrain = en$predTrain
+  predTest = en$predTest
+  
+  expect_equal(length(predTrain),nrow(Xtrain))
+  expect_equal(length(predTest),nrow(Xtest))
+  
+  ## verbose FALSE
+  en = ff.createEnsemble(Xtrain = Xtrain, 
+                         Xtest = Xtest, 
+                         y = Ytrain, 
+                         bestTune = tp$model$bestTune , 
+                         caretModelName = 'cubist' , 
+                         parallelize = T, 
+                         removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
+                         controlObject = tp$model$control,
+                         verbose = F)
+  predTrain = en$predTrain
+  predTest = en$predTest
+  
+  expect_equal(length(predTrain),nrow(Xtrain))
+  expect_equal(length(predTest),nrow(Xtest))
+  
+  ## blender 
+  gBlender = ff.blend(bestTune = tp$model$bestTune, 
+                                   caretModelName = 'cubist' , 
+                                   Xtrain = Xtrain , 
+                                   y = Ytrain, controlObject = tp$model$control, 
+                                   max_secs = 2, 
+                                   seed = 123,
+                                   method = c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN"),
+                                   useInteger = T, 
+                                   parallelize = T, 
+                                   verbose = F)
+  
+  expect_equal(length(gBlender),length(c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN")))
+  
+  sb = ff.summaryBlender(gBlender)
+  expect_equal(length(sb),length(c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN")))
+  
+  bbp = ff.getBestBlenderPerformance(gBlender)
+  expect_equal(is.null(bbp),F)
+  
+  bestTune = ff.getBestBlenderTune(gBlender)
+  expect_equal(is.null(bestTune),F)
+  
+  bestTune = ff.getBestBlenderTune(gBlender,truncate = F)
+  expect_equal(is.null(bestTune),F)
+  
+  diff = ff.verifyBlender (gBlender,Xtrain=Xtrain,y=Ytrain,seed=123,controlObject=tp$model$control,caretModelname = 'cubist')
+  expect_equal(length(diff),1)
+  
+  ## restore warnings 
+  options(warn=warn_def)
+  
+})
+
