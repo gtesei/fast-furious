@@ -137,7 +137,7 @@ test_that('best tuning TRUE', {
   Xtrain = l$traindata
   Xtest = l$testdata
   
-  models = c('bayesglm','glm','glmStepAIC','knn','svmRadial','treebag','rf')
+  models = c('bayesglm','glm','glmStepAIC','svmRadial','treebag','rf')
   
   ## make a caret control object 
   controlObject <- trainControl(method = "repeatedcv", repeats = 1, number = 2)
@@ -172,6 +172,8 @@ test_that('best tuning TRUE', {
 test_that('base test case', {
   #skip_on_cran()
   
+  ff.setMaxCuncurrentThreads(2)
+  
   ## suppress warnings raised because there few obs 
   warn_def = getOption('warn')
   options(warn=-1)
@@ -188,11 +190,11 @@ test_that('base test case', {
   
   ## make a caret control object 
   controlObject <- trainControl(method = "repeatedcv", repeats = 1, number = 2)
-  
+  model.label = "knn"
   tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
                              Xtrain=Xtrain , 
                              Xtest=Xtest , 
-                             model.label = 'cubist' , 
+                             model.label = model.label , 
                              controlObject=controlObject)
   
   pred_test = tp$pred
@@ -207,7 +209,7 @@ test_that('base test case', {
                          Xtest = Xtest, 
                          y = Ytrain, 
                          bestTune = tp$model$bestTune , 
-                         caretModelName = 'cubist' , 
+                         caretModelName = model.label , 
                          parallelize = T, 
                          removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = T, 
                          controlObject = tp$model$control)
@@ -222,7 +224,7 @@ test_that('base test case', {
                          Xtest = Xtest, 
                          y = Ytrain, 
                          bestTune = tp$model$bestTune , 
-                         caretModelName = 'cubist' , 
+                         caretModelName = model.label , 
                          parallelize = F, 
                          removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = T, 
                          controlObject = tp$model$control)
@@ -237,7 +239,7 @@ test_that('base test case', {
                          Xtest = Xtest, 
                          y = Ytrain, 
                          bestTune = tp$model$bestTune , 
-                         caretModelName = 'cubist' , 
+                         caretModelName = model.label , 
                          parallelize = T, 
                          removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
                          controlObject = tp$model$control)
@@ -252,11 +254,12 @@ test_that('base test case', {
                          Xtest = Xtest, 
                          y = Ytrain, 
                          bestTune = tp$model$bestTune , 
-                         caretModelName = 'cubist' , 
+                         caretModelName = model.label , 
                          parallelize = T, 
                          removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
                          controlObject = tp$model$control,
                          verbose = F)
+  
   predTrain = en$predTrain
   predTest = en$predTest
   
@@ -265,21 +268,22 @@ test_that('base test case', {
   
   ## blender 
   cat(">>> Testing blender ... \n")
+  methods = c("Nelder-Mead", "BFGS")
   gBlender = ff.blend(bestTune = tp$model$bestTune, 
-                                   caretModelName = 'cubist' , 
+                                   caretModelName = model.label , 
                                    Xtrain = Xtrain , 
                                    y = Ytrain, controlObject = tp$model$control, 
-                                   max_secs = 2, 
+                                   max_secs = 1.5, 
                                    seed = 123,
-                                   method = c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN"),
+                                   method = methods,
                                    useInteger = T, 
                                    parallelize = T, 
                                    verbose = F)
   
-  expect_equal(length(gBlender),length(c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN")))
+  expect_equal(length(gBlender),length(methods))
   
   sb = ff.summaryBlender(gBlender)
-  expect_equal(length(sb),length(c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN")))
+  expect_equal(length(sb),length(methods))
   
   bbp = ff.getBestBlenderPerformance(gBlender)
   expect_equal(is.null(bbp),F)
@@ -290,11 +294,13 @@ test_that('base test case', {
   bestTune = ff.getBestBlenderTune(gBlender,truncate = F)
   expect_equal(is.null(bestTune),F)
   
-  diff = ff.verifyBlender (gBlender,Xtrain=Xtrain,y=Ytrain,seed=123,controlObject=tp$model$control,caretModelname = 'cubist')
+  diff = ff.verifyBlender (gBlender,Xtrain=Xtrain,y=Ytrain,seed=123,controlObject=tp$model$control,caretModelname = model.label)
   expect_equal(length(diff),1)
   
   ## restore warnings 
   options(warn=warn_def)
+  
+  ff.setMaxCuncurrentThreads(2)
   
 })
 
