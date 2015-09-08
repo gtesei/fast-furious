@@ -21,6 +21,7 @@ test_that('XGBoost', {
   
   ## xgbTreeGTJ best tuning 
   tp = NULL
+  set.seed(123)
   tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
                              Xtrain=Xtrain , 
                              Xtest=Xtest , 
@@ -44,6 +45,7 @@ test_that('XGBoost', {
   expect_equal(secs>0,T)
   
   ## xgbTreeGTJ variant 
+  set.seed(123)
   tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
                              Xtrain=Xtrain , 
                              Xtest=Xtest , 
@@ -68,6 +70,7 @@ test_that('XGBoost', {
   expect_equal(secs>0,T)
   
   ## xgbTree variant 
+  set.seed(123)
   tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
                              Xtrain=Xtrain , 
                              Xtest=Xtest , 
@@ -91,6 +94,7 @@ test_that('XGBoost', {
   expect_equal(secs>0,T)
   
   ## xgbTree variant 
+  set.seed(123)
   tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
                              Xtrain=Xtrain , 
                              Xtest=Xtest , 
