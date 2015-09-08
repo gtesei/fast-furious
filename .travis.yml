@@ -65,6 +65,7 @@ script:
   - ./travis-tool.sh run_tests
   - cat /home/travis/build/gtesei/fast-furious/R-package/fastfurious.Rcheck/00check.log
   - cat /home/travis/build/gtesei/fast-furious/R-package/fastfurious.Rcheck/00install.out
+  - cat /home/travis/build/gtesei/fast-furious/R-package/fastfurious.Rcheck/tests/testthat.Rout
 
 after_failure:
   - ./travis-tool.sh dump_logs
