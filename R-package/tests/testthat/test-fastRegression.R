@@ -137,7 +137,7 @@ test_that('best tuning TRUE', {
   Xtrain = l$traindata
   Xtest = l$testdata
   
-  models = c('bayesglm','glm','glmStepAIC','svmRadial','treebag','rf')
+  models = c('bayesglm','glm','treebag','rf')
   
   ## make a caret control object 
   controlObject <- trainControl(method = "repeatedcv", repeats = 1, number = 2)
@@ -268,7 +268,7 @@ test_that('base test case', {
   
   ## blender 
   cat(">>> Testing blender ... \n")
-  methods = c("Nelder-Mead", "BFGS")
+  methods = c("Nelder-Mead")
   gBlender = ff.blend(bestTune = tp$model$bestTune, 
                                    caretModelName = model.label , 
                                    Xtrain = Xtrain , 
