@@ -172,7 +172,7 @@ test_that('best tuning TRUE', {
 test_that('base test case', {
   #skip_on_cran()
   
-  ff.setMaxCuncurrentThreads(2)
+  ff.setMaxCuncurrentThreads(1)
   
   ## suppress warnings raised because there few obs 
   warn_def = getOption('warn')
@@ -204,21 +204,6 @@ test_that('base test case', {
   expect_equal(length(pred_test),nrow(Xtest))
   expect_equal(secs>0,T)
   
-  ## create ensemble 
-  en = ff.createEnsemble(Xtrain = Xtrain, 
-                         Xtest = Xtest, 
-                         y = Ytrain, 
-                         bestTune = tp$model$bestTune , 
-                         caretModelName = model.label , 
-                         parallelize = T, 
-                         removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = T, 
-                         controlObject = tp$model$control)
-  predTrain = en$predTrain
-  predTest = en$predTest
-  
-  expect_equal(length(predTrain),nrow(Xtrain))
-  expect_equal(length(predTest),nrow(Xtest))
-  
   ## parallelize FALSE
   en = ff.createEnsemble(Xtrain = Xtrain, 
                          Xtest = Xtest, 
@@ -240,7 +225,7 @@ test_that('base test case', {
                          y = Ytrain, 
                          bestTune = tp$model$bestTune , 
                          caretModelName = model.label , 
-                         parallelize = T, 
+                         parallelize = F, 
                          removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
                          controlObject = tp$model$control)
   predTrain = en$predTrain
@@ -255,7 +240,7 @@ test_that('base test case', {
                          y = Ytrain, 
                          bestTune = tp$model$bestTune , 
                          caretModelName = model.label , 
-                         parallelize = T, 
+                         parallelize = F, 
                          removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
                          controlObject = tp$model$control,
                          verbose = F)
@@ -277,7 +262,7 @@ test_that('base test case', {
                                    seed = 123,
                                    method = methods,
                                    useInteger = T, 
-                                   parallelize = T, 
+                                   parallelize = F, 
                                    verbose = F)
   
   expect_equal(length(gBlender),length(methods))
