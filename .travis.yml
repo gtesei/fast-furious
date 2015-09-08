@@ -69,6 +69,7 @@ script:
 
 after_failure:
   - ./travis-tool.sh dump_logs
+  - cat /home/travis/build/gtesei/fast-furious/R-package/fastfurious.Rcheck/tests/testthat.Rout
 
 after_success:
   - Rscript -e 'library(covr);coveralls()'
