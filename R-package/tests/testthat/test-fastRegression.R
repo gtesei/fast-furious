@@ -27,7 +27,8 @@ test_that('XGBoost', {
                              model.label = 'xgbTreeGTJ' , 
                              controlObject=NULL, 
                              best.tuning = T, 
-                             verbose=T)  
+                             verbose=T, 
+                             xgb.eta = 0.5)  
   
   
   
@@ -54,7 +55,7 @@ test_that('XGBoost', {
                              xgb.maximize =FALSE, 
                              xgb.metric.label = 'rmse', 
                              xgb.foldList = NULL,
-                             xgb.eta = 0.03, 
+                             xgb.eta = 0.5, 
                              verbose=T)  
   
   
@@ -78,7 +79,7 @@ test_that('XGBoost', {
                              xgb.maximize =FALSE, 
                              xgb.metric.label = 'rmse', 
                              xgb.foldList = NULL,
-                             xgb.eta = 0.03)  
+                             xgb.eta = 0.5)  
   
   
   
@@ -101,7 +102,7 @@ test_that('XGBoost', {
                              xgb.maximize =FALSE, 
                              xgb.metric.label = 'rmse', 
                              xgb.foldList = NULL,
-                             xgb.eta = 0.03, 
+                             xgb.eta = 0.5, 
                              verbose=T)  
   
   
