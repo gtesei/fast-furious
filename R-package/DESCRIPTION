@@ -15,6 +15,7 @@ Suggests:
     lattice (>= 0.20),
     ggplot2 (>= 1.0.0),
     testthat, 
+    Cubist,
     arm, 
     MASS,
     kknn,
