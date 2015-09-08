@@ -9,7 +9,7 @@ test_that('XGBoost', {
   ## data 
   Xtrain <- data.frame( a = rep(1:5 , each = 2), b = 1:10, c = rep(as.Date(c("2007-06-22", "2004-02-13")),5) )
   Xtest <- data.frame( a = rep(2:6 , each = 2), b= 1:10, c = rep(as.Date(c("2007-03-01", "2004-05-23")),5) )
-  Ytrain = 1:10 + runif(nrow(Xtrain))
+  Ytrain = 1:10 
   
   ## encode datasets 
   l = ff.makeFeatureSet(Xtrain,Xtest,c('C','N','D'))
