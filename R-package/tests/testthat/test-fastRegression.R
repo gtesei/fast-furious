@@ -44,82 +44,82 @@ test_that('XGBoost', {
   expect_equal(length(pred_test),nrow(Xtest))
   expect_equal(secs>0,T)
   
-  ## xgbTreeGTJ variant 
-  set.seed(123)
-  tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
-                             Xtrain=Xtrain , 
-                             Xtest=Xtest , 
-                             model.label = 'xgbTreeGTJ' , 
-                             controlObject=NULL, 
-                             best.tuning = F, 
-                             removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
-                             xgb.metric.fun = RMSE.xgb, 
-                             xgb.maximize =FALSE, 
-                             xgb.metric.label = 'rmse', 
-                             xgb.foldList = NULL,
-                             xgb.eta = 0.5, 
-                             verbose=T)  
-  
-  
-  
-  pred_test = tp$pred
-  model = tp$model
-  secs = tp$secs
-  
-  expect_equal(length(pred_test),nrow(Xtest))
-  expect_equal(secs>0,T)
-  
-  ## xgbTree variant 
-  set.seed(123)
-  tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
-                             Xtrain=Xtrain , 
-                             Xtest=Xtest , 
-                             model.label = 'xgbTree' , 
-                             controlObject=controlObject, 
-                             best.tuning = F, 
-                             removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
-                             xgb.metric.fun = RMSE.xgb, 
-                             xgb.maximize =FALSE, 
-                             xgb.metric.label = 'rmse', 
-                             xgb.foldList = NULL,
-                             xgb.eta = 0.5)  
-  
-  
-  
-  pred_test = tp$pred
-  model = tp$model
-  secs = tp$secs
-  
-  expect_equal(length(pred_test),nrow(Xtest))
-  expect_equal(secs>0,T)
-  
-  ## xgbTree variant 
-  set.seed(123)
-  tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
-                             Xtrain=Xtrain , 
-                             Xtest=Xtest , 
-                             model.label = 'xgbTree' , 
-                             controlObject=NULL, 
-                             best.tuning = TRUE, 
-                             removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
-                             xgb.metric.fun = RMSE.xgb, 
-                             xgb.maximize =FALSE, 
-                             xgb.metric.label = 'rmse', 
-                             xgb.foldList = NULL,
-                             xgb.eta = 0.5, 
-                             verbose=T)  
-  
-  
-  
-  pred_test = tp$pred
-  model = tp$model
-  secs = tp$secs
-  
-  cat(">>>> length(pred_test): ",length(pred_test),"\n")
-  cat(">>>> nrow(Xtest): ",nrow(Xtest),"\n")
-  
-  expect_equal(length(pred_test),nrow(Xtest))
-  expect_equal(secs>0,T)
+#   ## xgbTreeGTJ variant 
+#   set.seed(123)
+#   tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
+#                              Xtrain=Xtrain , 
+#                              Xtest=Xtest , 
+#                              model.label = 'xgbTreeGTJ' , 
+#                              controlObject=NULL, 
+#                              best.tuning = F, 
+#                              removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
+#                              xgb.metric.fun = RMSE.xgb, 
+#                              xgb.maximize =FALSE, 
+#                              xgb.metric.label = 'rmse', 
+#                              xgb.foldList = NULL,
+#                              xgb.eta = 0.5, 
+#                              verbose=T)  
+#   
+#   
+#   
+#   pred_test = tp$pred
+#   model = tp$model
+#   secs = tp$secs
+#   
+#   expect_equal(length(pred_test),nrow(Xtest))
+#   expect_equal(secs>0,T)
+#   
+#   ## xgbTree variant 
+#   set.seed(123)
+#   tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
+#                              Xtrain=Xtrain , 
+#                              Xtest=Xtest , 
+#                              model.label = 'xgbTree' , 
+#                              controlObject=controlObject, 
+#                              best.tuning = F, 
+#                              removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
+#                              xgb.metric.fun = RMSE.xgb, 
+#                              xgb.maximize =FALSE, 
+#                              xgb.metric.label = 'rmse', 
+#                              xgb.foldList = NULL,
+#                              xgb.eta = 0.5)  
+#   
+#   
+#   
+#   pred_test = tp$pred
+#   model = tp$model
+#   secs = tp$secs
+#   
+#   expect_equal(length(pred_test),nrow(Xtest))
+#   expect_equal(secs>0,T)
+#   
+#   ## xgbTree variant 
+#   set.seed(123)
+#   tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
+#                              Xtrain=Xtrain , 
+#                              Xtest=Xtest , 
+#                              model.label = 'xgbTree' , 
+#                              controlObject=NULL, 
+#                              best.tuning = TRUE, 
+#                              removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
+#                              xgb.metric.fun = RMSE.xgb, 
+#                              xgb.maximize =FALSE, 
+#                              xgb.metric.label = 'rmse', 
+#                              xgb.foldList = NULL,
+#                              xgb.eta = 0.5, 
+#                              verbose=T)  
+#   
+#   
+#   
+#   pred_test = tp$pred
+#   model = tp$model
+#   secs = tp$secs
+#   
+#   cat(">>>> length(pred_test): ",length(pred_test),"\n")
+#   cat(">>>> nrow(Xtest): ",nrow(Xtest),"\n")
+#   
+#   expect_equal(length(pred_test),nrow(Xtest))
+#   expect_equal(secs>0,T)
   
   ## restore warnings 
   options(warn=warn_def)
