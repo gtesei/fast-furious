@@ -1,5 +1,12 @@
 
-
+#' Root mean square logistic error   
+#' 
+#' @param dtrain the xgboost train set object. 
+#' @param preds the predicted values (numeric vector). 
+#' @param th_err a threshold in case predictions are negative.  
+#' 
+#' @export
+#' @return a list of metric label / values   
 RMSLE.xgb = function (preds, dtrain,th_err=1.5) {
   obs <- xgboost::getinfo(dtrain, "label")
   if ( sum(preds<0) >0 ) {
@@ -9,6 +16,13 @@ RMSLE.xgb = function (preds, dtrain,th_err=1.5) {
   return(list(metric = "rmsle", value = rmsle))
 }
 
+#' Root mean square error   
+#' 
+#' @param dtrain the xgboost train set object. 
+#' @param preds the predicted values (numeric vector). 
+#' 
+#' @export
+#' @return a list of metric label / values   
 RMSE.xgb = function (preds, dtrain) {
   obs <- xgboost::getinfo(dtrain, "label")
   rmse = caret::RMSE(pred = preds , obs = obs)
