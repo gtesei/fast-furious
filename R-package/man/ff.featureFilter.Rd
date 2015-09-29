@@ -8,7 +8,7 @@ ff.featureFilter(traindata, testdata, y = NULL,
   removeOnlyZeroVariacePredictors = FALSE,
   performVarianceAnalysisOnTrainSetOnly = TRUE, correlationThreshold = NULL,
   removePredictorsMakingIllConditionedSquareMatrix = TRUE,
-  removeIdenticalPredictors = FALSE, removeHighCorrelatedPredictors = TRUE,
+  removeIdenticalPredictors = TRUE, removeHighCorrelatedPredictors = TRUE,
   featureScaling = TRUE, verbose = TRUE)
 }
 \arguments{

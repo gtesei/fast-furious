@@ -36,7 +36,7 @@ ff.featureFilter <- function(traindata,
                           performVarianceAnalysisOnTrainSetOnly = TRUE , 
                           correlationThreshold = NULL, 
                           removePredictorsMakingIllConditionedSquareMatrix = TRUE, 
-                          removeIdenticalPredictors = FALSE, 
+                          removeIdenticalPredictors = TRUE, 
                           removeHighCorrelatedPredictors = TRUE, 
                           featureScaling = TRUE, 
                           verbose = TRUE) {
