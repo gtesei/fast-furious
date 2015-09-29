@@ -82,10 +82,10 @@ ff.featureFilter <- function(traindata,
     card = NULL
     
     if (performVarianceAnalysisOnTrainSetOnly) { 
-      if (verbose) cat(">>> removing zero variance predictors only performing variance analysis on train set only ... \n")
+      if (verbose) cat(">>> removing zero variance predictors performing variance analysis on train set only ... \n")
       card = apply(traindata,2,function(x)  length(unique(x))  )
     } else {
-      if (verbose) cat(">>> removing zero variance predictors only performing variance analysis on both train set and test set ... \n")
+      if (verbose) cat(">>> removing zero variance predictors performing variance analysis on both train set and test set ... \n")
       card = apply(data,2,function(x)  length(unique(x))  )
     }
     
@@ -123,8 +123,8 @@ ff.featureFilter <- function(traindata,
     if (sum(colToRemove) > 0) {
       if (verbose) cat("removing ",sum(colToRemove)," identical predictors: ", 
                        paste(colnames(data) [colToRemove] , collapse=" " ) , " ... \n ")
+      data = data[,-which(colToRemove),drop=F]
     }
-    data = data[,-which(colToRemove),drop=F]
   }
   
   # removing high correlated predictors 
