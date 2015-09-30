@@ -8,7 +8,8 @@ ff.trainAndPredict.reg(Ytrain, Xtrain, Xtest, model.label, controlObject,
   best.tuning = FALSE, verbose = FALSE,
   removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = TRUE,
   xgb.metric.fun = RMSLE.xgb, xgb.maximize = FALSE,
-  xgb.metric.label = "rmsle", xgb.foldList = NULL, xgb.eta = NULL, ...)
+  xgb.metric.label = "rmsle", xgb.foldList = NULL, xgb.eta = NULL,
+  xgb.param = NULL, ...)
 }
 \arguments{
 \item{Ytrain}{the output variable as numeric vector}
@@ -46,6 +47,8 @@ In the latter case only if \code{best.tuning} is \code{TRUE}.}
 
 \item{xgb.eta}{custom \code{eta} parameter for \code{'xgbTreeGTJ'} and \code{'xgbTree'}.
 In the latter case only if \code{best.tuning} is \code{TRUE}.}
+
+\item{xgb.param}{custom parameters for XGBoost.}
 
 \item{...}{arguments passed to the regression routine.}
 }

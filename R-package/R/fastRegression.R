@@ -211,6 +211,7 @@ removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel = function
 #' In the latter case only if \code{best.tuning} is \code{TRUE}.
 #' @param xgb.eta custom \code{eta} parameter for \code{'xgbTreeGTJ'} and \code{'xgbTree'}. 
 #' In the latter case only if \code{best.tuning} is \code{TRUE}.
+#' @param xgb.param custom parameters for XGBoost. 
 #' @param ... arguments passed to the regression routine.  
 #' 
 #' @examples
@@ -261,6 +262,7 @@ ff.trainAndPredict.reg = function(Ytrain ,
                                  xgb.metric.label = 'rmsle', 
                                  xgb.foldList = NULL,
                                  xgb.eta = NULL,
+                                 xgb.param = NULL, 
                                  ... ) {
   
   model = NULL 
@@ -376,17 +378,26 @@ ff.trainAndPredict.reg = function(Ytrain ,
                      trControl = controlObject,...)
       pred = as.numeric( predict(model , Xtest )  )  
     } else if (model.label == "xgbTreeGTJ") {  ### xgbTreeGTJ 
-      param <- list("objective" = "reg:linear" ,
-                    "min_child_weight" = 6 , 
-                    "subsample" = 0.7 , 
-                    "colsample_bytree" = 0.6 , 
-                    "scale_pos_weight" = 0.8 , 
-                    "silent" = 1 , 
-                    "max_depth" = 8 , 
-                    "max_delta_step" = 2 )
       
-      param['eta'] = 0.02
-      if (! is.null(xgb.eta)) param['eta'] = xgb.eta
+      ## param
+      param = NULL
+      if (! is.null(xgb.param)) {
+        param = xgb.param
+        if (! is.null(xgb.eta)) stop("xgb.eta must be NULL if xgb.param is not NULL")
+      } else {
+        param <- list("objective" = "reg:linear" ,
+                      "min_child_weight" = 6 , 
+                      "subsample" = 0.7 , 
+                      "colsample_bytree" = 0.6 , 
+                      "scale_pos_weight" = 0.8 , 
+                      "silent" = 1 , 
+                      "max_depth" = 8 , 
+                      "max_delta_step" = 2 )
+        
+        param['eta'] = 0.02
+        if (! is.null(xgb.eta)) param['eta'] = xgb.eta
+      }
+      
       
       ## fix nrounds? 
       fix.nround = FALSE
@@ -425,16 +436,25 @@ ff.trainAndPredict.reg = function(Ytrain ,
       
     } else if (model.label == "xgbTree") {  ### XGBoost 
       if (best.tuning) {
-        param <- list("objective" = "reg:linear",
-                      "gamma" = 0.7,  
-                      "max_depth" = 20, 
-                      "subsample" = 0.5 , ## suggested in ESLII
-                      "nthread" = 10, 
-                      "min_child_weight" = 1 , 
-                      "colsample_bytree" = 0.5, 
-                      "max_delta_step" = 1)
-        param['eta'] = 0.05
-        if (! is.null(xgb.eta)) param['eta'] = xgb.eta
+        
+        ## param
+        param = NULL
+        if (! is.null(xgb.param)) {
+          param = xgb.param
+          if (! is.null(xgb.eta)) stop("xgb.eta must be NULL if xgb.param is not NULL")
+        } else {
+          param <- list("objective" = "reg:linear",
+                        "gamma" = 0.7,  
+                        "max_depth" = 20, 
+                        "subsample" = 0.5 , ## suggested in ESLII
+                        "nthread" = 10, 
+                        "min_child_weight" = 1 , 
+                        "colsample_bytree" = 0.5, 
+                        "max_delta_step" = 1)
+          
+          param['eta'] = 0.05
+          if (! is.null(xgb.eta)) param['eta'] = xgb.eta
+        }
         
         ## fix nrounds? 
         fix.nround = FALSE
