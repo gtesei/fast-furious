@@ -39,43 +39,91 @@ xgb_cross_val = function( data ,
                           fix.nround = FALSE, 
                           param , 
                           nfold = 5 , 
+                          xgb.cv.default = TRUE, 
                           verbose=TRUE) {
   
-  stopifnot(identical(xgb.maximize,FALSE))
+  stopifnot( (!fix.nround) || (fix.nround && xgb.cv.default) ) ## fix.nround must be handled by default xgb.cv 
   
-  inCV = TRUE
+  ## ret
   early.stop = cv.nround 
   perf.xg = NULL 
-  perf.last = NULL
   
+  ## 
   lab = paste('test.',xgb.metric.label,'.mean',sep='')
   
   if (! is.null(foldList)) {
     if (verbose) cat(">>> using resamples in foldList ... \n")
   }
   
-  while (inCV) { 
-    bst.cv = xgboost::xgb.cv(param=param, data = data, label = y, 
-                    nfold = nfold, nrounds=cv.nround , folds = foldList, 
-                    feval = xgb.metric.fun , maximize = xgb.maximize, verbose=FALSE)
+  ## xgb.cv.default
+  if (xgb.cv.default) {
+    inCV = TRUE
+    perf.last = NULL
+    
+    while (inCV) { 
+      
+      bst.cv = xgboost::xgb.cv(param=param, data = data, label = y, 
+                               nfold = nfold, nrounds=cv.nround , folds = foldList, 
+                               feval = xgb.metric.fun , maximize = xgb.maximize, verbose=FALSE)
+      
+      if (verbose) print(bst.cv)
+      
+      ## early.stop
+      if (xgb.maximize) {
+        early.stop = which(bst.cv[[lab]] == max(bst.cv[[lab]]))
+      } else {
+        early.stop = which(bst.cv[[lab]] == min(bst.cv[[lab]]))
+      }
+      if (length(early.stop)>1) early.stop = early.stop[length(early.stop)]
+      
+      ## stop? 
+      if (fix.nround) {
+        inCV = FALSE
+        perf.xg = bst.cv[[lab]][cv.nround] 
+        early.stop = cv.nround
+      } else if ( early.stop < cv.nround || (!xgb.maximize && !is.null(perf.last) && min(bst.cv[[lab]]) > perf.last) 
+                  || (xgb.maximize && !is.null(perf.last) && max(bst.cv[[lab]]) < perf.last) )  {
+        
+        inCV = FALSE
+        
+        if (xgb.maximize) {
+          perf.xg = max(bst.cv[[lab]])
+        } else {
+          perf.xg = min(bst.cv[[lab]])
+        }
+        if (verbose) cat('>> stopping [',early.stop,'=early.stop < cv.nround=',cv.nround,'] [perf.xg=',perf.xg,'] ... \n') 
+      } else {
+        if(verbose) cat(">> redo-cv [early.stop == cv.nround=",cv.nround,"] with 2*cv.nround ... \n") 
+        cv.nround = cv.nround * 2 
+        if (xgb.maximize) {
+          perf.last = max(bst.cv[[lab]])
+        } else {
+          perf.last = min(bst.cv[[lab]])
+        }
+      }
+      gc()
+    }
+  } else {
+    bst.cv = ff.xgb.cv(param=param, data = data, label = y, 
+                       nfold = nfold, nrounds=cv.nround , folds = foldList, 
+                       feval = xgb.metric.fun , maximize = xgb.maximize, verbose=FALSE)
     
     if (verbose) print(bst.cv)
-    early.stop = which(bst.cv[[lab]] == min(bst.cv[[lab]]))
-    if (length(early.stop)>1) early.stop = early.stop[length(early.stop)]
-    if (fix.nround) {
-      inCV = FALSE
-      perf.xg = bst.cv[[lab]][cv.nround] 
-      early.stop = cv.nround
-    } else if ( early.stop < cv.nround || (! is.null(perf.last) && min(bst.cv[[lab]]) > perf.last) )  {
-      inCV = FALSE
-      perf.xg = min(bst.cv[[lab]])
-      if (verbose) cat('>> stopping [',early.stop,'=early.stop < cv.nround=',cv.nround,'] [perf.xg=',perf.xg,'] ... \n') 
+    
+    ## early.stop
+    if (xgb.maximize) {
+      early.stop = which(bst.cv[[lab]] == max(bst.cv[[lab]]))
     } else {
-      if(verbose) cat(">> redo-cv [early.stop == cv.nround=",cv.nround,"] with 2*cv.nround ... \n") 
-      cv.nround = cv.nround * 2 
-      perf.last = min(bst.cv[[lab]])
+      early.stop = which(bst.cv[[lab]] == min(bst.cv[[lab]]))
     }
-    gc()
+    if (length(early.stop)>1) early.stop = early.stop[length(early.stop)]
+    
+    ## perf.xg
+    if (xgb.maximize) {
+      perf.xg = max(bst.cv[[lab]])
+    } else {
+      perf.xg = min(bst.cv[[lab]])
+    }
   }
   
   return(list(early.stop=early.stop,perf.cv=perf.xg))
@@ -92,6 +140,7 @@ xgb_train_and_predict = function(train_set,
                                  cv.nround = 3000 , 
                                  fix.nround = FALSE, 
                                  nfold = 5 , 
+                                 xgb.cv.default = TRUE, 
                                  verbose=TRUE) {
   
   data = rbind(train_set,test_set)
@@ -103,9 +152,13 @@ xgb_train_and_predict = function(train_set,
   trind = 1:nrow(train_set)
   teind = (nrow(train_set)+1):nrow(x)
   
+  rm(train_set)
+  rm(test_set)
+  rm(data)
+  
   ## cross-valication
   if (verbose) cat(">> xgb: cross-validation ... \n")
-  
+
   xgb_xval = xgb_cross_val (data = x[trind,], 
                             y = y,  
                             foldList = foldList, 
@@ -116,6 +169,7 @@ xgb_train_and_predict = function(train_set,
                             fix.nround = fix.nround, 
                             param = param ,
                             nfold = nfold , 
+                            xgb.cv.default = xgb.cv.default, 
                             verbose=verbose)
   
   ## prediction
@@ -211,6 +265,9 @@ removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel = function
 #' In the latter case only if \code{best.tuning} is \code{TRUE}.
 #' @param xgb.eta custom \code{eta} parameter for \code{'xgbTreeGTJ'} and \code{'xgbTree'}. 
 #' In the latter case only if \code{best.tuning} is \code{TRUE}.
+#' @param xgb.cv.default \code{TRUE} for using \code{xgboost::xgb.cv} function (mandatory in case of fix nrounds), \code{FALSE} for using internal 
+#' \code{ff.xgb.cv} function. The main advantage of the ladder is that it doesn't need to restart nrounds in case for the specified nrounds 
+#' cross validation errors are still decreasing.   
 #' @param xgb.param custom parameters for XGBoost. 
 #' @param ... arguments passed to the regression routine.  
 #' 
@@ -262,6 +319,7 @@ ff.trainAndPredict.reg = function(Ytrain ,
                                  xgb.metric.label = 'rmsle', 
                                  xgb.foldList = NULL,
                                  xgb.eta = NULL,
+                                 xgb.cv.default = TRUE, 
                                  xgb.param = NULL, 
                                  ... ) {
   
@@ -424,7 +482,8 @@ ff.trainAndPredict.reg = function(Ytrain ,
                                    param = param,
                                    cv.nround = nrounds , 
                                    fix.nround = fix.nround, 
-                                   nfold = min(5,nrow(Xtrain)) , 
+                                   nfold = min(controlObject$number,nrow(Xtrain)) , 
+                                   xgb.cv.default = xgb.cv.default,
                                    verbose=verbose)
       pred = xgb$pred
       early.stop = xgb$early.stop
@@ -481,7 +540,8 @@ ff.trainAndPredict.reg = function(Ytrain ,
                                      param = param,
                                      cv.nround = nrounds , 
                                      fix.nround = fix.nround, 
-                                     nfold = min(5,nrow(Xtrain)) , 
+                                     nfold = min(controlObject$number,nrow(Xtrain)) , 
+                                     xgb.cv.default = xgb.cv.default,
                                      verbose=verbose)
         pred = xgb$pred
         early.stop = xgb$early.stop
@@ -1048,3 +1108,220 @@ getCaretFactors = function(y) {
   levels(y.cat) = c("class0","class1")
   return(list(y.cat=y.cat,fact.sign="class1"))
 }
+
+#######################################################################################
+ff.xgb.cv <- function(params=list(), data, nrounds, nfold, label = NULL, missing = NULL, 
+                      prediction = FALSE, showsd = TRUE, metrics=list(), 
+                      obj = NULL, feval = NULL, stratified = TRUE, folds = NULL, verbose = T, print.every.n=1L,
+                      early.stop.round = NULL, maximize = NULL, ...) {
+  
+  require(magrittr)
+  require(stringr)
+  require(data.table)
+  
+  if (verbose) cat(">> using ff.xgb.cv instead of xgb.cv ... \n")
+  
+  ##
+  if (typeof(params) != "list") {
+    stop("xgb.cv: first argument params must be list")
+  }
+  if(!is.null(folds)) {
+    if(class(folds)!="list" | length(folds) < 2) {
+      stop("folds must be a list with 2 or more elements that are vectors of indices for each CV-fold")
+    }
+    nfold <- length(folds)
+  }
+  if (nfold <= 1) {
+    stop("nfold must be bigger than 1")
+  }
+  if (is.null(missing)) {
+    dtrain <- xgboost:::xgb.get.DMatrix(data, label)
+  } else {
+    dtrain <- xgboost:::xgb.get.DMatrix(data, label, missing)
+  }
+  dot.params = list(...)
+  nms.params = names(params)
+  nms.dot.params = names(dot.params)
+  if (length(intersect(nms.params,nms.dot.params))>0)
+    stop("Duplicated defined term in parameters. Please check your list of params.")
+  params <- append(params, dot.params)
+  params <- append(params, list(silent=1))
+  for (mc in metrics) {
+    params <- append(params, list("eval_metric"=mc))
+  }
+  
+  # customized objective and evaluation metric interface
+  if (!is.null(params$objective) && !is.null(obj))
+    stop("xgb.cv: cannot assign two different objectives")
+  if (!is.null(params$objective))
+    if (class(params$objective)=='function') {
+      obj = params$objective
+      params[['objective']] = NULL
+    }
+  
+  if (!is.null(params$eval_metric))
+    if (class(params$eval_metric)=='function') {
+      feval = params$eval_metric
+      params[['eval_metric']] = NULL
+    }
+  
+  # Early Stopping
+  if (!is.null(early.stop.round)){
+    if (!is.null(feval) && is.null(maximize))
+      stop('Please set maximize to note whether the model is maximizing the evaluation or not.')
+    if (is.null(maximize) && is.null(params$eval_metric))
+      stop('Please set maximize to note whether the model is maximizing the evaluation or not.')
+    if (is.null(maximize))
+    {
+      if (params$eval_metric %in% c('rmse','logloss','error','merror','mlogloss')) {
+        maximize = FALSE
+      } else {
+        maximize = TRUE
+      }
+    }
+    
+    if (maximize) {
+      bestScore = 0
+    } else {
+      bestScore = Inf
+    }
+    bestInd = 0
+    earlyStopflag = FALSE
+    
+    if (length(metrics)>1)
+      warning('Only the first metric is used for early stopping process.')
+  }
+  
+  xgb_folds <- xgboost:::xgb.cv.mknfold(dtrain, nfold, params, stratified, folds)
+  obj_type = params[['objective']]
+  mat_pred = FALSE
+  if (!is.null(obj_type) && obj_type=='multi:softprob')
+  {
+    num_class = params[['num_class']]
+    if (is.null(num_class))
+      stop('must set num_class to use softmax')
+    predictValues <- matrix(0,xgboost:::xgb.numrow(dtrain),num_class)
+    mat_pred = TRUE
+  }
+  else
+    predictValues <- rep(0,xgboost:::xgb.numrow(dtrain))
+  history <- c()
+  print.every.n = max(as.integer(print.every.n), 1L)
+  
+  ############
+  inCV = T 
+  iter.num = 0 
+  dt = NULL
+  perf.last = NULL
+  
+  while(inCV) {
+    
+    for ( i in (iter.num*nrounds+1):(iter.num*nrounds+nrounds) ) {
+      msg <- list()
+      for (k in 1:nfold) {
+        fd <- xgb_folds[[k]]
+        succ <- xgboost:::xgb.iter.update(fd$booster, fd$dtrain, i - 1, obj)
+        msg[[k]] <- xgboost:::xgb.iter.eval(fd$booster, fd$watchlist, i - 1, feval) %>% str_split("\t") %>% .[[1]]
+      }
+      ret <- xgboost:::xgb.cv.aggcv(msg, showsd)
+      history <- c(history, ret)
+      if(verbose)
+        if (0==(i-1L)%%print.every.n)
+          cat(ret, "\n", sep="")
+      
+      # early_Stopping
+      if (!is.null(early.stop.round)){
+        score = strsplit(ret,'\\s+')[[1]][1+length(metrics)+2]
+        score = strsplit(score,'\\+|:')[[1]][[2]]
+        score = as.numeric(score)
+        if ((maximize && score>bestScore) || (!maximize && score<bestScore)) {
+          bestScore = score
+          bestInd = i
+        } else {
+          if (i-bestInd>=early.stop.round) {
+            earlyStopflag = TRUE
+            cat('Stopping. Best iteration:',bestInd)
+            break
+          }
+        }
+      }
+      
+    }
+    
+    if (prediction) {
+      for (k in 1:nfold) {
+        fd = xgb_folds[[k]]
+        if (!is.null(early.stop.round) && earlyStopflag) {
+          res = xgboost:::xgb.iter.eval(fd$booster, fd$watchlist, bestInd - 1, feval, prediction)
+        } else {
+          res = xgboost:::xgb.iter.eval(fd$booster, fd$watchlist, nrounds - 1, feval, prediction)
+        }
+        if (mat_pred) {
+          pred_mat = matrix(res[[2]],num_class,length(fd$index))
+          predictValues[fd$index,] = t(pred_mat)
+        } else {
+          predictValues[fd$index] = res[[2]]
+        }
+      }
+    }
+    
+    
+    colnames <- str_split(string = history[1], pattern = "\t")[[1]] %>% .[2:length(.)] %>% str_extract(".*:") %>% str_replace(":","") %>% str_replace("-", ".")
+    colnamesMean <- paste(colnames, "mean")
+    if(showsd) colnamesStd <- paste(colnames, "std")
+    
+    colnames <- c()
+    if(showsd) for(i in 1:length(colnamesMean)) colnames <- c(colnames, colnamesMean[i], colnamesStd[i])
+    else colnames <- colnamesMean
+    
+    type <- rep(x = "numeric", times = length(colnames))
+    dt <- utils::read.table(text = "", colClasses = type, col.names = colnames) %>% as.data.table
+    split <- str_split(string = history, pattern = "\t")
+    
+    for(line in split) dt <- line[2:length(line)] %>% str_extract_all(pattern = "\\d*\\.+\\d*") %>% unlist %>% as.numeric %>% as.list %>% {rbindlist(list(dt, .), use.names = F, fill = F)}
+    
+    ######
+    lab = paste('test.',params$eval_metric,'.mean',sep='')
+    
+    ## early.stop 
+    if (maximize) {
+      early.stop = which(dt[[lab]] == max(dt[[lab]]))
+    } else {
+      early.stop = which(dt[[lab]] == min(dt[[lab]]))
+    }
+    if (length(early.stop)>1) early.stop = early.stop[length(early.stop)]
+    
+    ## stop?
+    if ( early.stop < (iter.num*nrounds+nrounds) || (!maximize && !is.null(perf.last) && min(dt[[lab]]) > perf.last) 
+         || (maximize && !is.null(perf.last) && max(dt[[lab]]) < perf.last) )  {
+      
+      inCV = FALSE
+      
+      if (maximize) {
+        perf.xg = max(dt[[lab]])
+      } else {
+        perf.xg = min(dt[[lab]])
+      }
+      cat('>> inside ff.xgb:: stopping [',early.stop,'=early.stop < nrounds=',(iter.num*nrounds+nrounds),'] [perf.xg=',perf.xg,'] ... \n') 
+      
+    } else {
+      cat(">> inside ff.xgb:: redo-cv [early.stop == nrounds=",(iter.num*nrounds+nrounds),"] with nrounds=",((iter.num+1)*nrounds+nrounds)," ... \n") 
+      iter.num = iter.num + 1 
+      
+      if (maximize) {
+        perf.last = max(dt[[lab]])
+      } else {
+        perf.last = min(dt[[lab]])
+      }
+    }
+    
+    ## gc 
+    gc() 
+  }
+  ############
+  if (prediction) {
+    return(list(dt = dt,pred = predictValues))
+  }
+  return(dt)
+}
+#######################################################################################

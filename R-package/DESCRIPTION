@@ -29,4 +29,6 @@ Imports:
     parallel, 
     subselect,
     plyr, 
-    xgboost
+    xgboost, 
+    magrittr, 
+    stringr
