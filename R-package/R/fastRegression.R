@@ -141,37 +141,49 @@ xgb_train_and_predict = function(train_set,
               early.stop=xgb_xval$early.stop))
 }
 
-checkModelName = function(model.label) {
- models = c('bayesglm','glm','glmStepAIC','rlm','knn','pls','ridge','enet','svmRadial','treebag', 
-            'gbm','rf','cubist','avNNet','xgbTreeGTJ','xgbTree')
- if (! model.label %in% models) stop(paste0('unrecognized model name: ',model.label)) 
+checkModelName = function(model.label,regression=TRUE) {
+  if (regression) {
+    models = c('bayesglm','glm','glmStepAIC','rlm','knn','pls','ridge','enet','svmRadial','treebag', 
+               'gbm','rf','cubist','avNNet','xgbTreeGTJ','xgbTree')
+    if (! model.label %in% models) stop(paste0('unrecognized model name: ',model.label))    
+  } else {
+    ## TODO Classification case 
+  }
 }
 
 removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel = function (Xtrain, 
                                                                                   Xtest, 
                                                                                   model.label,
-                                                                                  removePredictorsMakingIllConditionedSquareMatrix_forLinearModels) {
-  
-  fragile_LinearModels = c('rlm','pls','ridge','enet')
-  if (! model.label %in% fragile_LinearModels || ! removePredictorsMakingIllConditionedSquareMatrix_forLinearModels) {
+                                                                                  removePredictorsMakingIllConditionedSquareMatrix_forLinearModels, 
+                                                                                  regression=TRUE) {
+  if (regression) {
+    fragile_LinearModels = c('rlm','pls','ridge','enet')
+    if (! model.label %in% fragile_LinearModels || ! removePredictorsMakingIllConditionedSquareMatrix_forLinearModels) {
+      return (list(
+        Xtrain = Xtrain, 
+        Xtest = Xtest
+      )) 
+    }
+    
+    l = ff.featureFilter (Xtrain,
+                          Xtest,
+                          removeOnlyZeroVariacePredictors=TRUE,
+                          performVarianceAnalysisOnTrainSetOnly = TRUE , 
+                          removePredictorsMakingIllConditionedSquareMatrix = TRUE, 
+                          removeHighCorrelatedPredictors = FALSE, 
+                          featureScaling = FALSE)
+    
+    return (list(
+      Xtrain = l$traindata, 
+      Xtest = l$testdata
+    ))  
+  } else {
+    ## TODO Classification 
     return (list(
       Xtrain = Xtrain, 
       Xtest = Xtest
     )) 
   }
-  
-  l = ff.featureFilter (Xtrain,
-                        Xtest,
-                        removeOnlyZeroVariacePredictors=TRUE,
-                        performVarianceAnalysisOnTrainSetOnly = TRUE , 
-                        removePredictorsMakingIllConditionedSquareMatrix = TRUE, 
-                        removeHighCorrelatedPredictors = FALSE, 
-                        featureScaling = FALSE)
-  
-  return (list(
-    Xtrain = l$traindata, 
-    Xtest = l$testdata
-  ))  
 }
 
 #' Trains a specified model on the given train set and predicts on the given test set. 
@@ -770,21 +782,22 @@ ff.verifyBlender = function(blender,Xtrain,y,seed=NULL,controlObject, caretModel
 }
 
 
-#' Create an ensemble of a tuned regression model.  
+#' Create an ensemble of a tuned model 
 #' 
 #' @param y the output variable as numeric vector
 #' @param Xtrain the encoded \code{data.frame} of train data. Must be a \code{data.frame} of \code{numeric}
 #' @param Xtest the encoded \code{data.frame} of test data. Must be a \code{data.frame} of \code{numeric}
-#' @param caretModelName a string specifying which model to use. Possible values are \code{'lm'}, \code{'bayesglm'}, 
+#' @param caretModelName a string specifying which model to use. Possible values for regression are \code{'lm'}, \code{'bayesglm'}, 
 #' \code{'glm'}, \code{'glmStepAIC'}, \code{'rlm'}, \code{'knn'}, \code{'pls'}, \code{'ridge'}, \code{'enet'}, 
 #' \code{'svmRadial'}, \code{'treebag'}, \code{'gbm'}, \code{'rf'}, \code{'cubist'}, \code{'avNNet'}, 
-#' \code{'xgbTreeGTJ'}, \code{'xgbTree'}
+#' \code{'xgbTreeGTJ'}, \code{'xgbTree'}. 
 #' @param controlObject a list of values that define how this function acts. Must be a caret \code{trainControl} object 
 #' @param verbose \code{TRUE} to enable verbose mode. 
 #' @param parallelize \code{TRUE} to enable parallelization (require \code{parallel}). 
 #' @param removePredictorsMakingIllConditionedSquareMatrix_forLinearModels \code{TRUE} for removing predictors making 
-#' ill-conditioned square matrices in case of fragile linear models, i.e. \code{c('rlm','pls','ridge','enet')}.
+#' ill-conditioned square matrices in case of fragile linear models, i.e. \code{c('rlm','pls','ridge','enet')} for regression.
 #' @param bestTune a \code{data.frame} with best tuned parameters of specified model. 
+#' @param regression \code{TRUE} to create an ensemble of a tuned regression model and \code{FALSE} to create an ensemble of a tuned classification model.   
 #' @param ... arguments passed to the regression routine.  
 #' 
 #' @examples
@@ -845,12 +858,22 @@ ff.createEnsemble = function(Xtrain,
                              removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = TRUE, 
                              controlObject, 
                              parallelize = TRUE,
-                             verbose=TRUE , 
+                             verbose=TRUE ,
+                             regression = TRUE, 
                              ... ) {
-  checkModelName(caretModelName)
+  checkModelName(caretModelName,regression=regression)
   stopifnot( ! is.null(controlObject) )
   stopifnot( is.atomic(y) && length(y) == nrow(Xtrain) )
   stopifnot( (is.null(bestTune)) || (is.data.frame(bestTune) && ncol(bestTune) > 0) )
+  
+  ## classification case 
+  y.cat = NULL
+  fact.sign = NULL
+  if (! regression) {
+    l = getCaretFactors(y=y)
+    y.cat = l$y.cat
+    fact.sign = l$fact.sign
+  }
   
   ##
   predTrain = rep(NA,nrow(Xtrain))
@@ -873,16 +896,22 @@ ff.createEnsemble = function(Xtrain,
     y_i = y[ index[[i]] ]
     test_i = Xtrain[ indexOut[[i]] , ]
     
+    ## classification 
+    if (! regression) {
+      y_i = y.cat[ index[[i]] ]
+    }
+    
     ##
     fs = removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel(Xtrain=train_i, 
                                                                                Xtest=test_i, 
                                                                                model.label=caretModelName,
-                                                                               removePredictorsMakingIllConditionedSquareMatrix_forLinearModels=removePredictorsMakingIllConditionedSquareMatrix_forLinearModels)
+                                                                               removePredictorsMakingIllConditionedSquareMatrix_forLinearModels=removePredictorsMakingIllConditionedSquareMatrix_forLinearModels,
+                                                                               regression=regression)
     train_i = fs$Xtrain
     test_i = fs$Xtest
     
     model = NULL
-    internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction )
+    internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction ) 
     
     if (! is.null(bestTune) ) {
       model <- caret::train(y = y_i, x = train_i ,
@@ -900,7 +929,15 @@ ff.createEnsemble = function(Xtrain,
                      trControl = internalControlObject , ...)
     }
     
-    return(pred=predict(model,test_i))
+    ## 
+    ret = NULL
+    if (regression) {
+      ret = predict(model,test_i)
+    } else {
+      ret = predict(model,test_i,type = "prob")[,fact.sign]
+    }
+    
+    return(pred=ret)
   }
   
   train_list = NULL
@@ -941,34 +978,53 @@ ff.createEnsemble = function(Xtrain,
   fs = removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel(Xtrain=Xtrain, 
                                                                              Xtest=Xtest, 
                                                                              model.label=caretModelName,
-                                                                             removePredictorsMakingIllConditionedSquareMatrix_forLinearModels=removePredictorsMakingIllConditionedSquareMatrix_forLinearModels)
+                                                                             removePredictorsMakingIllConditionedSquareMatrix_forLinearModels=removePredictorsMakingIllConditionedSquareMatrix_forLinearModels, 
+                                                                             regression=regression)
   Xtrain = fs$Xtrain
   Xtest = fs$Xtest
   
   internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction )
   model = NULL
   
+  ytrain = NULL
+  if (regression) {
+    ytrain = y
+  } else {
+    ytrain = y.cat
+  }
+  
   if (! is.null(bestTune) ) { 
-    model <- caret::train(y = y, x = Xtrain ,
+    model <- caret::train(y = ytrain, x = Xtrain ,
                    method = caretModelName,
                    tuneGrid = bestTune,
                    trControl = internalControlObject , ...)
   } else if (identical(caretModelName,"rlm")) {
-    model <- caret::train(y = y, x = Xtrain ,
+    model <- caret::train(y = ytrain, x = Xtrain ,
                    method = caretModelName, 
                    preProcess="pca" , 
                    trControl = internalControlObject , ...)
   } else {
-    model <- caret::train(y = y, x = Xtrain ,
+    model <- caret::train(y = ytrain, x = Xtrain ,
                    method = caretModelName, 
                    trControl = internalControlObject , ...)
   }
   
   ##
-  predTest = predict(model,Xtest)
+  predTest = NULL
+  if (regression) {
+    predTest = predict(model,Xtest)
+  } else {
+    predTest = predict(model,Xtest,type = "prob")[,fact.sign]
+  }
   stopifnot( sum(is.na(predTest))==0 )
   
   ##
   return(list(predTrain = predTrain , predTest = predTest))
 }
 
+getCaretFactors = function(y) {
+  stopifnot(sort(unique(y))[1] == 0, sort(unique(y))[2] == 1, length(unique(y)) == 2)
+  y.cat = factor(y) 
+  levels(y.cat) = c("class0","class1")
+  return(list(y.cat=y.cat,fact.sign="class1"))
+}

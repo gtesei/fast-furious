@@ -2,11 +2,12 @@
 % Please edit documentation in R/fastRegression.R
 \name{ff.createEnsemble}
 \alias{ff.createEnsemble}
-\title{Create an ensemble of a tuned regression model.}
+\title{Create an ensemble of a tuned model}
 \usage{
 ff.createEnsemble(Xtrain, Xtest, y, caretModelName, bestTune,
   removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = TRUE,
-  controlObject, parallelize = TRUE, verbose = TRUE, ...)
+  controlObject, parallelize = TRUE, verbose = TRUE, regression = TRUE,
+  ...)
 }
 \arguments{
 \item{Xtrain}{the encoded \code{data.frame} of train data. Must be a \code{data.frame} of \code{numeric}}
@@ -15,15 +16,15 @@ ff.createEnsemble(Xtrain, Xtest, y, caretModelName, bestTune,
 
 \item{y}{the output variable as numeric vector}
 
-\item{caretModelName}{a string specifying which model to use. Possible values are \code{'lm'}, \code{'bayesglm'},
+\item{caretModelName}{a string specifying which model to use. Possible values for regression are \code{'lm'}, \code{'bayesglm'},
 \code{'glm'}, \code{'glmStepAIC'}, \code{'rlm'}, \code{'knn'}, \code{'pls'}, \code{'ridge'}, \code{'enet'},
 \code{'svmRadial'}, \code{'treebag'}, \code{'gbm'}, \code{'rf'}, \code{'cubist'}, \code{'avNNet'},
-\code{'xgbTreeGTJ'}, \code{'xgbTree'}}
+\code{'xgbTreeGTJ'}, \code{'xgbTree'}.}
 
 \item{bestTune}{a \code{data.frame} with best tuned parameters of specified model.}
 
 \item{removePredictorsMakingIllConditionedSquareMatrix_forLinearModels}{\code{TRUE} for removing predictors making
-ill-conditioned square matrices in case of fragile linear models, i.e. \code{c('rlm','pls','ridge','enet')}.}
+ill-conditioned square matrices in case of fragile linear models, i.e. \code{c('rlm','pls','ridge','enet')} for regression.}
 
 \item{controlObject}{a list of values that define how this function acts. Must be a caret \code{trainControl} object}
 
@@ -31,13 +32,15 @@ ill-conditioned square matrices in case of fragile linear models, i.e. \code{c('
 
 \item{verbose}{\code{TRUE} to enable verbose mode.}
 
+\item{regression}{\code{TRUE} to create an ensemble of a tuned regression model and \code{FALSE} to create an ensemble of a tuned classification model.}
+
 \item{...}{arguments passed to the regression routine.}
 }
 \value{
 a list of train and test predictions.
 }
 \description{
-Create an ensemble of a tuned regression model.
+Create an ensemble of a tuned model
 }
 \examples{
 ## suppress warnings raised because there few obs
