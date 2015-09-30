@@ -991,7 +991,13 @@ ff.createEnsemble = function(Xtrain,
     test_i = fs$Xtest
     
     model = NULL
-    internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction ) 
+    internalControlObject = NULL
+    if (regression) {
+      internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction )   
+    } else {
+      internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction , classProbs = TRUE) 
+    }
+    
     
     if (! is.null(bestTune) ) {
       model <- caret::train(y = y_i, x = train_i ,
@@ -1063,8 +1069,13 @@ ff.createEnsemble = function(Xtrain,
   Xtrain = fs$Xtrain
   Xtest = fs$Xtest
   
-  internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction )
   model = NULL
+  internalControlObject = NULL
+  if (regression) {
+    internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction )   
+  } else {
+    internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction , classProbs = TRUE) 
+  }
   
   ytrain = NULL
   if (regression) {
