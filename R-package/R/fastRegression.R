@@ -158,7 +158,7 @@ xgb_train_and_predict = function(train_set,
   
   ## cross-valication
   if (verbose) cat(">> xgb: cross-validation ... \n")
-
+  
   xgb_xval = xgb_cross_val (data = x[trind,], 
                             y = y,  
                             foldList = foldList, 
@@ -177,9 +177,9 @@ xgb_train_and_predict = function(train_set,
   if (verbose) cat('>> xgb: prediction [early.stop:',xgb_xval$early.stop,'] ... \n')
   dtrain <- xgboost::xgb.DMatrix(x[trind,], label = y)
   bst = xgboost::xgb.train(param = param,  
-                  dtrain , 
-                  nrounds = xgb_xval$early.stop, 
-                  feval = xgb.metric.fun , maximize = xgb.maximize , verbose = FALSE)
+                           dtrain , 
+                           nrounds = xgb_xval$early.stop, 
+                           feval = xgb.metric.fun , maximize = xgb.maximize , verbose = FALSE)
   
   # workaround for length 1 preds 
   if (length(teind)>1){
@@ -210,34 +210,30 @@ removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel = function
                                                                                   model.label,
                                                                                   removePredictorsMakingIllConditionedSquareMatrix_forLinearModels, 
                                                                                   regression=TRUE) {
+  fragile_LinearModels = NULL
   if (regression) {
     fragile_LinearModels = c('rlm','pls','ridge','enet')
-    if (! model.label %in% fragile_LinearModels || ! removePredictorsMakingIllConditionedSquareMatrix_forLinearModels) {
-      return (list(
-        Xtrain = Xtrain, 
-        Xtest = Xtest
-      )) 
-    }
-    
-    l = ff.featureFilter (Xtrain,
-                          Xtest,
-                          removeOnlyZeroVariacePredictors=TRUE,
-                          performVarianceAnalysisOnTrainSetOnly = TRUE , 
-                          removePredictorsMakingIllConditionedSquareMatrix = TRUE, 
-                          removeHighCorrelatedPredictors = FALSE, 
-                          featureScaling = FALSE)
-    
-    return (list(
-      Xtrain = l$traindata, 
-      Xtest = l$testdata
-    ))  
   } else {
-    ## TODO Classification 
+    fragile_LinearModels = c('glm','pls','lda')
+  }
+  
+  if (! model.label %in% fragile_LinearModels || ! removePredictorsMakingIllConditionedSquareMatrix_forLinearModels) {
     return (list(
       Xtrain = Xtrain, 
-      Xtest = Xtest
-    )) 
+      Xtest = Xtest)) 
   }
+  
+  l = ff.featureFilter (Xtrain,
+                        Xtest,
+                        removeOnlyZeroVariacePredictors=TRUE,
+                        performVarianceAnalysisOnTrainSetOnly = TRUE , 
+                        removePredictorsMakingIllConditionedSquareMatrix = TRUE, 
+                        removeHighCorrelatedPredictors = FALSE, 
+                        featureScaling = FALSE)
+  
+  return (list(
+    Xtrain = l$traindata, 
+    Xtest = l$testdata))  
 }
 
 #' Trains a specified model on the given train set and predicts on the given test set. 
@@ -265,9 +261,9 @@ removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel = function
 #' In the latter case only if \code{best.tuning} is \code{TRUE}.
 #' @param xgb.eta custom \code{eta} parameter for \code{'xgbTreeGTJ'} and \code{'xgbTree'}. 
 #' In the latter case only if \code{best.tuning} is \code{TRUE}.
-#' @param xgb.cv.default \code{TRUE} for using \code{xgboost::xgb.cv} function (mandatory in case of fix nrounds), \code{FALSE} for using internal 
-#' \code{ff.xgb.cv} function. The main advantage of the ladder is that it doesn't need to restart nrounds in case for the specified nrounds 
-#' cross validation errors are still decreasing.   
+#' @param xgb.cv.default \code{TRUE} for using \code{xgboost::xgb.cv} function (mandatory in case of fix nrounds), \code{FALSE} for using the internal 
+#' \code{ff.xgb.cv} function. The main advantage of the latter is that it doesn't need to restart nrounds in case for the specified nrounds 
+#' cross validation error is still decreasing.   
 #' @param xgb.param custom parameters for XGBoost. 
 #' @param ... arguments passed to the regression routine.  
 #' 
@@ -307,21 +303,21 @@ removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel = function
 #' @return a list of test predictions, model and number of excecuting seconds.  
 #' 
 ff.trainAndPredict.reg = function(Ytrain ,
-                                 Xtrain , 
-                                 Xtest , 
-                                 model.label , 
-                                 controlObject, 
-                                 best.tuning = FALSE, 
-                                 verbose = FALSE, 
-                                 removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = TRUE, 
-                                 xgb.metric.fun = RMSLE.xgb, 
-                                 xgb.maximize =FALSE, 
-                                 xgb.metric.label = 'rmsle', 
-                                 xgb.foldList = NULL,
-                                 xgb.eta = NULL,
-                                 xgb.cv.default = TRUE, 
-                                 xgb.param = NULL, 
-                                 ... ) {
+                                  Xtrain , 
+                                  Xtest , 
+                                  model.label , 
+                                  controlObject, 
+                                  best.tuning = FALSE, 
+                                  verbose = FALSE, 
+                                  removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = TRUE, 
+                                  xgb.metric.fun = RMSLE.xgb, 
+                                  xgb.maximize =FALSE, 
+                                  xgb.metric.label = 'rmsle', 
+                                  xgb.foldList = NULL,
+                                  xgb.eta = NULL,
+                                  xgb.cv.default = TRUE, 
+                                  xgb.param = NULL, 
+                                  ... ) {
   
   model = NULL 
   pred = NULL 
@@ -355,43 +351,43 @@ ff.trainAndPredict.reg = function(Ytrain ,
       pred = as.numeric( predict(model , Xtest )  ) 
     } else if (model.label == "knn") {  ### KNN_Reg
       model <- caret::train(y = Ytrain, x = Xtrain , method = "knn", 
-                     preProc = c("center", "scale"), 
-                     tuneGrid = data.frame(.k = 1:10),
-                     trControl = controlObject, ...)
+                            preProc = c("center", "scale"), 
+                            tuneGrid = data.frame(.k = 1:10),
+                            trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  )
     } else if (model.label == "pls") {  ### PLS_Reg
       .tuneGrid = expand.grid(.ncomp = 1:10)
       model <- caret::train(y = Ytrain, x = Xtrain ,
-                     method = "pls",
-                     tuneGrid = .tuneGrid , 
-                     trControl = controlObject, ...)
+                            method = "pls",
+                            tuneGrid = .tuneGrid , 
+                            trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  )
     } else if (model.label == "ridge") {  ### Ridge_Reg
       ridgeGrid <- data.frame(.lambda = seq(0, .1, length = 15))
       if (best.tuning) ridgeGrid <- data.frame(.lambda = seq(0, .1, length = 25))
       model <- caret::train(y = Ytrain, x = Xtrain ,
-                     method = "ridge",
-                     tuneGrid = ridgeGrid,
-                     trControl = controlObject, ...)
+                            method = "ridge",
+                            tuneGrid = ridgeGrid,
+                            trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  )
     } else if (model.label == "enet") {  ### Enet_Reg
       enetGrid <- expand.grid(.lambda = c(0, 0.01, .1), .fraction = seq(.05, 1, length = 20))
       if (best.tuning) enetGrid <- expand.grid(.lambda = c(0, 0.01,.1,.5,.8), .fraction = seq(.05, 1, length = 30))
       model <- caret::train(y = Ytrain, x = Xtrain ,
-                     method = "enet",
-                     tuneGrid = enetGrid, 
-                     trControl = controlObject, ...)
+                            method = "enet",
+                            tuneGrid = enetGrid, 
+                            trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  )
     } else if (model.label == "svmRadial") {  ### SVM_Reg
       model <- caret::train(y = Ytrain, x = Xtrain ,
-                     method = "svmRadial",
-                     tuneLength = 15,
-                     trControl = controlObject,...)
+                            method = "svmRadial",
+                            tuneLength = 15,
+                            trControl = controlObject,...)
       pred = as.numeric( predict(model , Xtest )  )
     } else if (model.label == "treebag") {  ### BaggedTree_Reg
       model <- caret::train(y = Ytrain, x = Xtrain ,
-                     method = "treebag",
-                     trControl = controlObject,...)
+                            method = "treebag",
+                            trControl = controlObject,...)
       pred = as.numeric( predict(model , Xtest )  )
     } else if (model.label == "gbm") {  ### GBM
       gbmGrid <- expand.grid(interaction.depth = seq(1, 7, by = 2),
@@ -399,41 +395,41 @@ ff.trainAndPredict.reg = function(Ytrain ,
                              shrinkage = c(0.01, 0.1), 
                              n.minobsinnode = 10)
       model <- caret::train(y = Ytrain, x = Xtrain ,
-                     method = "gbm",
-                     tuneGrid = gbmGrid,
-                     bag.fraction = 0.5 , 
-                     verbose = FALSE,
-                     trControl = controlObject, ... )
+                            method = "gbm",
+                            tuneGrid = gbmGrid,
+                            bag.fraction = 0.5 , 
+                            verbose = FALSE,
+                            trControl = controlObject, ... )
       pred = as.numeric( predict(model , Xtest )  )
     } else if (model.label == "rf") {  ### RandomForest_Reg
       .ntrees = 150
       if (best.tuning) .ntrees = 1000
       model <- caret::train(y = Ytrain, x = Xtrain ,
-                     method = "rf",
-                     tuneLength = 10,
-                     ntrees = .ntrees,
-                     importance = TRUE,
-                     trControl = controlObject, ...)
+                            method = "rf",
+                            tuneLength = 10,
+                            ntrees = .ntrees,
+                            importance = TRUE,
+                            trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  )
     } else if (model.label == "cubist") {  ### Cubist_Reg
       cubistGrid <- expand.grid(.committees = c(1, 5, 10, 50, 75, 90, 100),
                                 .neighbors = c(0, 1, 3, 5, 7, 9))
       model <- caret::train(y = Ytrain, x = Xtrain ,
-                     method = "cubist",
-                     tuneGrid = cubistGrid,
-                     trControl = controlObject, ...)
+                            method = "cubist",
+                            tuneGrid = cubistGrid,
+                            trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  )
     } else if (model.label == "avNNet") {  ### Neural Networks 
       nnetGrid <- expand.grid(.decay = c(0.001, .01, .1),
                               .size = seq(1, 27, by = 2),
                               .bag = FALSE)
       model <- caret::train(y = Ytrain, x = Xtrain ,
-                     method = "avNNet",
-                     tuneGrid = nnetGrid,
-                     linout = TRUE,
-                     trace = FALSE,
-                     maxit = 1000,
-                     trControl = controlObject,...)
+                            method = "avNNet",
+                            tuneGrid = nnetGrid,
+                            linout = TRUE,
+                            trace = FALSE,
+                            maxit = 1000,
+                            trControl = controlObject,...)
       pred = as.numeric( predict(model , Xtest )  )  
     } else if (model.label == "xgbTreeGTJ") {  ### xgbTreeGTJ 
       
@@ -553,8 +549,8 @@ ff.trainAndPredict.reg = function(Ytrain ,
         
       } else {
         model <- caret::train(y = Ytrain, x = Xtrain ,
-                       method = "xgbTree",
-                       trControl = controlObject, ... ) 
+                              method = "xgbTree",
+                              trControl = controlObject, ... ) 
         pred = as.numeric( predict(model , Xtest )  )
       }
     } else {
@@ -706,15 +702,15 @@ ff.plotPerformance.reg <- function(observed,predicted,main=NULL) {
 #' For further details see \code{\link[stats]{optim}}.
 
 ff.blend = function(bestTune,
-                                 caretModelName, 
-                                 Xtrain,y,
-                                 controlObject,
-                                 max_secs=10*60,
-                                 seed = NULL,
-                                 method = c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN"),
-                                 useInteger = TRUE, 
-                                 parallelize = TRUE, 
-                                 verbose=TRUE) {
+                    caretModelName, 
+                    Xtrain,y,
+                    controlObject,
+                    max_secs=10*60,
+                    seed = NULL,
+                    method = c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN"),
+                    useInteger = TRUE, 
+                    parallelize = TRUE, 
+                    verbose=TRUE) {
   checkModelName(caretModelName)
   
   stopifnot( is.data.frame(bestTune) && ncol(bestTune) > 0)
@@ -726,9 +722,9 @@ ff.blend = function(bestTune,
   cubistGrid <- expand.grid(bestTune)
   set.seed(seed)
   model <- caret::train(y = y, x = Xtrain ,
-                 method = caretModelName,
-                 tuneGrid = cubistGrid,
-                 trControl = controlObject)
+                        method = caretModelName,
+                        tuneGrid = cubistGrid,
+                        trControl = controlObject)
   tm = proc.time() - ptm
   secs1 = as.numeric(tm[3])
   max_iter = floor(max_secs / ( 2*secs1) ) # https://stat.ethz.ch/pipermail/r-devel/2010-August/058081.html
@@ -743,9 +739,9 @@ ff.blend = function(bestTune,
       .grid <- as.data.frame(t(x))
       set.seed(seed)
       model <- caret::train(y = y, x = Xtrain ,
-                     method = caretModelName,
-                     tuneGrid = .grid,
-                     trControl = controlObject)
+                            method = caretModelName,
+                            tuneGrid = .grid,
+                            trControl = controlObject)
       model$results$RMSE
     }
     
@@ -853,9 +849,9 @@ ff.verifyBlender = function(blender,Xtrain,y,seed=NULL,controlObject, caretModel
   cubistGrid <- as.data.frame( t(bestTune) )
   set.seed(seed)
   model <- caret::train(y = y, x = Xtrain ,
-                 method = caretModelname,
-                 tuneGrid = cubistGrid,
-                 trControl = controlObject)
+                        method = caretModelname,
+                        tuneGrid = cubistGrid,
+                        trControl = controlObject)
   bperf = ff.getBestBlenderPerformance(blender)
   if (length(bperf)>1) bperf = bperf[1]
   return(bperf - model$results$RMSE)
@@ -1001,18 +997,18 @@ ff.createEnsemble = function(Xtrain,
     
     if (! is.null(bestTune) ) {
       model <- caret::train(y = y_i, x = train_i ,
-                     method = caretModelName,
-                     tuneGrid = bestTune,
-                     trControl = internalControlObject , ...)
+                            method = caretModelName,
+                            tuneGrid = bestTune,
+                            trControl = internalControlObject , ...)
     } else if (identical(caretModelName,"rlm")) {
       model <- caret::train(y = y_i, x = train_i ,
-                     method = caretModelName, 
-                     preProcess="pca" , 
-                     trControl = internalControlObject , ...)
+                            method = caretModelName, 
+                            preProcess="pca" , 
+                            trControl = internalControlObject , ...)
     } else {
       model <- caret::train(y = y_i, x = train_i ,
-                     method = caretModelName,
-                     trControl = internalControlObject , ...)
+                            method = caretModelName,
+                            trControl = internalControlObject , ...)
     }
     
     ## 
@@ -1086,18 +1082,18 @@ ff.createEnsemble = function(Xtrain,
   
   if (! is.null(bestTune) ) { 
     model <- caret::train(y = ytrain, x = Xtrain ,
-                   method = caretModelName,
-                   tuneGrid = bestTune,
-                   trControl = internalControlObject , ...)
+                          method = caretModelName,
+                          tuneGrid = bestTune,
+                          trControl = internalControlObject , ...)
   } else if (identical(caretModelName,"rlm")) {
     model <- caret::train(y = ytrain, x = Xtrain ,
-                   method = caretModelName, 
-                   preProcess="pca" , 
-                   trControl = internalControlObject , ...)
+                          method = caretModelName, 
+                          preProcess="pca" , 
+                          trControl = internalControlObject , ...)
   } else {
     model <- caret::train(y = ytrain, x = Xtrain ,
-                   method = caretModelName, 
-                   trControl = internalControlObject , ...)
+                          method = caretModelName, 
+                          trControl = internalControlObject , ...)
   }
   
   ##
