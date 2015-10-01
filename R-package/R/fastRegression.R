@@ -104,7 +104,7 @@ xgb_cross_val = function( data ,
       gc()
     }
   } else {
-    bst.cv = ff.xgb.cv(param=param, data = data, label = y, 
+    bst.cv = ff.xgb.cv(params=param, data = data, label = y, 
                        nfold = nfold, nrounds=cv.nround , folds = foldList, 
                        feval = xgb.metric.fun , maximize = xgb.maximize, verbose=FALSE)
     
@@ -217,17 +217,16 @@ removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel = function
     fragile_LinearModels = c('glm','pls','lda')
   }
   
+  removePredictorsMakingIllConditionedSquareMatrix = TRUE
   if (! model.label %in% fragile_LinearModels || ! removePredictorsMakingIllConditionedSquareMatrix_forLinearModels) {
-    return (list(
-      Xtrain = Xtrain, 
-      Xtest = Xtest)) 
+    removePredictorsMakingIllConditionedSquareMatrix = FALSE
   }
   
   l = ff.featureFilter (Xtrain,
                         Xtest,
                         removeOnlyZeroVariacePredictors=TRUE,
                         performVarianceAnalysisOnTrainSetOnly = TRUE , 
-                        removePredictorsMakingIllConditionedSquareMatrix = TRUE, 
+                        removePredictorsMakingIllConditionedSquareMatrix = removePredictorsMakingIllConditionedSquareMatrix, 
                         removeHighCorrelatedPredictors = FALSE, 
                         featureScaling = FALSE)
   
