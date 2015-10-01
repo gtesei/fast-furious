@@ -973,7 +973,7 @@ ff.createEnsemble = function(Xtrain,
     test_i = Xtrain[ indexOut[[i]] , ]
     
     ## classification 
-    if (! regression) {
+    if (! regression && caretModelName != "libsvm" ) {
       y_i = y.cat[ index[[i]] ]
     }
     
@@ -995,7 +995,10 @@ ff.createEnsemble = function(Xtrain,
     }
     
     
-    if (! is.null(bestTune) ) {
+    if (caretModelName == "libsvm" && ! regression) {
+      model = e1071::svm(x = train_i , y = y_i , kernel = "radial" , gamma = bestTune$gamma , cost = bestTune$C)
+      
+    } else if (! is.null(bestTune) ) {
       model <- caret::train(y = y_i, x = train_i ,
                             method = caretModelName,
                             tuneGrid = bestTune,
@@ -1013,7 +1016,7 @@ ff.createEnsemble = function(Xtrain,
     
     ## 
     ret = NULL
-    if (regression) {
+    if ( regression || (! regression && caretModelName == "libsvm") ) {
       ret = predict(model,test_i)
     } else {
       ret = predict(model,test_i,type = "prob")[,fact.sign]
@@ -1074,13 +1077,16 @@ ff.createEnsemble = function(Xtrain,
   }
   
   ytrain = NULL
-  if (regression) {
+  if (regression  || (! regression && caretModelName == "libsvm") ) {
     ytrain = y
   } else {
     ytrain = y.cat
   }
   
-  if (! is.null(bestTune) ) { 
+  if (caretModelName == "libsvm" && ! regression) {
+    model = e1071::svm(x = Xtrain , y = ytrain , kernel = "radial" , gamma = bestTune$gamma , cost = bestTune$C)
+    
+  } else if (! is.null(bestTune) ) { 
     model <- caret::train(y = ytrain, x = Xtrain ,
                           method = caretModelName,
                           tuneGrid = bestTune,
@@ -1098,7 +1104,7 @@ ff.createEnsemble = function(Xtrain,
   
   ##
   predTest = NULL
-  if (regression) {
+  if (regression  || (! regression && caretModelName == "libsvm") ) {
     predTest = predict(model,Xtest)
   } else {
     predTest = predict(model,Xtest,type = "prob")[,fact.sign]

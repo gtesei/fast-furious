@@ -31,4 +31,5 @@ Imports:
     plyr, 
     xgboost, 
     magrittr, 
-    stringr
+    stringr,
+    e1071
