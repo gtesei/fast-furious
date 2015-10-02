@@ -117,8 +117,8 @@ ff.encodeCategoricalFeature = function(data.train ,
 ff.extractDateFeature = function(data.train , 
                                data.test) {
   
-  stopifnot(identical(class(data.train),'Date') )
-  stopifnot(identical(class(data.test),'Date'))
+  stopifnot(identical(class(data.train),'Date'))
+  stopifnot(identical(class(data.test), 'Date'))
   
   all_date = as.Date(c(data.train , data.test))
   all_date = sort(all_date)
@@ -259,9 +259,9 @@ ff.makeFeatureSet = function(data.train ,
     currIdx <<- currIdx + l[[i]]$dim
   })
   
-  #
-  stopifnot(sum(is.na(traindata))==0)
-  stopifnot(sum(is.na(testdata))==0)
+  # NAs handling at user level 
+  #stopifnot(sum(is.na(traindata))==0)
+  #stopifnot(sum(is.na(testdata))==0)
   
   #
   return(list(traindata=traindata,testdata=testdata))
