@@ -89,8 +89,8 @@ ff.encodeCategoricalFeature = function(data.train ,
   }
   
   ## reassembling 
-  testdata = mm[1:(length(data.test)),]
-  traindata = mm[((length(data.test))+1):(dim(mm)[1]),]
+  testdata = mm[1:(length(data.test)),,drop=F]
+  traindata = mm[((length(data.test))+1):(dim(mm)[1]),,drop=F]
   
   return(list(traindata = traindata ,testdata = testdata))
 }
