@@ -85,7 +85,7 @@ ff.encodeCategoricalFeature = function(data.train ,
   ##
   mm = as.data.frame(mm)
   if (remove1DummyVar) {
-    mm = mm[,-1]
+    mm = mm[,-1,drop=F]
   }
   
   ## reassembling 
