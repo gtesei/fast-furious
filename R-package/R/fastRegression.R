@@ -862,6 +862,8 @@ ff.verifyBlender = function(blender,Xtrain,y,seed=NULL,controlObject, caretModel
 #' @param y the output variable as numeric vector
 #' @param Xtrain the encoded \code{data.frame} of train data. Must be a \code{data.frame} of \code{numeric}
 #' @param Xtest the encoded \code{data.frame} of test data. Must be a \code{data.frame} of \code{numeric}
+#' @param predTest test set prediction (numeric vector). If available, passing it through this paramter 
+#' the function doesn't compute it again for creating the esemble. 
 #' @param caretModelName a string specifying which model to use. Possible values for regression are \code{'lm'}, \code{'bayesglm'}, 
 #' \code{'glm'}, \code{'glmStepAIC'}, \code{'rlm'}, \code{'knn'}, \code{'pls'}, \code{'ridge'}, \code{'enet'}, 
 #' \code{'svmRadial'}, \code{'treebag'}, \code{'gbm'}, \code{'rf'}, \code{'cubist'}, \code{'avNNet'}, 
@@ -930,6 +932,7 @@ ff.createEnsemble = function(Xtrain,
                              y,
                              caretModelName, 
                              bestTune,
+                             predTest = NULL,
                              removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = TRUE, 
                              controlObject, 
                              parallelize = TRUE,
@@ -950,9 +953,8 @@ ff.createEnsemble = function(Xtrain,
     fact.sign = l$fact.sign
   }
   
-  ##
+  ## predTrain
   predTrain = rep(NA,nrow(Xtrain))
-  predTest = rep(NA,nrow(Xtest))
   index = controlObject$index
   indexOut = controlObject$indexOut
   
@@ -1059,56 +1061,58 @@ ff.createEnsemble = function(Xtrain,
   stopifnot( sum(is.na(predTrain))==0 )
   
   ## predTest
-  fs = removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel(Xtrain=Xtrain, 
-                                                                             Xtest=Xtest, 
-                                                                             model.label=caretModelName,
-                                                                             removePredictorsMakingIllConditionedSquareMatrix_forLinearModels=removePredictorsMakingIllConditionedSquareMatrix_forLinearModels, 
-                                                                             regression=regression)
-  Xtrain = fs$Xtrain
-  Xtest = fs$Xtest
-  
-  model = NULL
-  internalControlObject = NULL
-  if (regression) {
-    internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction )   
-  } else {
-    internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction , classProbs = TRUE) 
-  }
-  
-  ytrain = NULL
-  if (regression  || (! regression && caretModelName == "libsvm") ) {
-    ytrain = y
-  } else {
-    ytrain = y.cat
-  }
-  
-  if (caretModelName == "libsvm" && ! regression) {
-    model = e1071::svm(x = Xtrain , y = ytrain , kernel = "radial" , gamma = bestTune$gamma , cost = bestTune$C)
+  if (is.null(predTest)) {
+    fs = removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel(Xtrain=Xtrain, 
+                                                                               Xtest=Xtest, 
+                                                                               model.label=caretModelName,
+                                                                               removePredictorsMakingIllConditionedSquareMatrix_forLinearModels=removePredictorsMakingIllConditionedSquareMatrix_forLinearModels, 
+                                                                               regression=regression)
+    Xtrain = fs$Xtrain
+    Xtest = fs$Xtest
     
-  } else if (! is.null(bestTune) ) { 
-    model <- caret::train(y = ytrain, x = Xtrain ,
-                          method = caretModelName,
-                          tuneGrid = bestTune,
-                          trControl = internalControlObject , ...)
-  } else if (identical(caretModelName,"rlm")) {
-    model <- caret::train(y = ytrain, x = Xtrain ,
-                          method = caretModelName, 
-                          preProcess="pca" , 
-                          trControl = internalControlObject , ...)
-  } else {
-    model <- caret::train(y = ytrain, x = Xtrain ,
-                          method = caretModelName, 
-                          trControl = internalControlObject , ...)
-  }
+    model = NULL
+    internalControlObject = NULL
+    if (regression) {
+      internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction )   
+    } else {
+      internalControlObject = caret::trainControl(method = "none", summaryFunction = controlObject$summaryFunction , classProbs = TRUE) 
+    }
+    
+    ytrain = NULL
+    if (regression  || (! regression && caretModelName == "libsvm") ) {
+      ytrain = y
+    } else {
+      ytrain = y.cat
+    }
+    
+    if (caretModelName == "libsvm" && ! regression) {
+      model = e1071::svm(x = Xtrain , y = ytrain , kernel = "radial" , gamma = bestTune$gamma , cost = bestTune$C)
+      
+    } else if (! is.null(bestTune) ) { 
+      model <- caret::train(y = ytrain, x = Xtrain ,
+                            method = caretModelName,
+                            tuneGrid = bestTune,
+                            trControl = internalControlObject , ...)
+    } else if (identical(caretModelName,"rlm")) {
+      model <- caret::train(y = ytrain, x = Xtrain ,
+                            method = caretModelName, 
+                            preProcess="pca" , 
+                            trControl = internalControlObject , ...)
+    } else {
+      model <- caret::train(y = ytrain, x = Xtrain ,
+                            method = caretModelName, 
+                            trControl = internalControlObject , ...)
+    }
+    
+    ##
+    if (regression  || (! regression && caretModelName == "libsvm") ) {
+      predTest = predict(model,Xtest)
+    } else {
+      predTest = predict(model,Xtest,type = "prob")[,fact.sign]
+    }
+    stopifnot( sum(is.na(predTest))==0 )  
+  } 
   
-  ##
-  predTest = NULL
-  if (regression  || (! regression && caretModelName == "libsvm") ) {
-    predTest = predict(model,Xtest)
-  } else {
-    predTest = predict(model,Xtest,type = "prob")[,fact.sign]
-  }
-  stopifnot( sum(is.na(predTest))==0 )
   
   ##
   return(list(predTrain = predTrain , predTest = predTest))

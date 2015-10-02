@@ -4,7 +4,7 @@
 \alias{ff.createEnsemble}
 \title{Create an ensemble of a tuned model}
 \usage{
-ff.createEnsemble(Xtrain, Xtest, y, caretModelName, bestTune,
+ff.createEnsemble(Xtrain, Xtest, y, caretModelName, bestTune, predTest = NULL,
   removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = TRUE,
   controlObject, parallelize = TRUE, verbose = TRUE, regression = TRUE,
   ...)
@@ -22,6 +22,9 @@ ff.createEnsemble(Xtrain, Xtest, y, caretModelName, bestTune,
 \code{'xgbTreeGTJ'}, \code{'xgbTree'}.}
 
 \item{bestTune}{a \code{data.frame} with best tuned parameters of specified model.}
+
+\item{predTest}{test set prediction (numeric vector). If available, passing it through this paramter
+the function doesn't compute it again for creating the esemble.}
 
 \item{removePredictorsMakingIllConditionedSquareMatrix_forLinearModels}{\code{TRUE} for removing predictors making
 ill-conditioned square matrices in case of fragile linear models, i.e. \code{c('rlm','pls','ridge','enet')} for regression.}
