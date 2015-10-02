@@ -10,6 +10,12 @@
 #' @param asNumericSequence set \code{T} if the predictor is a numeric sequence filling any possible hole between min and max in observations that could occour both in train set and test set. 
 #' @param replaceWhiteSpaceInLevelsWith replace possible spaces in the train/test name of feature. 
 #' @param levels the levels of the categorical feature. Must be \code{NULL} if asNumericSequence is \code{T}.  
+#' @param remove1DummyVar \code{T} to remove one dummy variable. Why? 
+#' First, if you know the values of the first C - 1 dummy variables, you know the last one too and it is more economical to use C - 1. 
+#' Secondly, if the model has slopes and intercepts (e.g. linear regression), the sum of all of the dummy variables wil add up to the 
+#' intercept (usually encoded as a "1") and that is bad for the math involved. On the other hand, there are models like penalized methods (such as ridge regression) 
+#' that seldom penalize the intercept, so a C-1 encoded variable could cause the other category effects to be penalized towards the reference category effect.
+#' @references \url{http://appliedpredictivemodeling.com/blog/2013/10/23/the-basics-of-encoding-categorical-data-for-predictive-models}
 #' 
 #' @examples
 #' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, c = letters[1:6])
@@ -45,7 +51,8 @@ ff.encodeCategoricalFeature = function(data.train ,
                                     colname.prefix, 
                                     asNumericSequence=F , 
                                     replaceWhiteSpaceInLevelsWith=NULL,
-                                    levels = NULL) {
+                                    levels = NULL, 
+                                    remove1DummyVar=FALSE) {
   
   stopifnot(is.atomic(data.train))
   stopifnot(is.atomic(data.test))
@@ -77,6 +84,9 @@ ff.encodeCategoricalFeature = function(data.train ,
   
   ##
   mm = as.data.frame(mm)
+  if (remove1DummyVar) {
+    mm = mm[,-1]
+  }
   
   ## reassembling 
   testdata = mm[1:(length(data.test)),]
@@ -133,6 +143,8 @@ ff.extractDateFeature = function(data.train ,
 #'        e.g. \code{c('N','C','D')} of the same length of the train set / test set columns 
 #' @param scaleNumericFeatures seto to \code{'TRUE'} to center and scale numeric features 
 #' @param parallelize set to \code{'TRUE'} to enable parallelization (require \code{parallel} package)  
+#' @param remove1DummyVarInCatPreds \code{T} to remove one dummy variable in encoding categorical predictors. 
+#' For further details see \code{\link[fastfurious]{ff.encodeCategoricalFeature}}.
 #' 
 #' @examples
 #' Xtrain <- data.frame( a = rep(1:3 , each = 2), b = 6:1, 
@@ -151,7 +163,8 @@ ff.makeFeatureSet = function(data.train ,
                              data.test, 
                              meta,
                              scaleNumericFeatures = FALSE,
-                             parallelize = FALSE) { 
+                             parallelize = FALSE,
+                             remove1DummyVarInCatPreds=FALSE) { 
 
   ##
   stopifnot(  ! (is.null(data.train) || is.null(data.test)) )
@@ -189,7 +202,7 @@ ff.makeFeatureSet = function(data.train ,
       ll['dim'] = 1
       return(ll)
     } else if (identical(m,'C')) {
-      ll = ff.encodeCategoricalFeature (x , y , nx)
+      ll = ff.encodeCategoricalFeature (data.train = x , data.test = y , colname.prefix = nx, remove1DummyVar = remove1DummyVarInCatPreds)
       ll['dim'] = ncol(ll$traindata)
       return(ll)
     } else if (identical(m,'N')) {

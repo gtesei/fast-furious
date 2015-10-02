@@ -9,7 +9,7 @@ modeling choice (eventually to be assessed by cross-validation).}
 \usage{
 ff.encodeCategoricalFeature(data.train, data.test, colname.prefix,
   asNumericSequence = F, replaceWhiteSpaceInLevelsWith = NULL,
-  levels = NULL)
+  levels = NULL, remove1DummyVar = FALSE)
 }
 \arguments{
 \item{data.train}{the observations of the predictor in train set.}
@@ -23,6 +23,12 @@ ff.encodeCategoricalFeature(data.train, data.test, colname.prefix,
 \item{replaceWhiteSpaceInLevelsWith}{replace possible spaces in the train/test name of feature.}
 
 \item{levels}{the levels of the categorical feature. Must be \code{NULL} if asNumericSequence is \code{T}.}
+
+\item{remove1DummyVar}{\code{T} to remove one dummy variable. Why?
+First, if you know the values of the first C - 1 dummy variables, you know the last one too and it is more economical to use C - 1.
+Secondly, if the model has slopes and intercepts (e.g. linear regression), the sum of all of the dummy variables wil add up to the
+intercept (usually encoded as a "1") and that is bad for the math involved. On the other hand, there are models like penalized methods (such as ridge regression)
+that seldom penalize the intercept, so a C-1 encoded variable could cause the other category effects to be penalized towards the reference category effect.}
 }
 \value{
 the list of trainset and testset after applying the specified filters
@@ -59,5 +65,8 @@ Xtrain[,'c'] = NULL
 Xtest[,'c'] = NULL
 Xtrain = cbind(Xtrain,l$traindata)
 Xtest = cbind(Xtest,l$testdata)
+}
+\references{
+\url{http://appliedpredictivemodeling.com/blog/2013/10/23/the-basics-of-encoding-categorical-data-for-predictive-models}
 }
 

@@ -5,7 +5,7 @@
 \title{Encode the feature set according to meta data passed as input.}
 \usage{
 ff.makeFeatureSet(data.train, data.test, meta, scaleNumericFeatures = FALSE,
-  parallelize = FALSE)
+  parallelize = FALSE, remove1DummyVarInCatPreds = FALSE)
 }
 \arguments{
 \item{data.train}{the observations of the predictor in train set.}
@@ -18,6 +18,9 @@ e.g. \code{c('N','C','D')} of the same length of the train set / test set column
 \item{scaleNumericFeatures}{seto to \code{'TRUE'} to center and scale numeric features}
 
 \item{parallelize}{set to \code{'TRUE'} to enable parallelization (require \code{parallel} package)}
+
+\item{remove1DummyVarInCatPreds}{\code{T} to remove one dummy variable in encoding categorical predictors.
+For further details see \code{\link[fastfurious]{ff.encodeCategoricalFeature}}.}
 }
 \value{
 the list of trainset and testset after applying the specified encodings
