@@ -1,12 +1,12 @@
-function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
-	 findOptPAndHAndLambda_kfold(Xtrain, ytrain, ...
+function [predTrain , predTest , p_opt_RMSE, h_opt_RMSE, lambda_opt_RMSE, RMSE_opt, grid] = ...
+	 findOptPAndHAndLambda_kfold_ensembleAndPredict(Xtrain, ytrain, Xtest,...
 			       featureScaled = 0 , scaleFeatures = 0 , ...
 			       p_vec = [] , ...
 			       h_vec = [1 2 3 4 5 6 7 8 9 10] , ...
 			       lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10] , ...
 			       verbose = 1, doPlot=1 , ...
 			       initGrid = [] , initStart = -1 , ...   
-			       iter = 200 , ...
+			       iter = 200 , iter_pred = 400 , ...
 			       regression = 1 , num_labels = 0 , k = 4) 
 	 
   if (! featureScaled & scaleFeatures) 
@@ -34,6 +34,12 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
 
   %% k-folds 
   folds = kfold_bclass(k=k,y=ytrain,seed=123); 
+
+  %% ensembles 
+  ensemb = zeros(size(Xtrain,1),(length(p_vec*length(h_vec)*length(lambda_vec)))); 
+  predTrain = zeros(size(Xtrain,1),1);
+  predTest = zeros(size(Xtest,1),1);
+
 
   %% Finding ...
   i = 1; 
@@ -79,12 +85,14 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
             
             roc_trs = auc(probs=pred_train,labels=ytr);
             roc_tes(kf) = auc(probs=pred_val , labels=yte); 
+        
+            %% ensembling 
+            ensemb(folds == kf,i) = pred_val;
+ 
           end 
           grid(i,5) = mean(roc_trs);
           grid(i,6) = mean(roc_tes);
         end 
-
-        ## TODO ensemble: i ensembles (one for each tune grid point) , selectiong best tune option ...
 	
 	i = i + 1;
         dlmwrite('_____NN__grid_tmp.mat',grid);
@@ -97,12 +105,14 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
   p_opt_RMSE = grid(RMSE_opt_idx,2);
   h_opt_RMSE = grid(RMSE_opt_idx,3);
   lambda_opt_RMSE = grid(RMSE_opt_idx,4);
+  predTrain = ensemb(:,RMSE_opt_idx);
 
   if (! regression)
     [RMSE_opt,RMSE_opt_idx] = max(grid(:,6));
     p_opt_RMSE = grid(RMSE_opt_idx,2);
     h_opt_RMSE = grid(RMSE_opt_idx,3);
-    lambda_opt_RMSE = grid(RMSE_opt_idx,4); 
+    lambda_opt_RMSE = grid(RMSE_opt_idx,4);
+    predTrain = ensemb(:,RMSE_opt_idx); 
   endif 
 
   ### print grid
@@ -123,7 +133,14 @@ function [p_opt_RMSE,h_opt_RMSE,lambda_opt_RMSE,RMSE_opt,grid] = ...
       fprintf('>>>> found max AUC=%f  with p=%i , h=%f , lambda=%f \n', RMSE_opt , p_opt_RMSE , h_opt_RMSE , lambda_opt_RMSE );
     endif 
   endif
-  
+
+  %% predTest 
+  fprintf("******************************************************************\n");
+  fprint(">>>> predicting on test set .... \n");
+  NNMeta = buildNNMeta([s0 (ones(h_opt_RMSE,1) .* p_opt_RMSE)' num_labels]');disp(NNMeta);
+  [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda_opt_RMSE , iter = iter_pred , featureScaled = 1);
+  predTest = NNPredictMulticlass(NNMeta, Theta , Xtest , featureScaled = 1);  
+	      
   if (doPlot)
     %subplot (1, 1, 1);
     plot(1:gLen, grid(:,5), 1:gLen, grid(:,6));
