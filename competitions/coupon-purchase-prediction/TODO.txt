@@ -1,0 +1,27 @@
+
+Vector components:
+------------------------------------------------------------
+
+LIST.CAPSULE_TEXT_x            (1=<x<=25)
+LIST.GENRE_NAME_x              (1=<x<=13)
+
+LIST.LARGE_AREA_NAME_x         (1=<x<9)
+AREA.SMALL_AREA_NAME_x         (1=<x<=55)
+AREA.PREF_NAME_x               (1=<x<=47)    <<<< remove because it is always associated to SMALL_AREA_NAME
+                                                  except 3 cases (PREF_NAME=2,4,9) where for the same PREF_NAME
+                                                  there are more than one SMALL_AREA_NAME associated
+
+LIST.BID_CATALOG_PRICE_x       (1=<x<=5)
+LIST.BID_PRICE_RATE_x          (1=<x<=3)
+
+LIST.WDISPPERIOD_x             (0=<x<=6)    <<<<< removed as component vector 
+
+
+
+************ TODO ************ 
+
+- 
+
+
+
+
