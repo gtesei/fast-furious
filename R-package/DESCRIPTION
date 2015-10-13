@@ -32,4 +32,5 @@ Imports:
     xgboost, 
     magrittr, 
     stringr,
-    e1071
+    e1071, 
+    glmnet
