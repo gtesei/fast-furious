@@ -976,7 +976,7 @@ ff.createEnsemble = function(Xtrain,
     ## classification 
     if (! regression && 
           caretModelName != "libsvm" &&
-          substr(x = model.label, start = 1 , stop = nchar('glmnet_alpha_')) != 'glmnet_alpha_') {
+          substr(x = caretModelName, start = 1 , stop = nchar('glmnet_alpha_')) != 'glmnet_alpha_') {
       y_i = y.cat[ index[[i]] ]
     }
     
@@ -1001,8 +1001,8 @@ ff.createEnsemble = function(Xtrain,
     if ( ! regression && caretModelName == "libsvm" ) {
       model = e1071::svm(x = train_i , y = y_i , kernel = "radial" , gamma = bestTune$gamma , cost = bestTune$C)
       
-    } else if ( ! regression && substr(x = model.label, start = 1 , stop = nchar('glmnet_alpha_')) == 'glmnet_alpha_' ) {
-      alpha <- as.numeric(substr(x = model.label, start = (nchar('glmnet_alpha_')+1) , stop = nchar(model.label)))
+    } else if ( ! regression && substr(x = caretModelName, start = 1 , stop = nchar('glmnet_alpha_')) == 'glmnet_alpha_' ) {
+      alpha <- as.numeric(substr(x = caretModelName, start = (nchar('glmnet_alpha_')+1) , stop = nchar(caretModelName)))
       stopifnot(!is.na(alpha))
       model <- glmnet::glmnet(x = as.matrix(train_i) , y = y_i , alpha = alpha , lambda = bestTune$lambda.min , family = "binomial")
       
@@ -1024,7 +1024,7 @@ ff.createEnsemble = function(Xtrain,
     
     ## 
     ret = NULL
-    if (! regression && substr(x = model.label, start = 1 , stop = nchar('glmnet_alpha_')) == 'glmnet_alpha_') {
+    if (! regression && substr(x = caretModelName, start = 1 , stop = nchar('glmnet_alpha_')) == 'glmnet_alpha_') {
       ret = as.numeric(predict(model, newx = as.matrix(test_i), s = bestTune$lambda.min, type = "response"))
     } else if ( regression || (! regression && caretModelName == "libsvm") ) {
       ret = predict(model,test_i)
@@ -1090,15 +1090,15 @@ ff.createEnsemble = function(Xtrain,
     ytrain = y
     if (! regression && 
           caretModelName != "libsvm" &&
-          substr(x = model.label, start = 1 , stop = nchar('glmnet_alpha_')) != 'glmnet_alpha_') {
+          substr(x = caretModelName, start = 1 , stop = nchar('glmnet_alpha_')) != 'glmnet_alpha_') {
       ytrain = y.cat
     }
     
     if (!regression && caretModelName == "libsvm") {
       model = e1071::svm(x = Xtrain , y = ytrain , kernel = "radial" , gamma = bestTune$gamma , cost = bestTune$C)
       
-    } else if (!regression && substr(x = model.label, start = 1 , stop = nchar('glmnet_alpha_')) == 'glmnet_alpha_') {
-      alpha <- as.numeric(substr(x = model.label, start = (nchar('glmnet_alpha_')+1) , stop = nchar(model.label)))
+    } else if (!regression && substr(x = caretModelName, start = 1 , stop = nchar('glmnet_alpha_')) == 'glmnet_alpha_') {
+      alpha <- as.numeric(substr(x = caretModelName, start = (nchar('glmnet_alpha_')+1) , stop = nchar(caretModelName)))
       stopifnot(!is.na(alpha))
       model <- glmnet::glmnet(x = as.matrix(Xtrain) , y = ytrain , alpha = alpha , lambda = bestTune$lambda.min , family = "binomial")
       
@@ -1119,7 +1119,7 @@ ff.createEnsemble = function(Xtrain,
     }
     
     ##
-    if (!regression && substr(x = model.label, start = 1 , stop = nchar('glmnet_alpha_')) == 'glmnet_alpha_') {
+    if (!regression && substr(x = caretModelName, start = 1 , stop = nchar('glmnet_alpha_')) == 'glmnet_alpha_') {
       predTest = as.numeric(predict(model, newx = as.matrix(Xtest), s = bestTune$lambda.min, type = "response"))
     } else if (regression  || (! regression && caretModelName == "libsvm") ) {
       predTest = predict(model,Xtest)
