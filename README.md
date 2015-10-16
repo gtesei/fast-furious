@@ -117,7 +117,7 @@ ens = ff.createEnsemble(Xtrain = Xtrain,
                         max_delta_step = 2)
                           
 ensemble_pred_train = ens$predTrain
-ensemble_pred_train = ens$predTest
+ensemble_pred_test = ens$predTest
 ```
 
 ## 3. fast-furious model implementations 
@@ -504,7 +504,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
     ```
     
 ## 4. fast-furious R-Package 
-Please see [R-Package PDF manual]: https://github.com/gtesei/fast-furious/blob/master/fastfurious-manual.pdf "R-Package PDF manual". 
+Please, refer to [fast-furious R-Package PDF manual](https://github.com/gtesei/fast-furious/blob/master/fastfurious-manual.pdf). 
     
 ## References 
 Most parts of fast-furious are based on the following resources: 
