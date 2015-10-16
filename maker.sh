@@ -13,6 +13,8 @@ if [[ $? -eq 0 ]]; then
             echo ">> adding updates ..."
             git status 
             git add R-package/*
+            cp R-package.Rcheck/fastfurious-manual.pdf . 
+	    git add fastfurious-manual.pdf
             if [[ $? -eq 0 ]]; then
                   echo ">> committing and pushing to github ..."
                   git status 
