@@ -1,4 +1,3 @@
-
 ### CONSTANTS  
 # assign("FAST_FURIOUS_BASE_PATH_VALUE", NULL, .GlobalEnv)
 # assign("FAST_FURIOUS_MAX_THREADS", 2, .GlobalEnv)
