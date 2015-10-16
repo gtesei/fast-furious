@@ -4,7 +4,6 @@
 # assign("FAST_FURIOUS_PTH_BINDINGS", list(), .GlobalEnv)
 
 ### FUNCS 
-
 #' Set the max number of cuncurrent threads. 
 #' 
 #' @param nThreads max number of cuncurrent threads. 
