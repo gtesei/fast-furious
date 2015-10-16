@@ -101,7 +101,7 @@ ens = ff.createEnsemble(Xtrain = Xtrain,
                         bestTune = expand.grid(
                           nrounds = bestTune$early.stop ,
                           max_depth = 8 ,  
-                          eta = 8 ),
+                          eta = 0.02 ),
                         removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
                         controlObject = controlObject, 
                         parallelize = TRUE,
