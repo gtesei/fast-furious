@@ -55,9 +55,9 @@ Once installed, you just need to load the package by using the R ```library``` f
 ```r
 library(fastfurious)
 
-##############
-## TUNE 
-##############
+##########################
+## TUNE / TRAIN / PREDICT 
+##########################
 controlObject = caret::trainControl(method = "repeatedcv", repeats = 1, number = 4 , summaryFunction = twoClassSummary , classProbs = TRUE)
 l = ff.trainAndPredict.class (Ytrain=Ytrain ,
                               Xtrain=Xtrain , 
@@ -81,9 +81,9 @@ pred = l$pred
 pred.prob = l$pred.prob
 secs = l$secs 
                                  
-##############
+##########################
 ## ENSEMB 
-##############
+##########################
 index = caret::createMultiFolds(y=Ytrain, controlObject$number, controlObject$repeats)
 indexOut <- lapply(index, function(training, allSamples) allSamples[-unique(training)], allSamples = seq(along = Ytrain))
 controlObject = trainControl(method = "repeatedcv", 
