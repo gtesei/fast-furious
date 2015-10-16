@@ -45,23 +45,80 @@ go();
 ```
 
 ### 2.4 How to use fast-furious in your R scripts  
-Assuming you are launching your R script in fast-furious base dir, you just need to ```source``` fast-furious resources at the begin of your script. For example, this is the code to perform imputation with fast-furious ```blackGuido``` function on a given data set _weather_ (excluding first two predictors) and using the best performing (RMSE) models among linear regression, KNN, PLS, Ridge regression, SVM, Cubist for continuous imputing predictors, and using the best performing (AUC) models among mode and SVM for categorical imputing predictors.   
+R installation is pretty easy and fast from github by using ```devtools::install_github```. Windows user will need to install [RTools](http://cran.r-project.org/bin/windows/Rtools/) first.
+
 ```r
-source("./data_process/Impute_Lib.R")
-
-## imputing missing values ...
-l = blackGuido (data = weather[,-c(1,2)], 
-                RegModels = c("LinearReg","KNN_Reg", "PLS_Reg" , "Ridge_Reg" , "SVM_Reg", "Cubist_Reg")  , 
-                ClassModels = c("Mode" , "SVMClass"), 
-                verbose = T , 
-                debug = F)
-weather.imputed = l[[1]]
-ImputePredictors = l[[2]]
-DecisionMatrix = l[[3]]
-
-weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
+devtools::install_github('gtesei/fast-furious',subdir='R-package')
 ```
 
+Once installed, you just need to load the package by using the R ```library``` function. E.g. this is the code sketch of how to tune, train, predict and ensemble an XGBoost model. 
+```r
+library(fastfurious)
+
+##############
+## TUNE 
+##############
+controlObject = caret::trainControl(method = "repeatedcv", repeats = 1, number = 4 , summaryFunction = twoClassSummary , classProbs = TRUE)
+l = ff.trainAndPredict.class (Ytrain=Ytrain ,
+                              Xtrain=Xtrain , 
+                              Xtest=Xtest , 
+                              model.label="xgbTree" , 
+                              controlObject=controlObject, 
+                              best.tuning = TRUE, 
+                              verbose = TRUE, 
+                              removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
+                              xgb.metric.fun = NULL, 
+                              xgb.maximize = TRUE, 
+                              metric.label = 'auc', 
+                              xgb.foldList = NULL,
+                              xgb.eta = 0.02, 
+                              xgb.max_depth = 8, 
+                              xgb.cv.default = FALSE)
+                              
+AUC.xval = max(l$model$results$ROC)
+bestTune = l$model$bestTune
+pred = l$pred
+pred.prob = l$pred.prob
+secs = l$secs 
+                                 
+##############
+## ENSEMB 
+##############
+index = caret::createMultiFolds(y=Ytrain, controlObject$number, controlObject$repeats)
+indexOut <- lapply(index, function(training, allSamples) allSamples[-unique(training)], allSamples = seq(along = Ytrain))
+controlObject = trainControl(method = "repeatedcv", 
+                               ## The method doesn't really matter
+                               ## since we defined the resamples
+                               index = index, 
+                               indexOut = indexOut , 
+                               summaryFunction = twoClassSummary , classProbs = TRUE)
+                               
+ens = ff.createEnsemble(Xtrain = Xtrain,
+                        Xtest = Xtest,
+                        y = Ytrain,
+                        caretModelName = 'xgbTree', 
+                        predTest = pred.prob,
+                        bestTune = expand.grid(
+                          nrounds = bestTune$early.stop ,
+                          max_depth = 8 ,  
+                          eta = 8 ),
+                        removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
+                        controlObject = controlObject, 
+                        parallelize = TRUE,
+                        verbose = TRUE , 
+                        regression = FALSE, 
+                             
+                        ### ... 
+                        objective = "binary:logistic",
+                        eval_metric = "auc", 
+                        subsample = 0.7 , 
+                        colsample_bytree = 0.6 , 
+                        scale_pos_weight = 0.8 , 
+                        max_delta_step = 2)
+                          
+ensemble_pred_train = ens$predTrain
+ensemble_pred_train = ens$predTest
+```
 
 ## 3. fast-furious model implementations 
 ### 3.1 Regularized Neural Networks 
@@ -446,88 +503,11 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
     printf('>>>>> metric: recall    - found optimum with p=%i and lambda=%f \n', p_opt_recall , lambda_opt_recall );
     ```
     
-## 4. fast-furious best practices  
-### 4.1 Data process best practices   
-Package ```data_process``` in R. 
+## 4. fast-furious R-Package 
+For fast-furious PDF manual of R-Package  ....
+![PDF Manual](https://github.com/gtesei/fast-furious/blob/master/fastfurious-manual.pdf)
 
-* for **imputing missing values on trainset/testset** use the ```blackGuido``` in ```Impute_Lib.R```. In literature you can find many imputing algorithms, among which an important role is played by the KNN based ones. I find this approach pretty funny, as I consider **the problem of imputing missing values just a regression problem, if the imputing predictor is continuous, or a classification problem, if the imputing predictor is discrete**. This is the idea behind ```blackGuido```. Basically ```blackGuido```, for each predictor with a missing value, 
-  + builds a **decision matrix** for choosing the best predictors to use for building the related supervised learning model; in order to select best predictors ```blackGuido``` uses a **filter method of feature selection** (you can find a good introduction to filter methods of feature selection in chapter 19 of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/)) choosing the most correlated predictor (CHI-SQUARE test among discrete variables, ANOVA test among discrete-continuous variables, PEARSON test among continuous-continuous variables) that has **no missing values in missing observations**. **Notice that a predictor with missing values could be used to estimate missing values of another predictor**. In order to choose the best imputating model, ```blackGuido``` uses internally [caret](http://caret.r-forge.r-project.org/). Anyway, only a few caret models are used (see  ```All.RegModels.impute``` and ```All.ClassModels.impute``` vectors in ```data_process/Impute_Lib.R```). So, a natural question here is why not using all regression/classification models caret supports? The answer is basically practical meaning that the supported imputating models are the ones that in my experience perform good computationally. 
-  + chooses the **best performing supervised learning model** among the ones you specify to use.  
-For example, this is the code to perform imputation with ```blackGuido``` function on a given data set _weather_ (excluding first two predictors) and using the best performing (RMSE) models among linear regression, KNN, PLS, Ridge regression, SVM, Cubist for continuous imputing predictors, and using the best performing (AUC) models among mode and SVM for categorical imputing predictors.  
 
-```r
-source("./data_process/Impute_Lib.R")
-
-## imputing missing values ...
-l = blackGuido (data = weather[,-c(1,2)], 
-                RegModels = c("LinearReg","KNN_Reg", "PLS_Reg" , "Ridge_Reg" , "SVM_Reg", "Cubist_Reg")  , 
-                ClassModels = c("Mode" , "SVMClass"), 
-                verbose = T , 
-                debug = F)
-weather.imputed = l[[1]]
-ImputePredictors = l[[2]]
-DecisionMatrix = l[[3]]
-
-weather.imputed = cbind(weather[,c(1,2)] , weather.imputed)
-```
-* for **basic feature selection** use the ```featureSelect``` function in ```FeatureSelection_Lib.R```. This function is particularly useful when you are going to feed a boundle of many different models on a common crossvalidation holdout set for selecting best candidates on which focusing your efforts later. So, many models (but not all ones like random forests, decision trees or extreme gradient boosting) relies on certain algebraic properties of the trainset like not having predictors that are linear combinations of other predictors or zero-variance predictors, or statistical properties like not having predictors that are high correlated to other predictors. By default, ```featureSelect``` removes **near zero variance predictors** (using caret  ```nearZeroVar ```) on trainset, it removes **predictors that make ill-conditioned square matrix**, it removes **high correlated predictors** and it performs **feature scaling**. 
-  + For example, this is the code for invoking  the **default behaviour** of ```featureSelect```.      
-  ```r
-  source("./data_process/FeatureSelection_Lib.R")
-  
-  fs = featureSelect (train,test)
-  train = fs$traindata
-  test = fs$testdata
-  ```
-  + For example, this is the code for invoking ```featureSelect``` in order to **remove only zero-variance predictors on trainset**, to remove predictors that make ill-conditioned square matrix, to remove high correlated predictors and to perform feature scaling.
-  ```r
-  source("./data_process/FeatureSelection_Lib.R")
-  
-  fs = featureSelect (train,test,
-                   removeOnlyZeroVariacePredictors = T,
-                   performVarianceAnalysisOnTrainSetOnly = T)
-  train = fs$traindata
-  test = fs$testdata
-  ```
-  + For example, this is the code for invoking ```featureSelect``` in order to **remove near zero-variance predictors on trainset having pearson correlation coefficient (with response variable) < 0.75**, to remove predictors that make ill-conditioned square matrix, to remove high correlated predictors and to perform feature scaling. 
-  ```r
-  source("./data_process/FeatureSelection_Lib.R")
-  
-  fs = featureSelect (train,test,y=ytrain,
-                   removeOnlyZeroVariacePredictors = F,
-                   correlationThreshold = 0.75)
-  train = fs$traindata
-  test = fs$testdata
-  ```
-  + For example, this is the code for invoking ```featureSelect``` in order to **remove only zero-variance predictors on trainset**. 
-  ```r
-  source("./data_process/FeatureSelection_Lib.R")
-  
-  fs = featureSelect (train,test,
-                   removeOnlyZeroVariacePredictors = T,
-                   performVarianceAnalysisOnTrainSetOnly = T,
-                   removePredictorsMakingIllConditionedSquareMatrix = F, 
-                   removeHighCorrelatedPredictors = F, 
-                   featureScaling = F)
-  train = fs$traindata
-  test = fs$testdata
-  ```
-* for **advanced feature selection** use the ```getPvalueFeatures``` function in ```SelectBestPredictors_Lib.R```. This function computes p-values among input variables (and their quadratic/k terms, with k < 6) and output variables (CHI-SQUARE test among discrete variables, ANOVA test among discrete-continuous variables, PEARSON test among continuous-continuous variables) using the p-value adjusting method you like (**by default, Bonferroni method**) and it returns a data frame with columns the term formulas, the p-values, the statistical significance, the percentage of NA values, and the performance of a basic model (linear regression for regression problems and logistic regression for classification problems) based on such a predictor with a 4-fold cross validation. ```getPvalueFeatures``` is useful if your feature selection approach is a **filter method** (you can find a good introduction to filter methods of feature selection in chapter 19 of [AppliedPredictiveModeling](http://appliedpredictivemodeling.com/)).      
-  + For example, this is the code for invoking ```getPvalueFeatures``` on a regression problem to evaluate p-values of predictors and their quadratic and cubic terms with the Bonferroni methiod as p-value adjusting method. 
-  ```r
-  source("./data_process/SelectBestPredictors_Lib.R")
-  
-  
-  predictors.props = getPvalueFeatures( features = train , 
-                                        response = ytrain , 
-                                        p = 3 , 
-                                        pValueAdjust = T, 
-                                        pValueAdjustMethod = "default", 
-                                        verbose = T)
-                                        
-  predictors.props = predictors.props[order(predictors.props$pValue,
-                                                      decreasing = F),]
-  ```
 
     
 ## References 
