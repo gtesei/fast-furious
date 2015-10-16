@@ -40,7 +40,7 @@ For example, this is the code of fast-furious ```GO_Neural.m``` script located o
 menv;
 
 %% load use cases and go  
-source './neural/README.m';
+README_Neural;
 go();
 ```
 
