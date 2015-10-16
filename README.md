@@ -51,7 +51,7 @@ R installation is pretty easy and fast from github by using ```devtools::install
 devtools::install_github('gtesei/fast-furious',subdir='R-package')
 ```
 
-Once installed, you just need to load the package by using the R ```library``` function. E.g. this is the code sketch of how to tune, train, predict and ensemble an XGBoost model. 
+Once installed, you just need to load the package by using the R ```library``` function. E.g. this is the code sketch for tuning, training, predicting and ensembling an XGBoost model on a binary classification problem. 
 ```r
 library(fastfurious)
 
@@ -504,11 +504,7 @@ Package ```logistic_reg``` **very fast 100% vectorized implementation** in Matla
     ```
     
 ## 4. fast-furious R-Package 
-For fast-furious PDF manual of R-Package  ....
-![PDF Manual](https://github.com/gtesei/fast-furious/blob/master/fastfurious-manual.pdf)
-
-
-
+Please see [R-Package PDF manual]: https://github.com/gtesei/fast-furious/blob/master/fastfurious-manual.pdf "R-Package PDF manual". 
     
 ## References 
 Most parts of fast-furious are based on the following resources: 
