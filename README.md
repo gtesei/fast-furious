@@ -23,8 +23,15 @@ fast-furious has been built in interpretable languages like R, Matlab/Octave, Py
   ```
   git clone https://github.com/gtesei/fast-furious.git
   ```
-  
-### 2.3 How to use fast-furious in your Octave/Matlab scripts  
+
+### 2.3 Installing only fast-furious R-Package 
+R-Package installation is pretty easy and fast from github by using ```devtools::install_github```. Windows user will need to install [RTools](http://cran.r-project.org/bin/windows/Rtools/) first.
+
+```r
+devtools::install_github('gtesei/fast-furious',subdir='R-package')
+```
+
+### 2.4 How to use fast-furious in your Octave/Matlab scripts  
 Assuming you are launching your Octave/Matlab script in fast-furious base dir, you just need to call at the begin of your script the fast-furious 
 ```menv``` function to set up the enviroment. Typically, your script should look like this 
 
@@ -44,13 +51,7 @@ README_Neural;
 go();
 ```
 
-### 2.4 How to use fast-furious in your R scripts  
-R installation is pretty easy and fast from github by using ```devtools::install_github```. Windows user will need to install [RTools](http://cran.r-project.org/bin/windows/Rtools/) first.
-
-```r
-devtools::install_github('gtesei/fast-furious',subdir='R-package')
-```
-
+### 2.5 How to use fast-furious in your R scripts  
 Once installed, you just need to load the package by using the R ```library``` function. E.g. this is the code sketch for tuning, training, predicting and ensembling an XGBoost model on a binary classification problem. 
 ```r
 library(fastfurious)
