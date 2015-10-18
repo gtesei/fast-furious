@@ -9,7 +9,7 @@ ff.trainAndPredict.reg(Ytrain, Xtrain, Xtest, model.label, controlObject,
   removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = TRUE,
   xgb.metric.fun = RMSLE.xgb, xgb.maximize = FALSE,
   xgb.metric.label = "rmsle", xgb.foldList = NULL, xgb.eta = NULL,
-  xgb.cv.default = TRUE, xgb.param = NULL, ...)
+  xgb.max_depth = NULL, xgb.cv.default = TRUE, xgb.param = NULL, ...)
 }
 \arguments{
 \item{Ytrain}{the output variable as numeric vector}
@@ -47,6 +47,8 @@ In the latter case only if \code{best.tuning} is \code{TRUE}.}
 
 \item{xgb.eta}{custom \code{eta} parameter for \code{'xgbTreeGTJ'} and \code{'xgbTree'}.
 In the latter case only if \code{best.tuning} is \code{TRUE}.}
+
+\item{xgb.max_depth}{custom \code{max_depth} parameter for \code{'xgbTreeGTJ'} and \code{'xgbTree'}.  In the latter case only if \code{best.tuning} is \code{TRUE}.}
 
 \item{xgb.cv.default}{\code{TRUE} for using \code{xgboost::xgb.cv} function (mandatory in case of fix nrounds), \code{FALSE} for using the internal
 \code{ff.xgb.cv} function. The main advantage of the latter is that it doesn't need to restart nrounds in case for the specified nrounds

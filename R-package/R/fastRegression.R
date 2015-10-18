@@ -260,6 +260,7 @@ removePredictorsMakingIllConditionedSquareMatrix_IFFragileLinearModel = function
 #' In the latter case only if \code{best.tuning} is \code{TRUE}.
 #' @param xgb.eta custom \code{eta} parameter for \code{'xgbTreeGTJ'} and \code{'xgbTree'}. 
 #' In the latter case only if \code{best.tuning} is \code{TRUE}.
+#' @param xgb.max_depth custom \code{max_depth} parameter for \code{'xgbTreeGTJ'} and \code{'xgbTree'}.  In the latter case only if \code{best.tuning} is \code{TRUE}.
 #' @param xgb.cv.default \code{TRUE} for using \code{xgboost::xgb.cv} function (mandatory in case of fix nrounds), \code{FALSE} for using the internal 
 #' \code{ff.xgb.cv} function. The main advantage of the latter is that it doesn't need to restart nrounds in case for the specified nrounds 
 #' cross validation error is still decreasing.   
@@ -314,6 +315,7 @@ ff.trainAndPredict.reg = function(Ytrain ,
                                   xgb.metric.label = 'rmsle', 
                                   xgb.foldList = NULL,
                                   xgb.eta = NULL,
+                                  xgb.max_depth = NULL, 
                                   xgb.cv.default = TRUE, 
                                   xgb.param = NULL, 
                                   ... ) {
@@ -437,6 +439,7 @@ ff.trainAndPredict.reg = function(Ytrain ,
       if (! is.null(xgb.param)) {
         param = xgb.param
         if (! is.null(xgb.eta)) stop("xgb.eta must be NULL if xgb.param is not NULL")
+        if (! is.null(xgb.max_depth)) stop("xgb.max_depth must be NULL if xgb.param is not NULL")
       } else {
         param <- list("objective" = "reg:linear" ,
                       "min_child_weight" = 6 , 
@@ -449,6 +452,7 @@ ff.trainAndPredict.reg = function(Ytrain ,
         
         param['eta'] = 0.02
         if (! is.null(xgb.eta)) param['eta'] = xgb.eta
+        if (! is.null(xgb.max_depth)) param['max_depth'] = xgb.max_depth
       }
       
       
@@ -496,6 +500,7 @@ ff.trainAndPredict.reg = function(Ytrain ,
         if (! is.null(xgb.param)) {
           param = xgb.param
           if (! is.null(xgb.eta)) stop("xgb.eta must be NULL if xgb.param is not NULL")
+          if (! is.null(xgb.max_depth)) stop("xgb.max_depth must be NULL if xgb.param is not NULL")
         } else {
           param <- list("objective" = "reg:linear",
                         "gamma" = 0.7,  
@@ -508,6 +513,7 @@ ff.trainAndPredict.reg = function(Ytrain ,
           
           param['eta'] = 0.05
           if (! is.null(xgb.eta)) param['eta'] = xgb.eta
+          if (! is.null(xgb.max_depth)) param['max_depth'] = xgb.max_depth
         }
         
         ## fix nrounds? 
