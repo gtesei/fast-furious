@@ -211,8 +211,6 @@ ff.trainAndPredict.class = function(Ytrain ,
           fit = e1071::svm(x = Xtrain[ index[[i]] , ] , y = Ytrain[index[[i]]] , kernel = "radial" , gamma = tuneGrid[j,]$gamma , cost = tuneGrid[j,]$C) 
           pred = predict(fit , Xtrain[ indexOut[[i]] , ])
           roc_1 = verification::roc.area(Ytrain[indexOut[[i]]] , pred )$A
-          #roc_2 = as.numeric( pROC::auc(pROC::roc(response = l$y.cat[indexOut[[i]]], predictor = pred, levels = levels(l$y.cat) )))
-          #rocs[i] <<- min(roc_1,roc_2)
           rocs[i] <<- roc_1
         })
         tuneGrid[j,3] <<- mean(rocs)
