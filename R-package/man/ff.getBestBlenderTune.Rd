@@ -17,4 +17,7 @@ a \code{data.frame} of the best tuning parameters.
 \description{
 Helper function that given a blender object returns the best tuning parameters found by the blender.
 }
+\seealso{
+\code{\link[fastfurious]{ff.blend}} for examples.
+}
 

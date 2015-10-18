@@ -29,4 +29,7 @@ a \code{numeric} as difference in performance between blender and replicated exe
 \description{
 Helper function that given a blender object replicates the execution in order to verify performances.
 }
+\seealso{
+\code{\link[fastfurious]{ff.blend}} for examples.
+}
 

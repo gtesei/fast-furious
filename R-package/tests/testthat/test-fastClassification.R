@@ -1,8 +1,6 @@
 test_that('base test case', {
   #skip_on_cran()
   
-  ff.setMaxCuncurrentThreads(1)
-  
   ## suppress warnings raised because there few obs 
   warn_def = getOption('warn')
   options(warn=-1)
@@ -35,12 +33,9 @@ test_that('base test case', {
   best_ROC = max(tp$model$results$ROC)
   
   expect_equal(length(pred_test),nrow(Xtest))
-  expect_equal(elapsed.secs>0,T)
+  expect_equal(elapsed.secs>0,TRUE)
   
   ## restore warnings 
   options(warn=warn_def)
-  
-  ## restore default 
-  ff.setMaxCuncurrentThreads(2)
   
 })

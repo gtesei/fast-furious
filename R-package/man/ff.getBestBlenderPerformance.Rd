@@ -15,4 +15,7 @@ a \code{numeric} of best score and as object name the best performant method nam
 \description{
 Helper function that given a blender object returns the best optimization method.
 }
+\seealso{
+\code{\link[fastfurious]{ff.blend}} for examples.
+}
 

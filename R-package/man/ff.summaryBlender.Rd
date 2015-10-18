@@ -15,4 +15,7 @@ a \code{numeric} vector of performances (one for each optimization method)
 \description{
 Helper function that given a blender object returns a \code{numeric} vector of performances (one for each optimization method).
 }
+\seealso{
+\code{\link[fastfurious]{ff.blend}} for examples.
+}
 

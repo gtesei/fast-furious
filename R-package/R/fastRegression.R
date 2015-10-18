@@ -784,7 +784,7 @@ ff.blend = function(bestTune,
 #' Helper function that given a blender object returns a \code{numeric} vector of performances (one for each optimization method). 
 #' 
 #' @param blender a blender object  
-#' 
+#' @seealso \code{\link[fastfurious]{ff.blend}} for examples. 
 #' @export
 #' @return a \code{numeric} vector of performances (one for each optimization method)
 
@@ -797,7 +797,7 @@ ff.summaryBlender = function(blender) {
 #' Helper function that given a blender object returns the best optimization method. 
 #' 
 #' @param blender a blender object  
-#' 
+#' @seealso \code{\link[fastfurious]{ff.blend}} for examples. 
 #' @export
 #' @return a \code{numeric} of best score and as object name the best performant method name. 
 
@@ -811,7 +811,7 @@ ff.getBestBlenderPerformance = function(blender) {
 #' 
 #' @param blender a blender object  
 #' @param truncate \code{TRUE} to cut at the first tuning best configuration in case there are more than one optimal tuning configurations.  
-#' 
+#' @seealso \code{\link[fastfurious]{ff.blend}} for examples. 
 #' @export
 #' @return a \code{data.frame} of the best tuning parameters. 
 
@@ -838,6 +838,7 @@ ff.getBestBlenderTune = function(blender,truncate=TRUE) {
 #' \code{'svmRadial'}, \code{'treebag'}, \code{'gbm'}, \code{'rf'}, \code{'cubist'}, \code{'avNNet'}, 
 #' \code{'xgbTreeGTJ'}, \code{'xgbTree'}. It must be the same model name used by the blender. 
 #' @param controlObject a list of values that define how this function acts. Must be a caret \code{trainControl} object. It must be the same used by the blender.
+#' @seealso \code{\link[fastfurious]{ff.blend}} for examples. 
 #' @export
 #' @return a \code{numeric} as difference in performance between blender and replicated execution.  
 
