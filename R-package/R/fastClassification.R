@@ -113,17 +113,17 @@ ff.trainAndPredict.class = function(Ytrain ,
     
     if (model.label == "glm") { ## logistic reg   
       l = getCaretFactors(y=Ytrain)
-      model <- train( x = Xtrain , y = l$y.cat , method = "glm", metric = getCaretMetric(metric=metric.label) , trControl = controlObject)
+      model <- caret::train( x = Xtrain , y = l$y.cat , method = "glm", metric = getCaretMetric(metric=metric.label) , trControl = controlObject)
       pred.prob = predict(model , Xtest , type = "prob")[,l$fact.sign]
       pred = predict(model,Xtest)
     } else if (model.label == "lda") { ## lda  
       l = getCaretFactors(y=Ytrain)
-      model <- train( x = Xtrain , y = l$y.cat,  method = "lda" , metric = getCaretMetric(metric=metric.label) , trControl = controlObject)
+      model <- caret::train( x = Xtrain , y = l$y.cat,  method = "lda" , metric = getCaretMetric(metric=metric.label) , trControl = controlObject)
       pred.prob = predict(model , Xtest , type = "prob")[,l$fact.sign]
       pred = predict(model,Xtest)
     } else if (model.label == "pls") { ## pls  
       l = getCaretFactors(y=Ytrain)
-      model <- train( x = Xtrain , y = l$y.cat,  
+      model <- caret::train( x = Xtrain , y = l$y.cat,  
                       method = "pls", tuneGrid = expand.grid(.ncomp = 1:10), 
                       metric = getCaretMetric(metric=metric.label) , trControl = controlObject)
       pred.prob = predict(model , Xtest , type = "prob")[,l$fact.sign]
@@ -131,7 +131,7 @@ ff.trainAndPredict.class = function(Ytrain ,
     } else if (model.label == "glmnet") { ## glmnet  
       l = getCaretFactors(y=Ytrain)
       glmnGrid <- expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1), .lambda = seq(.01, .2, length = 40))
-      model <- train( x = Xtrain , y = l$y.cat,  
+      model <- caret::train( x = Xtrain , y = l$y.cat,  
                       method = "glmnet", tuneGrid = glmnGrid, 
                       metric = getCaretMetric(metric=metric.label), trControl = controlObject)
       pred.prob = predict(model , Xtest , type = "prob")[,l$fact.sign]
@@ -139,7 +139,7 @@ ff.trainAndPredict.class = function(Ytrain ,
     } else if (model.label == "pam") { ## pam  
       l = getCaretFactors(y=Ytrain)
       nscGrid <- data.frame(.threshold = 0:25)
-      model <- train( x = Xtrain , y = l$y.cat,  
+      model <- caret::train( x = Xtrain , y = l$y.cat,  
                       method = "pam", tuneGrid = nscGrid, 
                       metric = getCaretMetric(metric=metric.label),  trControl = controlObject)
       pred.prob = predict(model , Xtest , type = "prob")[,l$fact.sign]
@@ -149,7 +149,7 @@ ff.trainAndPredict.class = function(Ytrain ,
       nnetGrid <- expand.grid(.size = 1:10, .decay = c(0, .1, 1, 2))
       maxSize <- max(nnetGrid$.size)
       numWts <- 1*(maxSize * ( (dim(Xtrain)[2]) + 1) + maxSize + 1)
-      model <- train( x = Xtrain , y = l$y.cat,  
+      model <- caret::train( x = Xtrain , y = l$y.cat,  
                       method = "nnet", metric = getCaretMetric(metric=metric.label), 
                       preProc = c( "spatialSign") , 
                       tuneGrid = nnetGrid , trace = FALSE , maxit = 2000 , 
@@ -159,7 +159,7 @@ ff.trainAndPredict.class = function(Ytrain ,
     } else if (model.label == "svmRadial") { ## svm 
       l = getCaretFactors(y=Ytrain)
       svmRGridReduced <- expand.grid(.sigma = kernlab::sigest(as.matrix(Xtrain)), .C = 2^(seq(-4, 4)))
-      model <- train( x = Xtrain , y = l$y.cat,
+      model <- caret::train( x = Xtrain , y = l$y.cat,
                       method = "svmRadial", tuneGrid = svmRGridReduced, 
                       metric = getCaretMetric(metric=metric.label), fit = FALSE, trControl = controlObject)
       pred.prob = predict(model , Xtest , type = "prob")[,l$fact.sign]
@@ -232,7 +232,7 @@ ff.trainAndPredict.class = function(Ytrain ,
       
     } else if (model.label == "knn") { ## knn 
       l = getCaretFactors(y=Ytrain)
-      model <- train( x = Xtrain , y =  l$y.cat,
+      model <- caret::train( x = Xtrain , y =  l$y.cat,
                       method = "knn", 
                       tuneGrid = data.frame(.k = c(4*(0:5)+1, 20*(1:5)+1, 50*(2:9)+1)),
                       metric = getCaretMetric(metric=metric.label),  trControl = controlObject)
@@ -240,7 +240,7 @@ ff.trainAndPredict.class = function(Ytrain ,
       pred = predict(model,Xtest)
     } else if (model.label == "rpart") { ## class trees 
       l = getCaretFactors(y=Ytrain)
-      model <- train( x = Xtrain , y = l$y.cat,  
+      model <- caret::train( x = Xtrain , y = l$y.cat,  
                       method = "rpart", tuneLength = 30, 
                       metric = getCaretMetric(metric=metric.label), trControl = controlObject)
       pred.prob = predict(model , Xtest , type = "prob")[,l$fact.sign]
@@ -248,10 +248,10 @@ ff.trainAndPredict.class = function(Ytrain ,
     } else if (model.label == "C5.0") { ## boosted trees 
       l = getCaretFactors(y=Ytrain)
       if (! best.tuning) {
-        model <- train( x = Xtrain , y = l$y.cat,  
+        model <- caret::train( x = Xtrain , y = l$y.cat,  
                         method = "C5.0",  metric = getCaretMetric(metric=metric.label), trControl = controlObject)
       } else { 
-        model <- train( x = Xtrain , y = l$y.cat,  
+        model <- caret::train( x = Xtrain , y = l$y.cat,  
                         tuneGrid = expand.grid(.trials = c(1, (1:10)*10), .model = "tree", .winnow = c(TRUE, FALSE) ),
                         method = "C5.0",  metric = getCaretMetric(metric=metric.label), trControl = controlObject)
       }
@@ -260,13 +260,13 @@ ff.trainAndPredict.class = function(Ytrain ,
     } else if (model.label == "bag") { ## bagging trees 
       l = getCaretFactors(y=Ytrain)
       if (! best.tuning) {
-        model <- train( x = Xtrain , y = l$y.cat,  
+        model <- caret::train( x = Xtrain , y = l$y.cat,  
                         method = "bag",  metric = getCaretMetric(metric=metric.label), trControl = controlObject, B = 50 ,
                         bagControl = bagControl(fit = plsBag$fit,
                                                 predict = plsBag$pred,
                                                 aggregate = plsBag$aggregate))
       } else {
-        model <- train( x = Xtrain , y = l$y.cat,  
+        model <- caret::train( x = Xtrain , y = l$y.cat,  
                         method = "bag",  metric = getCaretMetric(metric=metric.label) , trControl = controlObject, 
                         tuneGrid = data.frame(vars = seq(1, 15, by = 2)), 
                         bagControl = bagControl(fit = plsBag$fit,
