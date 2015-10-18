@@ -11,6 +11,7 @@ test_that('set_path and get_path in basic contest', {
 test_that('max number of concurrent threads', {
   #skip_on_cran(
   
+  ff.setMaxCuncurrentThreads(2)
   expect_equal(ff.getMaxCuncurrentThreads() , 2 )
   
   ff.setMaxCuncurrentThreads(6)
