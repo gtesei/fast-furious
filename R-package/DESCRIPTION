@@ -33,4 +33,5 @@ Imports:
     magrittr, 
     stringr,
     e1071, 
-    glmnet
+    glmnet, 
+    verification
