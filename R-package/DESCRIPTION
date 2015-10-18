@@ -21,7 +21,8 @@ Suggests:
     kknn,
     kernlab,
     ipred, 
-    randomForest
+    randomForest, 
+    pROC
 Depends:
     R (>= 2.10),  
     caret
