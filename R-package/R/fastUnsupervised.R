@@ -15,23 +15,26 @@
 #' @param verbose a logical value indicating whether verbose mode should be enabled.  
 #' @examples
 #' ## data 
-#' Xtrain <- data.frame( a = rep(1:10 , each = 2), b = 20:1, c = rep(as.Date(c("2007-06-22", "2004-02-13")),10) , d = 20:1)
-#' Xtest <- data.frame( a = rep(2:11 , each = 2), b = 1:20, c = rep(as.Date(c("2007-03-01", "2004-05-23")),10) , d = 1:20)
+#' Xtrain <- data.frame(a = rep(1:10 , each = 2), b = 20:1, 
+#'                      c = rep(as.Date(c("2007-06-22", "2004-02-13")),10) , d = 20:1)
+#' Xtest <- data.frame(a = rep(2:11 , each = 2), b = 1:20, 
+#'                     c = rep(as.Date(c("2007-03-01", "2004-05-23")),10) , d = 1:20)
 #' 
 #' ## encode data sets 
 #' l = ff.makeFeatureSet(Xtrain,Xtest,c("C","N","D","N"))
 #' Xtrain = l$traindata
 #' Xtest = l$testdata
 #'
-#' ffPCA = ff.pca(Xtrain = Xtrain , Xtest = Xtest , center = TRUE , scale. = TRUE , removeZeroVarPredictors = TRUE , 
+#' ffPCA = ff.pca(Xtrain = Xtrain , Xtest = Xtest , center = TRUE , scale. = TRUE , 
+#'                removeZeroVarPredictors = TRUE , 
 #'                varThreshold = 0.95 , doPlot = FALSE , verbose = TRUE)
 #'                                
 #' numComp <- ffPCA$numComp 
 #' numComp.elbow <- ffPCA$numComp.elbow 
 #' numComp.threshold <- ffPCA$numComp.threshold 
 #' 
-#' Xtrain_95Var = ffPCA$PC.train[1:numComp.threshold,,drop=FALSE]
-#' Xtest_95Var = ffPCA$PC.test[1:numComp.threshold,,drop=FALSE]
+#' PC_Xtrain_95Var = ffPCA$PC.train[1:numComp.threshold,,drop=FALSE]
+#' PC_Xtest_95Var = ffPCA$PC.test[1:numComp.threshold,,drop=FALSE]
 #' 
 #' @export
 #' @return a list whose components are the number of principal components (\code{numComp}), the number of principal components to hold 
@@ -65,7 +68,7 @@ ff.pca <- function(Xtrain,Xtest,
     
     predToRemove = which(sc == 0) 
     if (length(predToRemove)>0) {
-      if(verbose) cat(">>> removing zero variance predictors:",colnames(Xtrain)[predToRemove],"...\n")
+      if(verbose) cat(">>> removing zero variance predictors:",colnames(data)[predToRemove],"...\n")
       data = data[,-predToRemove,drop=F]
     } 
     rm(list=c("x"))
