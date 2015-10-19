@@ -35,6 +35,46 @@ test_that('base test case', {
   expect_equal(length(pred_test),nrow(Xtest))
   expect_equal(elapsed.secs>0,TRUE)
   
+  ## make a caret control object 
+  controlObject <- trainControl(method = "repeatedcv", repeats = 2, number = 3 , summaryFunction = twoClassSummary , classProbs = TRUE)
+  tp = ff.trainAndPredict.class(Ytrain=Ytrain ,
+                                Xtrain=Xtrain , 
+                                Xtest=Xtest, 
+                                model.label = "libsvm" , 
+                                controlObject=controlObject, 
+                                verbose=T , 
+                                best.tuning=T)
+  
+  pred_test = tp$pred
+  model = tp$model
+  elapsed.secs = tp$secs
+  
+  bestTune = l$model$bestTune
+  best_ROC = max(tp$model$results$ROC)
+  
+  expect_equal(length(pred_test),nrow(Xtest))
+  expect_equal(elapsed.secs>0,TRUE)
+  
+  ## make a caret control object 
+  controlObject <- trainControl(method = "repeatedcv", repeats = 2, number = 3 , summaryFunction = twoClassSummary , classProbs = TRUE)
+  tp = ff.trainAndPredict.class(Ytrain=Ytrain ,
+                                Xtrain=Xtrain , 
+                                Xtest=Xtest, 
+                                model.label = "glmnet_alpha_0.5" , 
+                                controlObject=controlObject, 
+                                verbose=T , 
+                                best.tuning=T)
+  
+  pred_test = tp$pred
+  model = tp$model
+  elapsed.secs = tp$secs
+  
+  bestTune = l$model$bestTune
+  best_ROC = max(tp$model$results$ROC)
+  
+  expect_equal(length(pred_test),nrow(Xtest))
+  expect_equal(elapsed.secs>0,TRUE)
+  
   ## restore warnings 
   options(warn=warn_def)
   
