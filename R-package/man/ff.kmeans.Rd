@@ -28,7 +28,8 @@ ff.kmeans(Xtrain, Xtest, max_centers = 10, nstart = 5, iter.max = 10,
 }
 \value{
 a list whose components are the max number of clusters evaluated (\code{max_centers}), the best number of clusters
- (\code{best_n_cluters}), assuming \code{best_n_cluters} as number of clusters a vector of integers (from 1:\code{best_n_cluters})
+ (\code{best_n_cluters}), the sequence of within groups sum of squares across number of clusters (\code{wss}),
+ assuming \code{best_n_cluters} as number of clusters a vector of integers (from 1:\code{best_n_cluters})
  indicating the cluster to which each point is allocated in the train set (\code{K.train}) and test set (\code{K.test}).
 }
 \description{

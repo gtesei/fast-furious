@@ -155,7 +155,8 @@ ff.pca <- function(Xtrain,Xtest,
 #' 
 #' @export
 #' @return a list whose components are the max number of clusters evaluated (\code{max_centers}), the best number of clusters
-#'  (\code{best_n_cluters}), assuming \code{best_n_cluters} as number of clusters a vector of integers (from 1:\code{best_n_cluters}) 
+#'  (\code{best_n_cluters}), the sequence of within groups sum of squares across number of clusters (\code{wss}), 
+#'  assuming \code{best_n_cluters} as number of clusters a vector of integers (from 1:\code{best_n_cluters}) 
 #'  indicating the cluster to which each point is allocated in the train set (\code{K.train}) and test set (\code{K.test}).       
 #' 
 ff.kmeans <- function(Xtrain,Xtest,
@@ -205,6 +206,7 @@ ff.kmeans <- function(Xtrain,Xtest,
   
   return(list(max_centers = max_centers,
               best_n_cluters = best_n_cluters,
+              wss = wss , 
               K.train = K.train , 
               K.test = K.test ))
 }
