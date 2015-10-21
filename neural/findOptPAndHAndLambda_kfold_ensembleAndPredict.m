@@ -2,26 +2,30 @@ function [predTrain , predTest , p_opt_RMSE, h_opt_RMSE, lambda_opt_RMSE, RMSE_o
 	 findOptPAndHAndLambda_kfold_ensembleAndPredict(Xtrain, ytrain, Xtest,...
 			       featureScaled = 0 , scaleFeatures = 0 , ...
 			       p_vec = [] , ...
-			       h_vec = [1 2 3 4 5 6 7 8 9 10] , ...
-			       lambda_vec = [0 0.001 0.003 0.01 0.03 0.1 0.3 1 3 10] , ...
+			       h_vec = [1 2 3] , ...
+			       lambda_vec = [0 0.001 0.01 0.1 1 5] , ...
 			       verbose = 1, doPlot=1 , ...
 			       initGrid = [] , initStart = -1 , ...   
-			       iter = 200 , iter_pred = 400 , ...
-			       regression = 1 , num_labels = 0 , k = 4) 
+			       iter = 200 , iter_pred = 800 , ...
+			       regression = 0 , num_labels = 1 , k = 4) 
 	 
   if (! featureScaled & scaleFeatures) 
     [Xtrain,mu,sigma] = treatContFeatures(Xtrain,1);
-    [Xval,mu,sigma] = treatContFeatures(Xval,1,1,mu,sigma);
+    [Xtest,mu,sigma] = treatContFeatures(Xtest,1,1,mu,sigma);
   elseif (! featureScaled & ! scaleFeatures) 
     Xtrain = [ones(size(Xtrain,1), 1), Xtrain]; % Add Ones
-    Xval = [ones(size(Xval,1), 1), Xval]; % Add Ones
+    Xtest = [ones(size(Xtest,1), 1), Xtest]; % Add Ones
   end
 
   %% p_vec
-  n = size(Xtrain,2);
+  n = size(Xtrain,2); 
   s0 = n-1;
-  p_vec = s0:(floor(s0/2)):(2*s0);
-
+  if (length(p_vec)==0) 
+    %% p_vec = s0:(floor(s0/2)):(2*s0);
+    p_vec = s0;
+  end
+  
+  %% grid 
   grid = [];
   gLen = 0;
   if (size(initGrid,1) == 0 | size(initGrid,2) == 0 | initStart < 0) 
@@ -56,7 +60,7 @@ function [predTrain , predTest , p_opt_RMSE, h_opt_RMSE, lambda_opt_RMSE, RMSE_o
         lambda = lambda_vec(lambdaIdx);
 
         if (verbose)
-          fprintf("|---------------------->  trying p=%f , h=%f , lambda=%f... \n" , p,h,lambda);
+          fprintf("|---------------------->  [%i/%i] trying p=%f , h=%f , lambda=%f... \n" , i, gLen ,p,h,lambda);
           fflush(stdout);
         endif
         
@@ -73,9 +77,9 @@ function [predTrain , predTest , p_opt_RMSE, h_opt_RMSE, lambda_opt_RMSE, RMSE_o
           roc_tes = zeros(1,k);
           roc_trs = zeros(1,k);
           for kf = 1:k
-            xtr = Xtrain(folds != kf,);
+            xtr = Xtrain(folds != kf,:);
             ytr = ytrain(folds != kf);
-            xte = Xtrain(folds == kf);
+            xte = Xtrain(folds == kf,:);
             yte = ytrain(folds == kf);
  
             NNMeta = buildNNMeta([s0 (ones(h,1) .* p)' num_labels]');disp(NNMeta);
@@ -117,7 +121,7 @@ function [predTrain , predTest , p_opt_RMSE, h_opt_RMSE, lambda_opt_RMSE, RMSE_o
 
   ### print grid
   if (verbose)
-    printf("*** GRID ***\n");
+    printf("*************************** GRID ***************************\n");
     if (regression)
       fprintf('i \tp \t\th \t\tlambda \t\tRMSE(Train) \tRMSE(Val) \n');
     else 
@@ -136,13 +140,12 @@ function [predTrain , predTest , p_opt_RMSE, h_opt_RMSE, lambda_opt_RMSE, RMSE_o
 
   %% predTest 
   fprintf("******************************************************************\n");
-  fprint(">>>> predicting on test set .... \n");
+  fprintf(">>>> predicting on test set .... \n");
   NNMeta = buildNNMeta([s0 (ones(h_opt_RMSE,1) .* p_opt_RMSE)' num_labels]');disp(NNMeta);
   [Theta] = trainNeuralNetwork(NNMeta, Xtrain, ytrain, lambda_opt_RMSE , iter = iter_pred , featureScaled = 1);
   predTest = NNPredictMulticlass(NNMeta, Theta , Xtest , featureScaled = 1);  
 	      
   if (doPlot)
-    %subplot (1, 1, 1);
     plot(1:gLen, grid(:,5), 1:gLen, grid(:,6));
     if (regression)
       title(sprintf('Validation Curve -- min RMSE=%f  with p=%i,h=%f,lambda=%f', RMSE_opt ,...

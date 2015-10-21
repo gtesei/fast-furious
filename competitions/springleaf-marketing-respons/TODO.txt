@@ -1,0 +1,63 @@
+
+*** NAs 
+  - 0.42% in train set and 0.42% in test set 
+  - 473 (out if 1927) predictors in train set and 473 in test set 
+
+  -> options: 
+     - impute (blackGiudo, mode, knn)
+     - impute -1 (there are 111 predictors with NAs and -1) --> a safer choice is imputing w/ -1.5 (no predictors with NAs has -1s)
+     - remove predictors (~25% total predictors)
+
+
+*** Predictor Analysis 
+
+- VAR_0200 (16584 American cities) / VAR_0404 (3144 types of job labels) / VAR_0493 (797 types of job labels)
+    -> do not encode for trees models / rule based models and 
+    -> to remove for all other models (e.g. knn, svm)
+
+- there'are date predictors with "" instead of NAs
+>>>  VAR_0073 - NAs: 101127 - unique values: 1459 
+>>>  VAR_0075 - NAs: 56     - unique values: 2372 
+>>>  VAR_0156 - NAs: 139361 - unique values: 731 
+>>>  VAR_0157 - NAs: 144311 - unique values: 425 
+>>>  VAR_0158 - NAs: 143142 - unique values: 408 
+>>>  VAR_0159 - NAs: 139361 - unique values: 651 
+>>>  VAR_0166 - NAs: 131001 - unique values: 2146 
+>>>  VAR_0167 - NAs: 142664 - unique values: 854 
+>>>  VAR_0168 - NAs: 134506 - unique values: 1646 
+>>>  VAR_0169 - NAs: 131001 - unique values: 1909 
+>>>  VAR_0176 - NAs: 127699 - unique values: 2164 
+>>>  VAR_0177 - NAs: 141873 - unique values: 946 
+>>>  VAR_0178 - NAs: 133158 - unique values: 1649 
+>>>  VAR_0179 - NAs: 127699 - unique values: 1876 
+>>>  VAR_0204 - NAs: 56     - unique values: 1193 
+>>>  VAR_0217 - NAs: 56     - unique values: 398 
+
+
+- correlation based clustering 
+>>> number of cells in pred corr matrix > 0.95 : 5728 
+ 
+>>> clusters:  259 
+>>> leaves outside clusters:  1377 
+>>> leaves inside clusters:  794 
+>>> distribution of number of nodes per cluster 
+  0%  25%  50%  75% 100% 
+   2    2    2    2   42 
+>>> mean: 3.065637  - sd: 4.119289 
+>>> table(cl.num)
+cl.num
+  2   3   4   5   6   7   8   9  10  12  16  28  41  42 
+196  26  10   8   3   4   5   1   1   1   1   1   1   1 
+
+- PCA 
+found  2170 PCs ... 
+>>> Number of PCs to hold according to the elbow rule: first  2  PCs ... 
+>>> Number of PCs to hold explaining 95% of variance: first  561  PCs ... 
+
+- ffNNet - 100 PCs
+>>>> found max AUC=0.725075  with p=100 , h=3.000000 , lambda=5.000000 
+
+
+*** TODO
+- try max_depth = 1 in XGB -- errore mastodontoico!!
+- try ffNNet with  561  PCs with the winner configuration of 100 PCs
