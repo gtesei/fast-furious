@@ -106,6 +106,7 @@ xgb_cross_val = function( data ,
   } else {
     bst.cv = ff.xgb.cv(params=param, data = data, label = y, 
                        nfold = nfold, nrounds=cv.nround , folds = foldList, 
+                       xgb.metric.label = xgb.metric.label , 
                        feval = xgb.metric.fun , maximize = xgb.maximize, verbose=FALSE)
     
     if (verbose) print(bst.cv)
@@ -1149,7 +1150,7 @@ getCaretFactors = function(y) {
 }
 
 #######################################################################################
-ff.xgb.cv <- function(params=list(), data, nrounds, nfold, label = NULL, missing = NULL, 
+ff.xgb.cv <- function(params=list(), data, nrounds, nfold, label = NULL, xgb.metric.label = NULL , missing = NULL, 
                       prediction = FALSE, showsd = TRUE, metrics=list(), 
                       obj = NULL, feval = NULL, stratified = TRUE, folds = NULL, verbose = T, print.every.n=1L,
                       early.stop.round = NULL, maximize = NULL, ...) {
@@ -1320,7 +1321,14 @@ ff.xgb.cv <- function(params=list(), data, nrounds, nfold, label = NULL, missing
     for(line in split) dt <- line[2:length(line)] %>% str_extract_all(pattern = "\\d*\\.+\\d*") %>% unlist %>% as.numeric %>% as.list %>% {rbindlist(list(dt, .), use.names = F, fill = F)}
     
     ######
-    lab = paste('test.',params$eval_metric,'.mean',sep='')
+    lab = NULL 
+    if (! is.null(xgb.metric.label))  {
+      lab = paste('test.',xgb.metric.label,'.mean',sep='')
+    } else if (! is.null(params$eval_metric)) {
+      lab = paste('test.',params$eval_metric,'.mean',sep='')
+    } else {
+      stop("you need to specify your metric by xgb.metric.label or by params$eval_metric.")
+    }
     
     ## early.stop 
     if (maximize) {
