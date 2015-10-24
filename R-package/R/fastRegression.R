@@ -969,7 +969,7 @@ ff.createEnsemble = function(Xtrain,
   }))
   if (sum(!cL)>0) {
     if (verbose) cat(">>> These predictors are not numeric in test set:",colnames(Xtest)[!cL],"--> converting ... \n")
-    a = lapply(1:ncol(Xtrain), function(i) {
+    a = lapply(1:ncol(Xtest), function(i) {
       Xtest[,i] <<- as.numeric(Xtest[,i]) 
     })
   }
