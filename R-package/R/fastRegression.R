@@ -952,6 +952,28 @@ ff.createEnsemble = function(Xtrain,
   stopifnot( is.atomic(y) && length(y) == nrow(Xtrain) )
   stopifnot( (is.null(bestTune)) || (is.data.frame(bestTune) && ncol(bestTune) > 0) )
   
+  ## check all predictors in Xtrain are numeric & converting if not 
+  cL = unlist(lapply(Xtrain,function(x) {
+    return(class(x) == "numeric")
+  }))
+  if (sum(!cL)>0) {
+    if (verbose) cat(">>> These predictors are not numeric in train set:",colnames(Xtrain)[!cL],"--> converting ... \n")
+    a = lapply(1:ncol(Xtrain), function(i) {
+      Xtrain[,i] <<- as.numeric(Xtrain[,i]) 
+    })
+  }
+  
+  ## check all predictors in Xtest are numeric & converting if not 
+  cL = unlist(lapply(Xtest,function(x) {
+    return(class(x) == "numeric")
+  }))
+  if (sum(!cL)>0) {
+    if (verbose) cat(">>> These predictors are not numeric in test set:",colnames(Xtest)[!cL],"--> converting ... \n")
+    a = lapply(1:ncol(Xtrain), function(i) {
+      Xtest[,i] <<- as.numeric(Xtest[,i]) 
+    })
+  }
+  
   ## classification case 
   y.cat = NULL
   fact.sign = NULL
