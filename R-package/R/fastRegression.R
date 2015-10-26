@@ -488,8 +488,11 @@ ff.trainAndPredict.reg = function(Ytrain ,
       pred = xgb$pred
       early.stop = xgb$early.stop
       
+      alist = list()
+      alist[xgb.metric.label] = xgb$perf.cv
+      
       model = list(
-        results = list( RMSLE=xgb$perf.cv  ),
+        results = alist,
         bestTune = data.frame(early.stop = xgb$early.stop)
       )
       
@@ -548,8 +551,11 @@ ff.trainAndPredict.reg = function(Ytrain ,
         pred = xgb$pred
         early.stop = xgb$early.stop
         
+        alist = list()
+        alist[xgb.metric.label] = xgb$perf.cv
+        
         model = list(
-          results = list( RMSLE=xgb$perf.cv  ),
+          results = alist,
           bestTune = data.frame(early.stop = xgb$early.stop)
         )
         
@@ -1374,7 +1380,7 @@ ff.xgb.cv <- function(params=list(), data, nrounds, nfold, label = NULL, xgb.met
       cat('>> inside ff.xgb:: stopping [',early.stop,'=early.stop < nrounds=',(iter.num*nrounds+nrounds),'] [perf.xg=',perf.xg,'] ... \n') 
       
     } else {
-      cat(">> inside ff.xgb:: redo-cv [early.stop == nrounds=",(iter.num*nrounds+nrounds),"] with nrounds=",((iter.num+1)*nrounds+nrounds)," ... \n") 
+      cat(">> inside ff.xgb:: redo-cv [early.stop == nrounds=",(iter.num*nrounds+nrounds),"] [perf.xg=",perf.xg,"] with nrounds=",((iter.num+1)*nrounds+nrounds)," ... \n") 
       iter.num = iter.num + 1 
       
       if (maximize) {
