@@ -8,7 +8,7 @@ ff.trainAndPredict.reg(Ytrain, Xtrain, Xtest, model.label, controlObject,
   best.tuning = FALSE, verbose = FALSE,
   removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = TRUE,
   xgb.metric.fun = RMSLE.xgb, xgb.maximize = FALSE,
-  xgb.metric.label = "rmsle", xgb.foldList = NULL, xgb.eta = NULL,
+  xgb.metric.label = "RMSLE", xgb.foldList = NULL, xgb.eta = NULL,
   xgb.max_depth = NULL, xgb.cv.default = TRUE, xgb.param = NULL, ...)
 }
 \arguments{

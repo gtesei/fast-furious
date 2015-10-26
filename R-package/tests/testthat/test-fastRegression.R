@@ -57,7 +57,7 @@ test_that('XGBoost', {
                              removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
                              xgb.metric.fun = RMSE.xgb, 
                              xgb.maximize =FALSE, 
-                             xgb.metric.label = 'rmse', 
+                             xgb.metric.label = 'RMSE', 
                              xgb.foldList = NULL,
                              xgb.eta = 0.5, 
                              verbose=T)  
@@ -82,7 +82,7 @@ test_that('XGBoost', {
                              removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
                              xgb.metric.fun = RMSE.xgb, 
                              xgb.maximize =FALSE, 
-                             xgb.metric.label = 'rmse', 
+                             xgb.metric.label = 'RMSE', 
                              xgb.foldList = NULL,
                              xgb.eta = 0.5)  
   
@@ -106,7 +106,7 @@ test_that('XGBoost', {
                              removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = F, 
                              xgb.metric.fun = RMSE.xgb, 
                              xgb.maximize =FALSE, 
-                             xgb.metric.label = 'rmse', 
+                             xgb.metric.label = 'RMSE', 
                              xgb.foldList = NULL,
                              xgb.eta = 0.5, 
                              verbose=T)  

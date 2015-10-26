@@ -13,7 +13,7 @@ RMSLE.xgb = function (preds, dtrain,th_err=1.5) {
     preds = ifelse(preds >=0 , preds , th_err)
   }
   rmsle = sqrt(    sum( (log(preds+1) - log(obs+1))^2 )   /length(preds))
-  return(list(metric = "rmsle", value = rmsle))
+  return(list(metric = "RMSLE", value = rmsle))
 }
 
 #' Root mean square error   
@@ -26,7 +26,7 @@ RMSLE.xgb = function (preds, dtrain,th_err=1.5) {
 RMSE.xgb = function (preds, dtrain) {
   obs <- xgboost::getinfo(dtrain, "label")
   rmse = caret::RMSE(pred = preds , obs = obs)
-  return(list(metric = "rmse", value = rmse))
+  return(list(metric = "RMSE", value = rmse))
 }
 
 xgb_cross_val = function( data , 
@@ -313,7 +313,7 @@ ff.trainAndPredict.reg = function(Ytrain ,
                                   removePredictorsMakingIllConditionedSquareMatrix_forLinearModels = TRUE, 
                                   xgb.metric.fun = RMSLE.xgb, 
                                   xgb.maximize =FALSE, 
-                                  xgb.metric.label = 'rmsle', 
+                                  xgb.metric.label = 'RMSLE', 
                                   xgb.foldList = NULL,
                                   xgb.eta = NULL,
                                   xgb.max_depth = NULL, 
