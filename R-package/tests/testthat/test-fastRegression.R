@@ -21,7 +21,7 @@ test_that('XGBoost', {
   ## make a caret control object 
   controlObject <- trainControl(method = "repeatedcv", repeats = 1, number = 2)
   
-  ## xgbTreeGTJ best tuning 
+  ## xgbTreeGTJ best tuning  
   tp = NULL
   set.seed(123)
   tp = ff.trainAndPredict.reg(Ytrain=Ytrain ,
