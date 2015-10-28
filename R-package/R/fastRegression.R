@@ -1380,7 +1380,6 @@ ff.xgb.cv <- function(params=list(), data, nrounds, nfold, label = NULL, xgb.met
       cat('>> inside ff.xgb:: stopping [',early.stop,'=early.stop < nrounds=',(iter.num*nrounds+nrounds),'] [perf.xg=',perf.xg,'] ... \n') 
       
     } else {
-      iter.num = iter.num + 1 
       
       if (maximize) {
         perf.last = max(dt[[lab]])
@@ -1389,6 +1388,8 @@ ff.xgb.cv <- function(params=list(), data, nrounds, nfold, label = NULL, xgb.met
       }
       
       cat(">> inside ff.xgb:: redo-cv [early.stop == nrounds=",(iter.num*nrounds+nrounds),"] [perf.last=",perf.last,"] with nrounds=",((iter.num+1)*nrounds+nrounds)," ... \n")
+      
+      iter.num = iter.num + 1 
     }
     
     ## gc 
