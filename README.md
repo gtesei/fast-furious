@@ -5,6 +5,13 @@
 [![License](http://img.shields.io/:license-mit-blue.svg?style=flat)](http://badges.mit-license.org)
 [![Badges](http://img.shields.io/:badges-4/4-ff6799.svg)](https://github.com/badges/badgerbadgerbadger)
 
+“*We should forget about small efficiencies, say about 97% of the time:
+premature optimization is the root of all evil. Yet we should not pass
+up our opportunities in that critical 3%. A good programmer will
+not be lulled into complacency by such reasoning, he will be wise to
+look carefully at the critical code; but only after that code has been
+identified.*” - Donald Knuth.
+
 ## 1. What is it?
   fast-furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models I needed in my Machine Learning Lab but I didn't found on the shelf.
   
