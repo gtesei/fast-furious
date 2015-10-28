@@ -13,14 +13,14 @@ look carefully at the critical code; but only after that code has been
 identified.*” - Donald Knuth.
 
 ## 1. What is it?
-  fast-furiuos gathers code (**R, Matlab/Octave, Python**), models and meta-models I needed in my Machine Learning Lab but I didn't found on the shelf.
+  fast-furiuos gathers code (**R, Matlab/Octave**), models and meta-models I needed in my Machine Learning Lab but I didn't found on the shelf.
   
 ## 2. Requirements, installation and how to use fast-furious in your scripts 
 fast-furious has been built in interpretable languages like R, Matlab/Octave, Python (hence, it does not require compilation) and **(Mac) OSX**, **Windows**, **Linux** are **fully supported**. 
 
 ### 2.1 Requirements
   * [Octave](http://www.gnu.org/software/octave/download.html) or Matlab is **mandatory** for fast-furious model implementations (*regularized neural networks, regularized linear and polynomial regression, regularized logistic regression*). If you are using only these fast-furious models Octave or Matlab installed on your machine is the only requirement. Currently, I am working on matlab compatibility issues. 
-  * [R](http://www.r-project.org/) is **mandatory** for data process, feature engineering, model selection and model ensembling best practices 
+  * [R](http://www.r-project.org/) is **mandatory** for data process, feature engineering, model selection and model ensembling.
   
 ### 2.2 Installation  
   Installation is pretty easy and quick. You can choose
