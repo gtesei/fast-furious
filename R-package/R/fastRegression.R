@@ -337,16 +337,16 @@ ff.trainAndPredict.reg = function(Ytrain ,
     Xtest = fs$Xtest
     
     if (model.label == "lm") {   ### LinearReg
-      model <- caret::train(y = Ytrain, x = Xtrain , method = "lm", trControl = controlObject)
+      model <- caret::train(y = Ytrain, x = Xtrain , method = "lm", trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  ) 
     } else if (model.label == "bayesglm") {   ### bayesglm
-      model <- caret::train(y = Ytrain, x = Xtrain , method = "bayesglm", trControl = controlObject)
+      model <- caret::train(y = Ytrain, x = Xtrain , method = "bayesglm", trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  ) 
     } else if (model.label == "glm") {   ### glm
-      model <- caret::train(y = Ytrain, x = Xtrain , method = "glm", trControl = controlObject)
+      model <- caret::train(y = Ytrain, x = Xtrain , method = "glm", trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  ) 
     } else if (model.label == "glmStepAIC") {   ### glmStepAIC
-      model <- caret::train(y = Ytrain, x = Xtrain , method = "glmStepAIC", trControl = controlObject)
+      model <- caret::train(y = Ytrain, x = Xtrain , method = "glmStepAIC", trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  ) 
     } else if (model.label == "rlm") {   ### RobustLinearReg
       model <- caret::train(y = Ytrain, x = Xtrain , method = "rlm", preProcess="pca", trControl = controlObject, ... )
