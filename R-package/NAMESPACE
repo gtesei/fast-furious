@@ -2,6 +2,7 @@
 
 export(RMSE.xgb)
 export(RMSLE.xgb)
+export(RMSPE)
 export(ff.bindPath)
 export(ff.blend)
 export(ff.corrFilter)

@@ -29,6 +29,25 @@ RMSE.xgb = function (preds, dtrain) {
   return(list(metric = "RMSE", value = rmse))
 }
 
+#' Root mean square percentage error   
+#' 
+#' @param dtrain the xgboost train set object.
+#' @param preds the predicted values (numeric vector). 
+#' 
+#' @export
+#' @return a list of metric label / values   
+RMSPE <- function(preds, dtrain) {
+  labels <- getinfo(dtrain, "label")
+  ignIdx = which(labels==0)
+  if (length(ignIdx)>0) {
+    labels = labels[-ignIdx]
+    preds = preds[-ignIdx]
+  }
+  stopifnot(sum(labels==0)==0)
+  err <- sqrt(  mean(  ((rep(1,length(preds))-preds/labels)^2)   ) )
+  return(list(metric = "RMSPE", value = err))
+}
+
 xgb_cross_val = function( data , 
                           y , 
                           foldList, 
