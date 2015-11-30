@@ -11,11 +11,6 @@ train = train_data(:,2:end);
 y_train = train_data(:,1);
 y_train = y_train + ones(length(y_train),1); %% fast-furious NN 1-based 
 
-%printf("|--> feature scaling ...\n");
-%[train_data,mu,sigma] = treatContFeatures(train_data,1);
-%[test_data,mu_val,sigma_val] = treatContFeatures(test_data,1,1,mu,sigma);
-
-
 [Xtrain,ytrain,Xval,yval] = splitTrainValidation(train,y_train,0.80,shuffle=1);
 
 %% to remove 
