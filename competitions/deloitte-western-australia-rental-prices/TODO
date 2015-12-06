@@ -1,0 +1,139 @@
+######### DATA ANALYSIS 
+
+- train.csv 
+Each row is a rental property, with a REN_ID, a VE_NUMBER, and the rental price per week (REN_BASE_RENT). 
+2 NAs values - cut 
+
+        REN_ID REN_DATE_EFF_FROM REN_BASE_RENT VE_NUMBER REN_LEASE_LENGTH
+794528 3016221        2012-09-29           450        NA                 
+832143    7877        2014-02-21           400        NA        
+
+
+there are more than 1 REN_ID for a given VE_NUMBER (even the same REN_DATE_EFF_FROM)
+
+       REN_ID REN_DATE_EFF_FROM REN_BASE_RENT VE_NUMBER REN_LEASE_LENGTH
+61205  1946378        2001-07-20            85    219069                 
+61350  2116475        2001-07-20            95    219069                 
+62697  3748629        2001-07-20           100    219069                 
+68522  5162316        2001-07-30            75    219069                 
+83675  1243826        2001-09-26           100    219069                 
+83948  2853259        2001-09-26            80    219069                 
+89142  2624206        2001-10-19           100    219069            
+
+REN_LEASE_LENGTH is 0.9915789% "" (i.e. NAs) --> remove 
+
+**NOTICE**
+> sum(unique(train$VE_NUMBER) %in%  test$VE_NUMBER)
+[1] 71318
+
+        REN_ID REN_DATE_EFF_FROM REN_BASE_RENT VE_NUMBER REN_LEASE_LENGTH
+104198 3879849        2001-12-11           130    720779                 
+166368 4712586        2002-05-31           135    720779                 
+207121 5013937        2002-09-26           140    720779                 
+231589 3573781        2002-12-10           135    720779                 
+420922 1628649        2004-02-04           145    720779                 
+
+> test[test$VE_NUMBER==720779,]
+      REN_ID REN_DATE_EFF_FROM VE_NUMBER REN_LEASE_LENGTH
+47632 933694        2013-06-28    720779   
+
+
+- test.csv 
+same as train (without the response variable REN_BASE_RENT) and no NAs 
+
+############################################################################
+#############   LAND                         ###############################
+############################################################################
+
+- land 
+[ LAN_LDS_NUMBER ]: 0.9982159 -- NAs 1173872 
+[ LAN_LDS_NUMBER_ID_TYPE3 ]: 0.9876987 -- NAs 1161504 
+[ LAN_LDS_NUMBER_IS_RURAL ]: 0.4417664 -- NAs 519504 
+[ LAN_DATE_SUBDIVISION_LGA ]: 0.8037952 -- NAs 945239 
+[ LAN_DATE_SUBDIVISION_WAPC ]: 0.03576367 -- NAs 42057 
+[ LAN_SKETCH_ID ]: 0.9832725 -- NAs 1156299 
+[ LAN_ID1_LOT_NO ]: 0.01416533 -- NAs 16658 
+[ LAN_ID1_PART_LOT ]: 0.9918884 -- NAs 1166431 
+[ LAN_ID2_LOT ]: 0.9982772 -- NAs 1173944 
+[ LAN_ID2_PART_LOT ]: 0.9999269 -- NAs 1175884 
+[ LAN_ID3_PART_LOT ]: 0.9989855 -- NAs 1174777 
+[ LAN_DATE_SURVEY_STRATA ]: 0.9572634 -- NAs 1125713 
+[ LAN_DATE_LEASE_EXPIRY ]: 0.9863058 -- NAs 1159866 
+[ LAN_DATE_LEASE_FROM ]: 0.9918076 -- NAs 1166336 
+[ LAN_STR_ID_HAS_CORNER ]: 0.9590823 -- NAs 1127852 
+[ LLG_DATE_EFF_FROM ]: 6.802895e-06 -- NAs 8 
+[ SUB_POSTCODE ]: 1.700724e-06 -- NAs 2 
+[ URT_DATE_EFF_FROM ]: 2.551085e-06 -- NAs 3 
+
+- land_valuation_key
+1694 VEs in land_valuation_key are associated to more than one LAN_ID 
+But without a rule, as it results comparing two LAN_IDs associated to the same VE. 
+Most of the fields are equal. >>> 100% pure noise >>> cut 
+
+- land_admin_areas
+0.8265898 is the perc. of LAND_ID in land don't occur in land_admin_areas --> cut table??
+
+- land_pins
+3.097041e-05 (9) is the perc. of LAND_ID in land don't occur in land_pins
+
+- land_restrictions
+0.9996593 is the perc. of LAND_ID in land don't occur in land_restrictions --> cut ?? 
+
+- land_urban
+0.3122368 is the perc. of LAND_ID in land don't occur in land_urban --> cut ?? 
+
+- land_zonings 
+0.156139 is the perc. of LAND_ID in land don't occur in land_urban 
+
+############################################################################
+#############   VALUATION ENTITIES           ###############################
+############################################################################
+
+- valuation_entities 
+all VE_NUMBER occur in train / test set 
+
+- valuation_entities_classifications
+4 VE_NUMBER don't occur in test set 
+
+- valuation_entities_details
+107 VE_NUMBER don't occur in train (95) / test set (15) --> ??  
+
+
+
+######### TODO 
+
+- once identified the best data to use, try log tranf. on Ytrain 
+- once identified the best data to use, try eta 0.01
+
+layer1_dataProcNAs4_modxgbTreeGTJ_eta0.02_max_depth9_tuneTRUE.csv: 17999 rounds (0.283003) - with pred 
+
+
+layer1_dataProcbase_ytranflog_modxgbTreeGTJ_eta0.02_max_depth6_tuneTRUE.csv: 53997 rounds (log 0.027037) - without pred 
+> mean(predTrain)
+[1] 5.414936
+> mean(predTest)
+[1] 6.12215
+> 
+> 
+> 
+> if (!is.null(modelList[[m]]$ytranf)) {
++   cat(">>> applying inverse tranf. of ",modelList[[m]]$ytranf," to ensembling predictions ... \n")
++   predTrain <- exp(predTrain)
++   predTest <- exp(predTest)
++ }
+>>> applying inverse tranf. of  log  to ensembling predictions ... 
+> mean(predTest)
+[1] 488.2577
+> mean(predTrain)
+[1] 276.1616
+
+### top submission on Nov 20 -- avg_Nov2_15.csv (0.21465)
+
+>> inside ff.xgb:: stopping [ 20998 =early.stop < nrounds= 21000 ] [perf.xg= 0.024911 ] ... 
+
+demographics.csv
+demographics_key.csv
+distances.csv
+
+
+
