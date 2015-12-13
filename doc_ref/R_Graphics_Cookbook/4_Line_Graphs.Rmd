@@ -1,0 +1,199 @@
+---
+title: "4_Line_Graphs"
+author: "Gino Tesei"
+date: "December 12, 2014"
+output: html_document
+---
+
+## 1. Making a Basic Line Graph
+```{r}
+library(ggplot2)
+library(gcookbook) # For the data set 
+
+library(plyr) ##
+
+## numeric 
+ggplot( BOD, aes( x = Time, y = demand)) + 
+  geom_line()
+
+## categorical 
+BOD1 <- BOD # Make a copy of the data 
+BOD1$Time <- factor( BOD1$Time) 
+ggplot( BOD1, aes( x = Time, y = demand, group = 1)) + 
+  geom_line()
+
+# expands ylim  
+ggplot( BOD, aes( x = Time, y = demand)) + 
+  geom_line() + 
+  expand_limits( y = 0)
+```
+
+## 2. Adding Points to a Line Graph
+```{r}
+ggplot( BOD, aes( x = Time, y = demand)) + geom_line() + 
+  geom_point()
+
+ggplot( worldpop, aes( x = Year, y = Population)) + geom_line() + 
+  geom_point() 
+
+# Same with a log y-axis 
+ggplot( worldpop, aes( x = Year, y = Population)) + geom_line() + 
+  geom_point() + 
+  scale_y_log10()
+```
+
+## 3. Making a Line Graph with Multiple Lines
+```{r}
+# Summarize the ToothGrowth data 
+tg <- ddply( ToothGrowth, c("supp", "dose"), summarise, length = mean( len)) 
+
+# Map supp to colour 
+ggplot( tg, aes( x = dose, y = length, colour = supp)) + 
+  geom_line() 
+
+# Map supp to linetype
+ggplot( tg, aes( x = dose, y = length, linetype = supp , colour = supp)) + 
+  geom_line()
+
+## x-axis is conceived of as being categorical,
+ggplot( tg, aes( x = factor( dose), y = length, colour = supp, group = supp)) + 
+  geom_line()
+
+## shape 
+ggplot( tg, aes( x = dose, y = length, shape = supp)) + 
+  geom_line() + 
+  geom_point( size = 4) 
+
+# Make the points a little larger 
+ggplot( tg, aes( x = dose, y = length, fill = supp)) + 
+  geom_line() + 
+  geom_point( size = 4, shape = 21) 
+
+## in case points overlap dodge them 
+ggplot( tg, aes( x = dose, y = length, shape = supp , colour = supp )) + ## linetype = supp)) + 
+  geom_line( position = position_dodge( 0.2)) + # Dodge lines by 0.2 
+  geom_point( position = position_dodge( 0.2), size = 4) # Dodge points by 0.2 
+```
+
+## 4. Changing the Appearance of Lines
+```{r}
+ggplot( BOD, aes( x = Time, y = demand)) + 
+  geom_line( linetype ="dashed", size = 1, colour ="blue")
+
+# Summarize the ToothGrowth data 
+tg <- ddply( ToothGrowth, c("supp", "dose"), summarise, length = mean( len)) 
+
+ggplot( tg, aes( x = dose, y = length, colour = supp)) + 
+  geom_line() + 
+  scale_colour_brewer( palette ="Set1")
+
+# If both lines have the same properties, you need to specify a variable to # use for grouping 
+ggplot( tg, aes( x = dose, y = length, group = supp)) + 
+  geom_line( colour ="darkgreen", size = 1.5) 
+
+# Since supp is mapped to colour, it will automatically be used for grouping 
+ggplot( tg, aes( x = dose, y = length, colour = supp)) + 
+  geom_line( linetype ="dashed") + 
+  geom_point( shape = 22, size = 3, fill ="white")
+
+```
+
+## 5. Changing the Appearance of Points
+```{r}
+ggplot( BOD, aes( x = Time, y = demand)) + 
+  geom_line() + 
+  geom_point( size = 4, shape = 22, colour ="darkred", fill ="pink")
+
+## The default shape for points is a solid circle, the default size is 2, and the default colour is "black". 
+## The fill color is relevant only for some point shapes (numbered 21– 25), which have separate outline and fill colors 
+ggplot( BOD, aes( x = Time, y = demand)) + 
+  geom_line() + 
+  geom_point( size = 4, shape = 21, fill ="white")
+
+## If the points and lines have different colors, you should specify the points after the lines
+pd <- position_dodge(0.2) 
+ggplot( tg, aes( x = dose, y = length, fill = supp)) + 
+  geom_line( position = pd) + 
+  geom_point( shape = 21, size = 3, position = pd) + 
+  scale_fill_manual( values = c("black","white"))
+
+```
+
+## 6. Making a Graph with a Shaded Area
+```{r}
+# Convert the sunspot.year data set into a data frame for this example 
+sunspotyear <- data.frame( Year = as.numeric( time( sunspot.year)), Sunspots = as.numeric( sunspot.year) ) 
+
+ggplot( sunspotyear, aes( x = Year, y = Sunspots)) + 
+  geom_area()
+
+## We’ll also add an outline, by setting colour:
+ggplot( sunspotyear, aes( x = Year, y = Sunspots)) + 
+  geom_area( colour ="black", fill ="blue", alpha =.2)
+
+## Having an outline around the entire area might not be desirable,
+ggplot( sunspotyear, aes( x = Year, y = Sunspots)) + 
+  geom_area( fill ="blue", alpha =.2) + 
+  geom_line()
+```
+
+## 7. Making a Stacked Area Graph
+```{r}
+str(uspopage) ## AgeGroup is a factor 
+
+ggplot( uspopage, aes( x = Year, y = Thousands, fill = AgeGroup) ) + 
+  geom_area() ##+ scale_fill_brewer( breaks = rev( levels( uspopage$AgeGroup)))
+
+ggplot( uspopage, aes( x = Year, y = Thousands, fill = AgeGroup) ) + 
+  geom_area() + 
+  scale_fill_brewer( breaks = rev( levels( uspopage$AgeGroup)))
+
+## The legend can be reversed by setting the breaks in the scale.
+ggplot( uspopage, aes( x = Year, y = Thousands, fill = AgeGroup)) + 
+  geom_area( colour ="black", size =.2, alpha =.4) + 
+  scale_fill_brewer( palette ="Blues", breaks = rev( levels( uspopage$AgeGroup)))
+
+## To reverse the stacking order, we’ll put order = desc( AgeGroup)
+ggplot( uspopage, aes( x = Year, y = Thousands, fill = AgeGroup, order = desc( AgeGroup))) + 
+  geom_area( colour ="black", size =.2, alpha =.4) + 
+  scale_fill_brewer( palette ="Blues")
+
+## Since each filled area is drawn with a polygon, the outline includes the left and right sides. This might be distracting or misleading. To get rid of it
+ggplot( uspopage, aes( x = Year, y = Thousands, fill = AgeGroup, order = desc( AgeGroup))) + 
+  geom_area( colour = NA, alpha =.4) + 
+  scale_fill_brewer( palette ="Blues") + 
+  geom_line( position ="stack", size =.2)
+
+```
+
+## 8. Making a Proportional Stacked Area Graph
+```{r}
+# Convert Thousands to Percent 
+uspopage_prop <- ddply( uspopage, "Year", transform, Percent = Thousands / sum( Thousands) * 100)
+
+ggplot( uspopage_prop, aes( x = Year, y = Percent, fill = AgeGroup)) + 
+  geom_area( colour =" black", size =.2, alpha =.4) +
+  scale_fill_brewer( palette ="Blues", breaks = rev( levels( uspopage$AgeGroup)))
+```
+
+## 9. Adding a Confidence Region
+```{r}
+# Grab a subset of the climate data 
+clim <- subset( climate, Source == "Berkeley", select = c("Year", "Anomaly10y", "Unc10y")) 
+str(clim) 
+
+## Anomaly10y is a 10-year running average of the deviation 
+## Unc10y is the 95% confidence interval of Anomaly10y
+
+# Shaded region 
+ggplot( clim, aes( x = Year, y = Anomaly10y)) + 
+  geom_ribbon( aes( ymin = Anomaly10y-Unc10y, ymax = Anomaly10y + Unc10y), alpha = 0.2) + 
+  geom_line()
+
+# With a dotted line for upper and lower bounds 
+ggplot( clim, aes( x = Year, y = Anomaly10y)) + 
+  geom_line( aes( y = Anomaly10y-Unc10y), colour ="grey50", linetype ="dotted") + 
+  geom_line( aes( y = Anomaly10y + Unc10y), colour ="grey50", linetype ="dotted") + 
+  geom_line()
+
+```

@@ -1,0 +1,48 @@
+---
+title: "7_Annotations"
+author: "Gino Tesei"
+date: "December 13, 2014"
+output: html_document
+---
+
+## 1. Adding Text Annotations
+```{r}
+library(ggplot2)
+library(gcookbook) # For the data set 
+
+# Use annotate() and a text geom 
+p <- ggplot( faithful, aes( x = eruptions, y = waiting)) + 
+  geom_point() 
+
+p + annotate("text", x = 3, y = 48, label ="Group 1") + 
+  annotate("text", x = 4.5, y = 66, label ="Group 2")
+
+# other text properties can be specified,
+p + 
+  annotate("text", x = 3, y = 48, label ="Group 1", family ="serif", fontface ="italic", colour ="darkred", size = 3) + annotate("text", x = 4.5, y = 66, label ="Group 2", family ="serif", fontface ="italic", colour ="darkred", size = 3)
+
+# If the axes are continuous, you can use the special values Inf and -Inf to place text annotations at the edge of the plotting area
+p + 
+  annotate("text", x =-Inf, y =Inf, label ="Upper left", hjust =-.2, vjust = 2) + 
+  annotate("text", x = mean( range( faithful$eruptions)), y =-Inf, vjust =-0.4, label ="Bottom middle")
+```
+
+## 2. Using Mathematical Expressions in Annotations
+```{r}
+# A normal curve 
+p <- ggplot( data.frame( x = c(-3,3)), aes( x = x)) + 
+  stat_function( fun = dnorm) 
+
+p + annotate("text", x = 2, y = 0.3, parse = TRUE, 
+             label ="frac( 1, sqrt( 2 * pi)) * e ^ {-x ^ 2 / 2}")
+
+# To display two variables next to each other put a * operator between them
+p + 
+  annotate("text", x = 0, y = 0.05, parse = TRUE, size = 4, 
+           label ="' Function: ' * y == frac( 1, sqrt( 2* pi)) * e ^{-x ^ 2/ 2}")
+```
+
+## 3. Adding Lines
+```{r}
+
+```

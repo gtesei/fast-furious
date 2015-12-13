@@ -1,0 +1,20 @@
+---
+title: "Index"
+author: "Gino Tesei"
+date: "December 13, 2014"
+output: html_document
+---
+
+## ggplot2_Cookbook 
+3. [3_Bar_Graphs](3_Bar_Graphs.html)
+4. [4_Line_Graphs](4_Line_Graphs.html)
+5. [5_Scatter_Plots](5_Scatter_Plots.html)
+6. [6_Summarized_Data_Distributions](6_Summarized_Data_Distributions.html)
+7. [7_Annotations](7_Annotations.html)
+
+
+
+## R Markdown memos  
+* To hide code: `{r, echo=FALSE}`
+* To hide code, to generate plot files but hide them in the output document: `{r,echo=FALSE,fig.show="hide"}`
+* To suppress messages, for instance when loading packages, use `suppressMessages`. E.g. `suppressMessages(library(xgboost))`
