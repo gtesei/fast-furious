@@ -1,0 +1,127 @@
+---
+title: "8_Axes"
+author: "Gino Tesei"
+date: "December 13, 2014"
+output: html_document
+---
+
+## 1. Swapping X- and Y-Axes
+```{r}
+library(ggplot2)
+library(gcookbook) # For the data set 
+
+library(plyr)
+
+ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() 
+
+## Use coord_flip() to flip the axes
+ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() + coord_flip()
+
+# If the x variable is a factor, the order can be reversed by using scale_x_discrete() with limits = rev( levels(...))
+ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() + 
+  coord_flip() + 
+  scale_x_discrete( limits = rev( levels( PlantGrowth$group)))
+```
+
+## 2. Setting the Range of a Continuous Axis
+```{r}
+p <- ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() 
+
+# Display the basic graph 
+p 
+
+# Display the graph with longet y axis  
+p + ylim( 0, max( PlantGrowth$weight))
+```
+
+## 3. Reversing a Continuous Axis
+```{r}
+ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() + 
+  scale_y_reverse() 
+
+# Similar effect by specifying limits in reversed order 
+ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() + ylim( 6.5, 3.5)
+
+# Like scale_y_continuous(), scale_y_reverse() does not work with ylim. 
+# The same is true for the x-axis properties. 
+# If you want to reverse an axis and set its range, you must do it within the scale_y_reverse() statement, by setting the limits in reversed order
+ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() + 
+  scale_y_reverse( limits = c( 8, 0))
+```
+
+## 4. Changing the Order of Items on a Categorical Axis
+```{r}
+# To manually set the order of items on the axis, specify limits with a vector of the levels in the desired order.
+p <- ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() 
+
+p + 
+  scale_x_discrete( limits = c("ctrl","trt1"))
+
+# To reverse the order, set limits = rev( levels(...)),
+p + 
+  scale_x_discrete( limits = rev( levels( PlantGrowth$group)))
+```
+
+## 5. Setting the Scaling Ratio of the X- and Y-Axes
+```{r}
+sp <- ggplot( marathon, aes( x = Half, y = Full)) + 
+  geom_point() 
+
+# Use coord_fixed(). This will result in a 1:1 scaling between the x- and y-axes
+sp + 
+  coord_fixed()
+
+# It’s also helpful to set the tick spacing to be the same, by setting breaks in scale_y_continuous() and scale_x_continuous()
+sp + 
+  coord_fixed() + 
+  scale_y_continuous( breaks = seq( 0, 420, 30)) + 
+  scale_x_continuous( breaks = seq( 0, 420, 30))
+
+# If, instead of an equal ratio, you want some other fixed ratio between the axes, set the ratio parameter.
+sp + 
+  coord_fixed( ratio = 1/2) + 
+  scale_y_continuous( breaks = seq( 0, 420, 30)) + 
+  scale_x_continuous( breaks = seq( 0, 420, 15))
+```
+
+## 6. Setting the Positions of Tick Marks
+```{r}
+# Usually ggplot() does a good job of deciding where to put the tick marks
+ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() 
+
+# but if you want to change them, set breaks in the scale
+ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() + 
+  scale_y_continuous( breaks = c( 4, 4.25, 4.5, 5, 6, 8))
+
+# Discrete axis: setting breaks will change which of the levels are labeled, but will not remove them or change their order
+ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() + 
+  scale_x_discrete( limits = c("trt2", "ctrl"), breaks ="ctrl")
+```
+
+## 7. Removing Tick Marks and Labels
+```{r}
+
+p <- ggplot( PlantGrowth, aes( x = group, y = weight)) + 
+  geom_boxplot() 
+
+# default 
+p
+
+# To remove just the tick labels use theme( axis.text.y = element_blank())
+p + 
+  theme( axis.text.y = element_blank())
+
+```
+
+
