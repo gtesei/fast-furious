@@ -11,6 +11,7 @@ output: html_document
 5. [5_Scatter_Plots](5_Scatter_Plots.html)
 6. [6_Summarized_Data_Distributions](6_Summarized_Data_Distributions.html)
 7. [7_Annotations](7_Annotations.html)
+8. [8_Axes](8_Axes.html)
 
 
 
