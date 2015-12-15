@@ -13,6 +13,7 @@ output: html_document
 7. [7_Annotations](7_Annotations.html)
 8. [8_Axes](8_Axes.html)
 11. [11_Facets](11_Facets.html)
+12. [12_Using_Colors](12_Using_Colors.html)
 13. [13_Miscellaneous_Graphs](13_Miscellaneous_Graphs.html)
 
 
