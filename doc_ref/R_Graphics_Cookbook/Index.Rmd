@@ -12,6 +12,7 @@ output: html_document
 6. [6_Summarized_Data_Distributions](6_Summarized_Data_Distributions.html)
 7. [7_Annotations](7_Annotations.html)
 8. [8_Axes](8_Axes.html)
+13. [13_Miscellaneous_Graphs](13_Miscellaneous_Graphs.html)
 
 
 

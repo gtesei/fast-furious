@@ -1,0 +1,321 @@
+---
+title: "13_Miscellaneous_Graphs"
+author: "Gino Tesei"
+date: "December 14, 2015"
+output: html_document
+---
+
+## 1. Making a Correlation Matrix
+```{r}
+library(ggplot2)
+library(gcookbook) # For the data set 
+
+library(plyr)
+
+library(corrplot) 
+mcor <- cor(mtcars)
+
+## corrplot
+corrplot( mcor)
+
+corrplot( mcor, method ="shade", shade.col = NA, tl.col ="black", tl.srt = 45)
+
+# Generate a lighter palette 
+col <- colorRampPalette( c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA")) 
+
+corrplot( mcor, method ="shade", shade.col = NA, tl.col ="black", tl.srt = 45, 
+          col = col(200), 
+          addCoef.col ="black", 
+          addcolorlabel ="no", order ="AOE")
+```
+
+## 2. Plotting a Function
+```{r}
+# The data frame is only used for setting the range 
+p <- ggplot( data.frame( x = c(-3,3)), aes( x = x)) 
+
+p + 
+  stat_function( fun = dnorm)
+
+p + 
+  stat_function( fun = dt, args = list( df = 2))
+
+## my funcs 
+myfun <- function( xvar) { 1/( 1 + exp(-xvar + 10)) }
+
+ggplot( data.frame( x = c( 0, 20)), aes( x = x)) + 
+  stat_function( fun = myfun)
+```
+
+## 3.Shading a Subregion Under a Function Curve
+```{r}
+# Return dnorm( x) for 0 < x < 2, and NA for all other x 
+dnorm_limit <- function( x) { 
+  y <- dnorm( x) 
+  y[ x < 0 | x > 2] <- NA 
+  return(y) } 
+# ggplot() with dummy data 
+p <- ggplot( data.frame( x = c(-3, 3)), aes( x = x)) 
+
+p + 
+  stat_function( fun = dnorm_limit, geom ="area", fill ="blue", alpha = 0.2) + 
+  stat_function( fun = dnorm)
+
+# limit range
+limitRange <- function( fun, min, max) { 
+  function( x) { 
+    y <- fun( x) 
+    y[ x < min | x > max] <- NA 
+    return(y) 
+    } 
+  }
+
+# This returns a function 
+dlimit <- limitRange( dnorm, 0, 2) 
+# Now we'll try out the new function -- it only returns values for inputs # between 0 and 2 
+dlimit(-2:4)
+
+p + 
+  stat_function( fun = dnorm) + 
+  stat_function( fun = limitRange( dnorm, 0, 2), geom ="area", fill ="blue", alpha = 0.2)
+```
+
+## 4. Creating a Network Graph
+```{r}
+library( igraph) 
+
+# Specify edges for a directed graph 
+gd <- graph( c( 1,2, 2,3, 2,4, 1,4, 5,5, 3,6)) 
+plot(gd) 
+
+# For an undirected graph 
+gu <- graph( c( 1,2, 2,3, 2,4, 1,4, 5,5, 3,6), directed = FALSE) 
+
+#
+str(gd)
+str(gu)
+
+set.seed(229) 
+plot(gu)
+
+# Create a graph object from the data set 
+str(madmen2)
+g <- graph.data.frame( madmen2, directed = TRUE) 
+# Remove unnecessary margins 
+par( mar = c( 0,0,0,0)) 
+plot( g, layout = layout.fruchterman.reingold, vertex.size = 8, edge.arrow.size = 0.5, vertex.label = NA)
+
+## undirected graph.
+g <- graph.data.frame( madmen, directed = FALSE) 
+par( mar = c( 0,0,0,0)) 
+# Remove unnecessary margins 
+plot( g, layout = layout.circle, vertex.size = 8, vertex.label = NA)
+```
+
+## 5. Using Text Labels in a Network Graph
+```{r}
+# Copy madmen and drop every other row 
+m <- madmen[ 1: nrow( madmen) %% 2 == 1, ] 
+g <- graph.data.frame( m, directed = FALSE) 
+
+V(g)$name
+
+plot( g, layout = layout.fruchterman.reingold, vertex.size = 4, # Smaller nodes 
+      vertex.label = V(g)$name, # Set the labels 
+      vertex.label.cex = 0.8, # Slightly smaller font 
+      vertex.label.dist = 0.4, # Offset the labels 
+      vertex.label.color = "black")
+
+# View the edges 
+E(g) # Set some of the labels to "M" 
+E(g)[ c( 2,11,19)]$label <- "M" # Set color of all to grey, and then color a few red 
+E(g)$color <- "grey70" 
+E(g)[ c( 2,11,19)]$color <- "red" 
+plot( g) 
+```
+
+## 6. Creating a Heat Map
+```{r}
+str( presidents)
+pres_rating <- data.frame( rating = as.numeric( presidents), 
+                           year = as.numeric( floor( time( presidents))), 
+                           quarter = as.numeric( cycle( presidents)) ) 
+str(pres_rating)
+
+# Base plot 
+p <- ggplot( pres_rating, aes( x = year, y = quarter, fill = rating)) 
+
+# Using geom_tile()
+p + 
+  geom_tile() # Using geom_raster() - looks the same, but a little more efficient 
+
+p + 
+  geom_raster()
+```
+
+## 7. Creating a Dendrogram
+```{r}
+# Get data from year 2009 
+c2 <- subset( countries, Year == 2009)
+
+# Drop rows that have any NA values
+c2 <- c2[ complete.cases( c2), ] 
+# Pick out a random 25 countries # (Set random seed to make this repeatable) 
+set.seed( 201) 
+c2 <- c2[ sample( 1: nrow( c2), 25), ] 
+str(c2)
+
+rownames( c2) <- c2$Name 
+c2 <- c2[, 4:7] 
+str(c2)
+
+c3 <- scale( c2) 
+str(c3)
+
+hc <- hclust( dist( c3)) 
+# Make the dendrogram 
+plot( hc) 
+
+# With text aligned 
+plot( hc, hang = -1)
+```
+
+## 8. Creating a Mosaic Plot
+```{r}
+# Print a "flat" contingency table 
+ftable( UCBAdmissions)
+
+library( vcd) 
+# Split by Admit, then Gender, then Dept 
+mosaic( ~ Admit + Gender + Dept, data = UCBAdmissions)
+
+mosaic( ~ Dept + Gender + Admit, data = UCBAdmissions, 
+        highlighting ="Admit", 
+        highlighting_fill = c("lightblue", "pink"), direction = c(" v"," h"," v"))
+
+# Another possible set of splitting directions 
+mosaic( ~ Dept + Gender + Admit, data = UCBAdmissions, 
+        highlighting ="Admit", 
+        highlighting_fill = c("lightblue", "pink"), 
+        direction = c("v", "v", "h")) 
+# This order makes it difficult to compare male and female 
+mosaic( ~ Dept + Gender + Admit, data = UCBAdmissions, 
+        highlighting ="Admit", 
+        highlighting_fill = c("lightblue", "pink"), 
+        direction = c("v", "h", "h"))
+```
+
+## 9. Creating a Pie Chart
+```{r}
+library( MASS) # For the data set 
+
+# Get a table of how many cases are in each level of fold 
+fold <- table( survey$Fold) 
+fold 
+
+# Make the pie chart 
+pie( fold)
+
+pie( c( 99, 18, 120), 
+     labels = c("L on R", "Neither", "R on L"))
+```
+
+## 10. Creating a geographical map
+```{r}
+library( maps) # For map data 
+
+# Get map data for USA 
+states_map <- map_data("state") 
+
+# ggplot2 must be loaded to use map_data() 
+ggplot( states_map, aes( x = long, y = lat, group = group)) + 
+  geom_polygon( fill ="white", colour ="black") 
+
+
+# geom_path (no fill) and Mercator projection 
+ggplot( states_map, aes( x = long, y = lat, group = group)) + 
+  geom_path() + coord_map("mercator")
+
+# Get map data for world 
+world_map <- map_data("world") 
+str(world_map)
+
+east_asia <- map_data("world", region = c("Japan", "China", "North Korea", "South Korea"))
+
+# Map region to fill color 
+ggplot( east_asia, aes( x = long, y = lat, group = group, fill = region)) + 
+  geom_polygon( colour ="black") + 
+  scale_fill_brewer( palette ="Set2")
+```
+
+## 11. Creating a Choropleth Map
+```{r}
+# Transform the USArrests data set to the correct format 
+crimes <- data.frame( state = tolower( rownames( USArrests)), USArrests) 
+str(crimes)
+
+# Merge the data sets together 
+crime_map <- merge( states_map, crimes, by.x ="region", by.y ="state") 
+
+# After merging, the order has changed, which would lead to polygons drawn in # the incorrect order. So, we sort the data. 
+head( crime_map)
+
+# Sort by group, then order 
+crime_map <- arrange( crime_map, group, order) 
+head( crime_map)
+
+ggplot( crime_map, aes( x = long, y = lat, group = group, fill = Assault)) + 
+  geom_polygon( colour ="black") + 
+  coord_map("polyconic")
+
+ggplot( crimes, aes( map_id = state, fill = Assault)) + 
+  geom_map( map = states_map, colour ="black") +
+  scale_fill_gradient2( low ="#559999", mid ="grey90", high ="#BB650B", midpoint = median( crimes$Assault)) + 
+  expand_limits( x = states_map$long, y = states_map$lat) + coord_map("polyconic")
+
+# discretized.
+qa <- quantile( crimes$Assault, c( 0, 0.2, 0.4, 0.6, 0.8, 1.0)) 
+qa
+
+# Add a column of the quantile category 
+crimes$Assault_q <- cut( crimes$Assault, qa, labels = c(" 0-20%", "20-40%", "40-60%", "60-80%", "80-100%"), include.lowest = TRUE)
+str(crimes)
+
+# Generate a discrete color palette with 5 values 
+pal <- colorRampPalette( c("#559999", "grey80", "#BB650B"))( 5) 
+pal
+
+ggplot( crimes, aes( map_id = state, fill = Assault_q)) + 
+  geom_map( map = states_map, colour ="black") + 
+  scale_fill_manual( values = pal) + 
+  expand_limits( x = states_map$long, y = states_map$lat) + coord_map("polyconic") + 
+  labs( fill ="Assault Rate\ nPercentile")
+```
+
+## 12. Making a Map with a Clean Background
+```{r}
+# Create a theme with many of the background elements removed 
+theme_clean <- function( base_size = 12) { 
+  require( grid) 
+  # Needed for unit() 
+  theme_grey( base_size) %+replace% 
+    theme( axis.title = element_blank(), 
+           axis.text = element_blank(), 
+           panel.background = element_blank(), 
+           panel.grid = element_blank(), 
+           axis.ticks.length = unit( 0, "cm"), 
+           axis.ticks.margin = unit( 0, "cm"), 
+           panel.margin = unit( 0, "lines"), 
+           plot.margin = unit( c( 0, 0, 0, 0), "lines"), 
+           complete = TRUE 
+           ) 
+  }
+
+ggplot( crimes, aes( map_id = state, fill = Assault_q)) + 
+  geom_map( map = states_map, colour ="black") + 
+  scale_fill_manual( values = pal) + 
+  expand_limits( x = states_map$long, y = states_map$lat) + 
+  coord_map("polyconic") + 
+  labs( fill ="Assault Rate\ nPercentile") + 
+  theme_clean()
+```
