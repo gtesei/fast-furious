@@ -391,9 +391,16 @@ ff.trainAndPredict.reg = function(Ytrain ,
                             tuneGrid = ridgeGrid,
                             trControl = controlObject, ...)
       pred = as.numeric( predict(model , Xtest )  )
+    } else if (model.label == "ridge") {  ### Ridge_Reg
+      ridgeGrid <- data.frame(.lambda = seq(0, .1, length = 15))
+      model <- caret::train(y = Ytrain, x = Xtrain ,
+                            method = "lasso",
+                            tuneLength = 10,
+                            trControl = controlObject, ...)
+      pred = as.numeric( predict(model , Xtest )  )
     } else if (model.label == "enet") {  ### Enet_Reg
       enetGrid <- expand.grid(.lambda = c(0, 0.01, .1), .fraction = seq(.05, 1, length = 20))
-      if (best.tuning) enetGrid <- expand.grid(.lambda = c(0, 0.01,.1,.5,.8), .fraction = seq(.05, 1, length = 30))
+      if (best.tuning) enetGrid <- expand.grid(.lambda = c(0, 0.01,.1,.5,.8 , 1), .fraction = seq(0, 1, length = 30))
       model <- caret::train(y = Ytrain, x = Xtrain ,
                             method = "enet",
                             tuneGrid = enetGrid, 
