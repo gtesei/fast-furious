@@ -1,0 +1,35 @@
+
+** train / test (merge with store)
+- Sales - response 
+- Customers - cut 
+
+- Store 
+- DayOfWeek       
+- Date ~ dateNum , day , month , year     
+- Open 
+- Promo 
+- StateHoliday 
+- SchoolHoliday
+
+- StoreType 
+- Assortment 
+- CompetitionDistancePred := -1 if Date < CompetitionOpenSinceDate | CompetitionDistance is NA, otherwise CompetitionDistance (even if CompetitionOpenSinceDate is NA)
+- Promo2Pred := 0 if Promo2 is 0 | Promo2SinceDate < Date | Date not in Promo2Period , 1 otherwise
+- Promo2SinceMonths := # months that Promo2 started 
+
+* evaluate (add these predictors one by one)
+- SalesLastYearsDay := Sales of last years in the same shop
+- SalesLastYearWeek := Average Sales of last year in the same week 
+
+** feature selection 
+- Open = 1 
+- Sales >0 ?  
+
+** metric 
+- RMSPE : not takes into account Sales == 0 in days Open  (54 cases Shop / day , 41 stores)
+- RMSE  : takes into account Sales == 0 in days Open
+
+** resampling 
+- it seems that train period is before test period (~ 1,5 months)
+
+                     
