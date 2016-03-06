@@ -56,8 +56,7 @@ before_install:
   - ./travis-tool.sh r_binary_install data.table
   - ./travis-tool.sh install_github jimhester/covr
   - ./travis-tool.sh install_github terrytangyuan/lfda
-  - ./travis-tool.sh install_github dmlc/xgboost/R-package
-
+ 
 install:
   - ./travis-tool.sh install_deps
   - ./travis-tool.sh install_r ROSE DMwR
