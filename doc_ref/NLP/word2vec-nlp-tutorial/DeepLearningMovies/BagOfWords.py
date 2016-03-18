@@ -22,8 +22,8 @@ if __name__ == '__main__':
         print('>>> Loading Mac OSX env ...')
         os.chdir('/Users/gino/kaggle/fast-furious/gitHub/fast-furious/doc_ref/NLP/word2vec-nlp-tutorial/')
     else:
-        print('>>> Loading Mac OSX env ...')
-        os.chdir('/Users/gino/kaggle/fast-furious/gitHub/fast-furious/doc_ref/NLP/word2vec-nlp-tutorial/')
+        print('>>> Loading Windows env ...')
+        os.chdir('C:/Machine_Learning/git/fast-furious/doc_ref/NLP/word2vec-nlp-tutorial/')
 
     train = pd.read_csv('labeledTrainData.tsv', header=0, delimiter="\t", quoting=3)
     test = pd.read_csv('testData.tsv', header=0, delimiter="\t", quoting=3 )
