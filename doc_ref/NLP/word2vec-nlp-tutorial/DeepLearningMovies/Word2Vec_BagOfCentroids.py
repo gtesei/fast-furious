@@ -58,7 +58,7 @@ if __name__ == '__main__':
        print('>>> Loading Windows env ...')
        os.chdir('C:/Machine_Learning/git/fast-furious/doc_ref/NLP/word2vec-nlp-tutorial/')
 
-    model = Word2Vec.load("300features_40minwords_10context")
+    model = Word2Vec.load("300features_40minwords_10context.tsv")
 
 
     # ****** Run k-means on the word vectors and print a few clusters
@@ -95,8 +95,8 @@ if __name__ == '__main__':
         # Find all of the words for that cluster number, and print them out
         words = []
         for i in range(0,len(word_centroid_map.values())):
-            if( word_centroid_map.values()[i] == cluster ):
-                words.append(word_centroid_map.keys()[i])
+            if word_centroid_map.values()==cluster:
+                words.append(word_centroid_map.keys())
         print(words)
 
 

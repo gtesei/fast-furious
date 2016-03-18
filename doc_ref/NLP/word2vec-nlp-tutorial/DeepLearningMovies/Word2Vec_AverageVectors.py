@@ -52,6 +52,8 @@ def makeFeatureVec(words, model, num_features):
     featureVec = np.divide(featureVec,nwords)
     return featureVec
 
+def hash32(value):
+     return hash(value) & 0xffffffff
 
 def getAvgFeatureVecs(reviews, model, num_features):
     # Given a set of reviews (each one a list of words), calculate
@@ -137,7 +139,7 @@ if __name__ == '__main__':
     print("Training Word2Vec model...")
     model = Word2Vec(sentences, workers=num_workers,
                 size=num_features, min_count = min_word_count,
-                window = context, sample = downsampling, seed=1)
+                window = context, sample=downsampling, seed=1 , hashfxn=hash32)
 
     # If you don't plan to train the model any further, calling
     # init_sims will make the model much more memory-efficient.
