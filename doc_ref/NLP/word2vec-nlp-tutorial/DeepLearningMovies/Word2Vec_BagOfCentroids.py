@@ -26,6 +26,8 @@ import os
 from KaggleWord2VecUtility import KaggleWord2VecUtility
 import math
 
+def hash32(value):
+     return hash(value) & 0xffffffff
 
 # Define a function to create bags of centroids
 #
