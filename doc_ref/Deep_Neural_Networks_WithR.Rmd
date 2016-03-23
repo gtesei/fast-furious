@@ -1,0 +1,362 @@
+---
+title: "Deep_Neural_Networks_With_R"
+author: "Gino Tesei"
+date: "February 25, 2016"
+output:
+  html_document:
+    highlight: tango
+    number_sections: yes
+    theme: readable
+    toc: yes
+  pdf_document:
+    highlight: tango
+    number_sections: yes
+    toc: yes
+---
+
+# How to Immediately Approximate Any Function
+
+__Hornik et al. theorem__ 
+Let F be a continuous function on a bounded subset of n-dimensional space. Then there exists a two-layer neural network F with a finite number of hidden units that approximate F arbitrarily well. Namely, for all x in the domain of F, $\begin{equation}|F(x)−\hat{F}(x)|<\epsilon.\end{equation}.$
+
+```{r,warning=F,message=FALSE,echo=TRUE}
+Rsquared <- function(obs,preds) {
+  mobs = mean(obs)
+  1-sum((obs-preds)^2)/sum((obs-mobs)^2)
+}
+
+library ("neuralnet")
+require (Metrics)
+set.seed (2016) 
+attribute <- as.data.frame( sample(seq (-2 ,2, length =50), 50, replace = FALSE) , ncol =1) 
+response <-attribute ^2
+data <- cbind( attribute, response) 
+colnames (data) <- c( "attribute","response")
+head (data ,10)
+with(data,plot(attribute,response,color="gray",xlab="attribute",ylab="response"))
+
+##
+fit <-neuralnet (response ~ attribute, data=data, hidden =c(3,3), threshold = 0.01)
+library(devtools)
+source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
+plot.nnet(fit)
+
+testdata <- as.matrix( sample(seq( -2 ,2, length =10) , 10, replace = FALSE) , ncol =1)
+pred <- compute (fit, testdata)
+result <- cbind( testdata, pred$net.result , testdata^2) 
+colnames(result) <- c( " Attribute " ," Prediction ", " Actual ") 
+round(result,4)
+rmse(actual = testdata^2 , predicted = pred$net.result)
+Rsquared(obs=testdata^2,preds=pred$net.result)
+
+plot(x=testdata,y=testdata^2,col="red",xlab="testdata",ylab="pred vs. actual")
+points(x=testdata, y=pred$net.result,col="blue") 
+```
+
+# The Boston dataset 
+
+```{r,warning=F,message=FALSE,echo=TRUE}
+data( "Boston" ,package = "MASS") 
+data <-Boston
+apply(X = data,MARGIN = 2,FUN = function(x) sum(is.na(x)))
+caret::featurePlot(x = data[,-grep(pattern = "medv",x = colnames(data))], y = data$medv,
+            between = list(x = 1, y = 1),
+            type = c("g", "p", "smooth")) 
+
+##
+f<-medv~ crim + indus + nox + rm + age + dis + tax + ptratio + lstat
+set.seed(2016) 
+n =nrow(data) 
+train <- sample (1:n, 400, FALSE)
+
+## neuralnet
+# fit <- neuralnet (f, data = data[ train,], hidden =c(10 ,12 ,20), 
+#                   algorithm = "rprop+" , 
+#                   err.fct = "sse" , 
+#                   act.fct = "logistic" , 
+#                   threshold = 0.1, 
+#                   linear.output = TRUE)
+# 
+# pred <- compute(fit, data[ -train , 1:9])
+# 
+# ##
+# round(cor( pred$net.result, data[ - train ,10]) ^2 ,6)
+# mse(data [-train ,10], pred$net.result)
+# rmse(data [-train ,10], pred$net.result) 
+
+## 
+# require(deepnet)
+# set.seed (2016) 
+# X = data[ train ,1:9] 
+# Y = data[ train ,10] 
+# fitB <-nn.train (x = as.matrix(X), y =Y, 
+#                   initW = NULL, 
+#                  initB = NULL, 
+#                  hidden = c(10 ,12 ,20), 
+#                  learningrate = 0.58, 
+#                  momentum = 0.74, 
+#                  learningrate_scale = 1,
+#                  activationfun = "sigm" , 
+#                  output = "linear" , 
+#                  numepochs = 970, 
+#                  batchsize = 60, 
+#                  hidden_dropout = 0, 
+#                  visible_dropout = 0)
+# 
+# Xtest <- data[ -train ,1:9] 
+# predB <- nn.predict (fitB, Xtest)
+# 
+# round(cor( predB ,data[ -train ,10]) ^2 ,6) 
+# mse (data [-train ,10], predB) 
+# rmse (data [-train ,10], predB) 
+```
+
+# Binary Classification problems 
+
+```{r,warning=F,message=FALSE,echo=TRUE}
+data( "PimaIndiansDiabetes2" ,package = "mlbench")
+ncol(PimaIndiansDiabetes2)
+nrow(PimaIndiansDiabetes2)
+
+# NAs
+apply(X = PimaIndiansDiabetes2,MARGIN = 2,FUN = function(x) sum(is.na(x)))
+temp <-(PimaIndiansDiabetes2) 
+temp $insulin <- NULL 
+temp $triceps <- NULL 
+temp <-na.omit( temp)
+nrow( temp)
+
+# 
+y<-( temp $diabetes) 
+temp $diabetes <-NULL 
+temp <- scale( temp) 
+temp <- cbind(as.factor(y), temp)
+class(temp)
+summary(temp)
+
+# 
+set.seed (2016) 
+n =nrow( temp) 
+n_train <- 600 
+n_test <-n - n_train 
+train <- sample (1: n, n_train, FALSE)
+
+require (RSNNS)
+set.seed (2016) 
+X<-temp [train ,1:6] 
+Y<-temp [train ,7]
+
+fitMLP <- mlp (x =X, y =Y, size = c(12 ,8), maxit = 1000, 
+               initFunc = "Randomize_Weights" , initFuncParams = c( -0.3, 0.3), 
+               learnFunc = "Std_Backpropagation" , 
+               learnFuncParams = c(0.2, 0), 
+               updateFunc = "Topological_Order " , 
+               updateFuncParams = c(0), 
+               hiddenActFunc = "Act_Logistic" , 
+               shufflePatterns = TRUE, linOut = TRUE)
+
+
+predMLP <- sign( predict (fitMLP, temp [- train ,1:6]))
+
+table( predMLP ,sign( temp [-train ,7]), 
+       dnn =c( "Predicted", "Observed"))
+
+error_rate = (1 - sum( predMLP == sign( temp [-train ,7]))/ 124) 
+round( error_rate ,3)
+
+# AMORE
+detach( "package:RSNNS", unload = TRUE) 
+library (AMORE)
+
+net <- newff (n.neurons =c(6 ,12 ,8 ,1), 
+              learning.rate.global =0.01, 
+              momentum.global =0.5, 
+              error.criterium = "LMLS" , 
+              Stao = NA, 
+              hidden.layer = "sigmoid" , 
+              output.layer = "purelin" , 
+              method = "ADAPTgdwm")
+
+X<-temp [train,-7] 
+Y<-temp [train ,7]
+
+fit <- train (net, P =X , T =Y , 
+              error.criterium = "LMLS" , 
+              report= TRUE, show.step =100, n.shows =5)
+
+pred <- sign( sim (fit$net, temp [-train,]))
+table( pred ,sign( temp [- train ,7]), dnn =c( "Predicted" , "Observed"))
+
+
+error_rate = (1 - sum( pred == sign( temp [-train ,7]))/ 124) 
+round( error_rate ,3) 
+```
+
+# Multiple Response Classification problems  
+
+```{r,warning=F,message=FALSE,echo=TRUE}
+data( "bodyfat" ,package = "TH.data")
+
+set.seed (2016) 
+train <- sample (1:71 ,50, FALSE)
+
+scale_bodyfat <-as.data.frame(scale(log(bodyfat))) 
+f<- waistcirc + hipcirc ~ DEXfat + age + elbowbreadth + kneebreadth + anthro3a + anthro3b + anthro3c + anthro4
+
+# it <- neuralnet (f, data = scale_bodyfat [train,], 
+#                  hidden =c(8 ,4), threshold =0.1,
+#                  err.fct = "sse" , 
+#                  algorithm = "rprop+" , 
+#                  act.fct = "logistic" , 
+#                  linear.output = FALSE )
+# 
+# without_fat <- scale_bodyfat 
+# without_fat$waistcirc <-NULL  
+# without_fat$hipcirc <-NULL
+# 
+# pred <- compute (fit, without_fat [-train,] ) 
+# pred $net.result
+
+### installed packages 
+# pack <- as.data.frame (installed.packages () [,c(1 ,3:4)]) 
+# rownames (pack) <- NULL 
+# pack <- pack [is.na( pack$Priority), 1:2, drop= FALSE] 
+# print( pack, row.names= FALSE)
+```
+
+# The Elman Neural Networks 
+```{r,warning=F,message=FALSE,echo=TRUE}
+require (RSNNS) 
+require (quantmod)
+
+data( "UKLungDeaths" ,package = "datasets")
+
+par( mfrow =c(3 ,1)) 
+plot( ldeaths, xlab = "Year" , ylab = "Both sexes" , main = "Total") 
+plot( mdeaths, xlab = "Year" , ylab = "Males" , main = "Males") 
+plot( fdeaths, xlab = "Year" , ylab = "Females" , main = "Females")
+
+sum(is.na( ldeaths))
+
+class( ldeaths)
+
+par( mfrow = c(3, 1))
+plot( ldeaths)
+
+x<- density (ldeaths)
+
+plot(x, main = "UK total deaths from lung diseases") 
+polygon (x, col= "green", border = "black") 
+boxplot (ldeaths ,col= "cyan", ylab = "Number of deaths per month")
+
+#
+y<-as.ts( ldeaths)
+y<- log( y)
+y<- as.ts(scale( y)) ### ??????????????
+
+y<-as.zoo (y)
+x1 <-Lag (y, k = 1) 
+x2 <-Lag (y, k = 2) 
+x3 <-Lag (y, k = 3) 
+x4 <-Lag (y, k = 4) 
+x5 <-Lag (y, k = 5) 
+x6 <-Lag (y, k = 6) 
+x7 <-Lag (y, k = 7)
+x8 <-Lag (y, k = 8) 
+x9 <-Lag (y, k = 9) 
+x10 <-Lag (y, k = 10) 
+x11 <-Lag (y, k = 11) 
+x12 <-Lag (y, k = 12)
+
+deaths <- cbind( x1, x2, x3, x4, x5, x6, x7, x8, x9, x10 ,x11, x12) 
+deaths <- cbind(y, deaths)
+deaths <- deaths [-(1:12),]
+n =nrow( deaths)
+n
+
+set.seed(465)
+n_train <- 45 
+train <- sample (1:n, n_train, FALSE)
+
+inputs <- deaths [,2:13] 
+outputs <- deaths [,1]
+
+fit <- elman (inputs [train], 
+                outputs [train], 
+                size =c(1 ,1), 
+                learnFuncParams =c(0.1), 
+                maxit =1000)
+
+plotIterativeError (fit)
+
+summary(fit)
+
+#
+pred <- predict (fit, inputs [-train])
+
+cor( outputs [-train], pred)^2
+
+rmse(actual = outputs [-train] , predicted = pred)
+Rsquared(obs = outputs [-train]  , preds = pred)
+```
+
+# The Jordan Neural Networks 
+```{r,warning=F,message=FALSE,echo=TRUE}
+require (RSNNS) 
+data( "nottem" ,package = "datasets") 
+require (quantmod)
+
+class( nottem)
+plot( nottem)
+
+#
+y<-as.ts( nottem) 
+y<- log( y) 
+y<- as.ts(scale( y))
+
+y<-as.zoo (y) 
+x1 <-Lag (y, k = 1) 
+x2 <-Lag (y, k = 2)
+x3 <-Lag (y, k = 3) 
+x4 <-Lag (y, k = 4) 
+x5 <-Lag (y, k = 5) 
+x6 <-Lag (y, k = 6) 
+x7 <-Lag (y, k = 7) 
+x8 <-Lag (y, k = 8) 
+x9 <-Lag (y, k = 9) 
+x10 <-Lag (y, k = 10) 
+x11 <-Lag (y, k = 11) 
+x12 <-Lag (y, k = 12)
+
+
+# 
+temp <- cbind( x1, x2, x3, x4, x5, x6, x7, x8, x9, x10 ,x11, x12) 
+temp <- cbind(y, temp) 
+temp <- temp [-(1:12),]
+
+plot( temp)
+
+# 
+n =nrow(temp) 
+n 
+set.seed (465)
+n_train <- 190 
+train <- sample (1:n, n_train, FALSE)
+
+# 
+inputs <- temp [,2:13] 
+outputs <- temp [,1] 
+fit <- jordan (inputs [train], 
+               outputs [train], 
+               size =2, 
+               learnFuncParams =c (0.01), 
+               maxit =1000)
+
+plotIterativeError(fit)
+
+pred <- predict (fit, inputs [-train]) 
+cor( outputs [-train], pred)^2 
+
+rmse(actual = outputs [-train] , predicted = pred)
+Rsquared(obs = outputs [-train]  , preds = pred)
+```
