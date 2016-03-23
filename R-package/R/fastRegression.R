@@ -1197,9 +1197,12 @@ ff.createEnsemble = function(Xtrain,
 }
 
 getCaretFactors = function(y) {
-  stopifnot(sort(unique(y))[1] == 0, sort(unique(y))[2] == 1, length(unique(y)) == 2)
+  ncl = length(unique(unique(y)))
+  for (i in 1:ncl) {
+    stopifnot(sort(unique(y))[i] == (i-1))
+  }
   y.cat = factor(y) 
-  levels(y.cat) = c("class0","class1")
+  levels(y.cat) = paste0("class",0:(ncl-1))
   return(list(y.cat=y.cat,fact.sign="class1"))
 }
 
