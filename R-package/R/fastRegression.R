@@ -1393,8 +1393,8 @@ ff.xgb.cv <- function(params=list(), data, nrounds, nfold, label = NULL, xgb.met
     if (length(early.stop)>1) early.stop = early.stop[length(early.stop)]
     
     ## stop?
-    if ( early.stop < (iter.num*nrounds+nrounds) || (!maximize && !is.null(perf.last) && min(dt[[lab]]) > perf.last) 
-         || (maximize && !is.null(perf.last) && max(dt[[lab]]) < perf.last) )  {
+    if ( early.stop < (iter.num*nrounds+nrounds) || (!maximize && !is.null(perf.last) && min(dt[[lab]]) >= perf.last) 
+         || (maximize && !is.null(perf.last) && max(dt[[lab]]) <= perf.last) )  {
       
       inCV = FALSE
       
