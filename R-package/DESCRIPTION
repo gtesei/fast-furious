@@ -5,7 +5,8 @@ Version: 0.1-1
 Date: 2015-08-03
 Author: Gino Tesei <gtesei@yahoo.com>
 Maintainer: Gino Tesei <gtesei@yahoo.com>
-Description: fast-furiuos gathers code, models and meta-models I needed in my Machine Learning Lab but I didn't found on the shelf.
+Description: fast-furiuos gathers code, models and meta-models I needed in my
+    Machine Learning Lab but I didn't found on the shelf.
 License: MIT + file LICENSE
 URL: https://github.com/gtesei/fast-furious
 BugReports: https://github.com/gtesei/fast-furious/issues
@@ -14,25 +15,26 @@ Suggests:
     knitr,
     lattice (>= 0.20),
     ggplot2 (>= 1.0.0),
-    testthat, 
+    testthat,
     Cubist,
-    arm, 
+    arm,
     MASS,
     kknn,
     kernlab,
-    ipred, 
-    randomForest, 
+    ipred,
+    randomForest,
     pROC
 Depends:
-    R (>= 2.10),  
+    R (>= 2.10),
     caret
 Imports:
-    parallel, 
+    parallel,
     subselect,
-    plyr, 
-    xgboost, 
-    magrittr, 
+    plyr,
+    xgboost,
+    magrittr,
     stringr,
-    e1071, 
-    glmnet, 
+    e1071,
+    glmnet,
     verification
+RoxygenNote: 5.0.1

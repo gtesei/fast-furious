@@ -96,6 +96,8 @@ ff.trainAndPredict.class = function(Ytrain ,
       ret = NULL
       if (metric == "auc") {
         ret = "ROC"
+      } else if (metric == "merror" | metric == "error" ) {
+        ret = "Accuracy"
       } else {
         stop(paste0("unrecognized metric:",metric))
       }
