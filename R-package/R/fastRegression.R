@@ -68,7 +68,7 @@ xgb_cross_val = function( data ,
   perf.xg = NULL 
   
   ## 
-  lab = paste('test.',xgb.metric.label,'.mean',sep='')
+  lab = paste('test_',xgb.metric.label,'_mean',sep='')
   
   if (! is.null(foldList)) {
     if (verbose) cat(">>> using resamples in foldList ... \n")
@@ -89,9 +89,9 @@ xgb_cross_val = function( data ,
       
       ## early.stop
       if (xgb.maximize) {
-        early.stop = which(bst.cv[[lab]] == max(bst.cv[[lab]]))
+        early.stop = which(bst.cv[['evaluation_log']][[lab]] == max(bst.cv[['evaluation_log']][[lab]]))
       } else {
-        early.stop = which(bst.cv[[lab]] == min(bst.cv[[lab]]))
+        early.stop = which(bst.cv[['evaluation_log']][[lab]] == min(bst.cv[['evaluation_log']][[lab]]))
       }
       #if (length(early.stop)>1) early.stop = early.stop[length(early.stop)]
       if (length(early.stop)>1) {
@@ -102,28 +102,28 @@ xgb_cross_val = function( data ,
       ## stop? 
       if (fix.nround) {
         inCV = FALSE
-        perf.xg = bst.cv[[lab]][cv.nround] 
+        perf.xg = bst.cv[['evaluation_log']][[lab]][cv.nround] 
         early.stop = cv.nround
       } else if (early.stop < cv.nround)  {
         
-        #else if ( early.stop < cv.nround || (!xgb.maximize && !is.null(perf.last) && min(bst.cv[[lab]]) > perf.last) 
+        #else if ( early.stop < cv.nround || (!xgb.maximize && !is.null(perf.last) && min(bst.cv[['evaluation_log']][[lab]]) > perf.last) 
         #          || (xgb.maximize && !is.null(perf.last) && max(bst.cv[[lab]]) < perf.last) )  {
         
         inCV = FALSE
         
         if (xgb.maximize) {
-          perf.xg = max(bst.cv[[lab]])
+          perf.xg = max(bst.cv[['evaluation_log']][[lab]])
         } else {
-          perf.xg = min(bst.cv[[lab]])
+          perf.xg = min(bst.cv[['evaluation_log']][[lab]])
         }
         if (verbose) cat('>> stopping [',early.stop,'=early.stop < cv.nround=',cv.nround,'] [perf.xg=',perf.xg,'] ... \n') 
       } else {
         if(verbose) cat(">> redo-cv [early.stop == cv.nround=",cv.nround,"] with 2*cv.nround ... \n") 
         cv.nround = cv.nround * 2 
         if (xgb.maximize) {
-          perf.last = max(bst.cv[[lab]])
+          perf.last = max(bst.cv[['evaluation_log']][[lab]])
         } else {
-          perf.last = min(bst.cv[[lab]])
+          perf.last = min(bst.cv[['evaluation_log']][[lab]])
         }
       }
       gc()
@@ -138,17 +138,17 @@ xgb_cross_val = function( data ,
     
     ## early.stop
     if (xgb.maximize) {
-      early.stop = which(bst.cv[[lab]] == max(bst.cv[[lab]]))
+      early.stop = which(bst.cv[['evaluation_log']][[lab]] == max(bst.cv[['evaluation_log']][[lab]]))
     } else {
-      early.stop = which(bst.cv[[lab]] == min(bst.cv[[lab]]))
+      early.stop = which(bst.cv[['evaluation_log']][[lab]] == min(bst.cv[['evaluation_log']][[lab]]))
     }
     if (length(early.stop)>1) early.stop = early.stop[length(early.stop)]
     
     ## perf.xg
     if (xgb.maximize) {
-      perf.xg = max(bst.cv[[lab]])
+      perf.xg = max(bst.cv[['evaluation_log']][[lab]])
     } else {
-      perf.xg = min(bst.cv[[lab]])
+      perf.xg = min(bst.cv[['evaluation_log']][[lab]])
     }
   }
   
@@ -209,10 +209,12 @@ xgb_train_and_predict = function(train_set,
   
   # workaround for length 1 preds 
   if (length(teind)>1){
-    pred = xgboost::predict(bst,x[teind,])
+    #pred = xgboost::predict(bst,x[teind,])
+    pred = predict(bst,x[teind,])
   } else {
     yy = rbind(x[teind,],x[teind,])
     .pred = xgboost::predict(bst,yy)
+    #.pred = xgboost::predict(bst,yy)
     pred = .pred[1]
   }
   
