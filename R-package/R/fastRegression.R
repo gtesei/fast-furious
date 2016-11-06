@@ -93,15 +93,21 @@ xgb_cross_val = function( data ,
       } else {
         early.stop = which(bst.cv[[lab]] == min(bst.cv[[lab]]))
       }
-      if (length(early.stop)>1) early.stop = early.stop[length(early.stop)]
+      #if (length(early.stop)>1) early.stop = early.stop[length(early.stop)]
+      if (length(early.stop)>1) {
+        #early.stop = early.stop[length(early.stop)]
+        early.stop = min(early.stop)
+      }
       
       ## stop? 
       if (fix.nround) {
         inCV = FALSE
         perf.xg = bst.cv[[lab]][cv.nround] 
         early.stop = cv.nround
-      } else if ( early.stop < cv.nround || (!xgb.maximize && !is.null(perf.last) && min(bst.cv[[lab]]) > perf.last) 
-                  || (xgb.maximize && !is.null(perf.last) && max(bst.cv[[lab]]) < perf.last) )  {
+      } else if (early.stop < cv.nround)  {
+        
+        #else if ( early.stop < cv.nround || (!xgb.maximize && !is.null(perf.last) && min(bst.cv[[lab]]) > perf.last) 
+        #          || (xgb.maximize && !is.null(perf.last) && max(bst.cv[[lab]]) < perf.last) )  {
         
         inCV = FALSE
         
