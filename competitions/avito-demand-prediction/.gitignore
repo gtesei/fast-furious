@@ -1,0 +1,15 @@
+*.DS_Store
+*.pyc
+data/* 
+.Rhistory
+
+__pycache__/*
+.ipynb_checkpoints/*
+
+# test-related
+.coverage
+.cache
+
+# developer environments
+.idea
+.vscode
